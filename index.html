@@ -1,29 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>ATLAS FX</title>
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+
+<style>
+body{
+margin:0;
+background:#000;
+}
+
+.grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+grid-template-rows:50vh 50vh;
+gap:1px;
+background:#111;
+height:100vh;
+}
+
+.chart{
+background:#000;
+}
+</style>
+</head>
+
+<body>
+
+<div class="grid">
+<div id="c1" class="chart"></div>
+<div id="c2" class="chart"></div>
+<div id="c3" class="chart"></div>
+<div id="c4" class="chart"></div>
+</div>
+
 <script>
 
-function generateData(mult){
+function buildData(seed){
+
+let base = 1.1700 + seed*0.002
 
 return [
-[1.1700,1.1710,1.1690,1.1705],
-[1.1705,1.1720,1.1700,1.1715],
-[1.1715,1.1730,1.1710,1.1725],
-[1.1725,1.1735,1.1715,1.1720],
-[1.1720,1.1740,1.1718,1.1735],
-[1.1735,1.1750,1.1730,1.1742],
-[1.1742,1.1755,1.1738,1.1750],
-[1.1750,1.1760,1.1740,1.1745],
-[1.1745,1.1765,1.1742,1.1760],
-[1.1760,1.1770,1.1750,1.1765]
-].map(x=>x.map(v=>v+(Math.random()*0.001*mult)))
+[base,base+0.0010,base-0.0008,base+0.0005],
+[base+0.0005,base+0.0015,base+0.0002,base+0.0012],
+[base+0.0012,base+0.0020,base+0.0009,base+0.0018],
+[base+0.0018,base+0.0023,base+0.0014,base+0.0016],
+[base+0.0016,base+0.0026,base+0.0012,base+0.0022],
+[base+0.0022,base+0.0030,base+0.0020,base+0.0026],
+[base+0.0026,base+0.0034,base+0.0022,base+0.0031],
+[base+0.0031,base+0.0036,base+0.0027,base+0.0029],
+[base+0.0029,base+0.0039,base+0.0026,base+0.0035],
+[base+0.0035,base+0.0042,base+0.0032,base+0.0039]
+]
 
 }
 
 function makeChart(id,data){
 
-var chart = echarts.init(document.getElementById(id));
+const chart = echarts.init(document.getElementById(id))
 
 chart.setOption({
 
-backgroundColor:'#000',
+backgroundColor:"#000",
 
 grid:{
 left:5,
@@ -33,37 +75,41 @@ bottom:20
 },
 
 xAxis:{
-type:'category',
-data:data.map((_,i)=>i),
-axisLine:{lineStyle:{color:'#182230'}},
-axisLabel:{color:'#6c7a89'}
+type:"category",
+data:["1","2","3","4","5","6","7","8","9","10"],
+axisLine:{lineStyle:{color:"#182230"}},
+axisLabel:{color:"#6c7a89"}
 },
 
 yAxis:{
 scale:true,
-position:'right',
-axisLine:{lineStyle:{color:'#182230'}},
-axisLabel:{color:'#6c7a89'},
-splitLine:{lineStyle:{color:'#182230'}}
+position:"right",
+axisLine:{lineStyle:{color:"#182230"}},
+axisLabel:{color:"#6c7a89"},
+splitLine:{lineStyle:{color:"#182230"}}
 },
 
 series:[{
-type:'candlestick',
-data:data,
+type:"candlestick",
+data:data.map(d=>[d[0],d[3],d[2],d[1]]),
 itemStyle:{
-color:'#07f911',
-color0:'#ff0015',
-borderColor:'#07f911',
-borderColor0:'#ff0015'
+color:"#07f911",
+color0:"#ff0015",
+borderColor:"#07f911",
+borderColor0:"#ff0015"
 }
 }]
-});
+
+})
 
 }
 
-makeChart('c1',generateData(1))   // 5m
-makeChart('c2',generateData(2))   // 15m
-makeChart('c3',generateData(3))   // 1h
-makeChart('c4',generateData(4))   // 4h
+makeChart("c1",buildData(0))
+makeChart("c2",buildData(1))
+makeChart("c3",buildData(2))
+makeChart("c4",buildData(3))
 
 </script>
+
+</body>
+</html>
