@@ -1,82 +1,47 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ATLAS FX Charts</title>
-
-<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
-
-<style>
-body{
-margin:0;
-background:#000;
-font-family:system-ui;
-}
-
-.grid{
-display:grid;
-grid-template-columns:1fr 1fr;
-grid-template-rows:50vh 50vh;
-gap:1px;
-background:#111;
-}
-
-.chart{
-background:#000;
-}
-</style>
-</head>
-
-<body>
-
-<div class="grid">
-<div id="c1" class="chart"></div>
-<div id="c2" class="chart"></div>
-<div id="c3" class="chart"></div>
-<div id="c4" class="chart"></div>
-</div>
-
 <script>
 
-function makeChart(id){
+function generateData(mult){
+
+return [
+[1.1700,1.1710,1.1690,1.1705],
+[1.1705,1.1720,1.1700,1.1715],
+[1.1715,1.1730,1.1710,1.1725],
+[1.1725,1.1735,1.1715,1.1720],
+[1.1720,1.1740,1.1718,1.1735],
+[1.1735,1.1750,1.1730,1.1742],
+[1.1742,1.1755,1.1738,1.1750],
+[1.1750,1.1760,1.1740,1.1745],
+[1.1745,1.1765,1.1742,1.1760],
+[1.1760,1.1770,1.1750,1.1765]
+].map(x=>x.map(v=>v+(Math.random()*0.001*mult)))
+
+}
+
+function makeChart(id,data){
 
 var chart = echarts.init(document.getElementById(id));
-
-var data = [
-['09:00',1.1700,1.1710,1.1690,1.1705],
-['09:05',1.1705,1.1720,1.1700,1.1715],
-['09:10',1.1715,1.1730,1.1710,1.1725],
-['09:15',1.1725,1.1735,1.1715,1.1720],
-['09:20',1.1720,1.1740,1.1718,1.1735],
-['09:25',1.1735,1.1750,1.1730,1.1742],
-['09:30',1.1742,1.1755,1.1738,1.1750],
-['09:35',1.1750,1.1760,1.1740,1.1745],
-['09:40',1.1745,1.1765,1.1742,1.1760],
-['09:45',1.1760,1.1770,1.1750,1.1765]
-];
 
 chart.setOption({
 
 backgroundColor:'#000',
 
 grid:{
-left:45,
-right:50,
-top:10,
+left:5,
+right:45,
+top:5,
 bottom:20
 },
 
 xAxis:{
 type:'category',
-data:data.map(x=>x[0]),
+data:data.map((_,i)=>i),
 axisLine:{lineStyle:{color:'#182230'}},
-axisLabel:{color:'#6c7a89'},
-splitLine:{show:false}
+axisLabel:{color:'#6c7a89'}
 },
 
 yAxis:{
 scale:true,
+position:'right',
 axisLine:{lineStyle:{color:'#182230'}},
 axisLabel:{color:'#6c7a89'},
 splitLine:{lineStyle:{color:'#182230'}}
@@ -84,8 +49,7 @@ splitLine:{lineStyle:{color:'#182230'}}
 
 series:[{
 type:'candlestick',
-data:data.map(x=>[x[1],x[4],x[3],x[2]]),
-
+data:data,
 itemStyle:{
 color:'#07f911',
 color0:'#ff0015',
@@ -97,12 +61,9 @@ borderColor0:'#ff0015'
 
 }
 
-makeChart('c1');
-makeChart('c2');
-makeChart('c3');
-makeChart('c4');
+makeChart('c1',generateData(1))   // 5m
+makeChart('c2',generateData(2))   // 15m
+makeChart('c3',generateData(3))   // 1h
+makeChart('c4',generateData(4))   // 4h
 
 </script>
-
-</body>
-</html>
