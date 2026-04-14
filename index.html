@@ -1,115 +1,299 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>ATLAS FX</title>
-
-<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
-
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ATLAS FX — Macro Dashboard</title>
 <style>
-body{
-margin:0;
-background:#000;
-}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#000;color:#d7dde3;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.35}
+a{color:#00B0FF;text-decoration:none}
+a:hover{text-decoration:underline}
+hr{border:none;border-top:1px solid #182230;margin:0}
+.mono{font-family:"SF Mono",Menlo,Consolas,monospace}
+.up{color:#07f911}
+.dn{color:#ff0015}
+.mut{color:#6c7a89}
+.hi{color:#FFD600}
+.or{color:#FF9100}
+.bl{color:#00B0FF}
+.gn{color:#00FF5A}
 
-.grid{
-display:grid;
-grid-template-columns:1fr 1fr;
-grid-template-rows:50vh 50vh;
-gap:1px;
-background:#111;
-height:100vh;
-}
+/* TOP TERMINOLOGY NAV */
+#term-nav{position:sticky;top:0;z-index:200;background:#000;border-bottom:1px solid #182230;padding:6px 10px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:11px}
+#term-nav .brand{color:#FFD600;font-weight:700;letter-spacing:1px;margin-right:10px}
+#term-nav a{color:#6c7a89}
+#term-nav a:hover{color:#00B0FF}
+#term-nav .sep{color:#182230}
+#term-nav .src{margin-left:auto;color:#6c7a89;font-size:10px}
+#term-nav .src b{color:#00FF5A}
 
-.chart{
-background:#000;
+/* MACRO HEADER */
+#macro-header{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:#182230;border-bottom:1px solid #182230}
+#macro-header .cell{background:#000;padding:8px 10px}
+#macro-header .cell .k{color:#6c7a89;font-size:10px;letter-spacing:1px}
+#macro-header .cell .v{font-size:16px;font-weight:600;margin-top:2px}
+#macro-header .cell .s{font-size:10px;color:#6c7a89;margin-top:2px}
+
+/* SECTION HEAD */
+.sec{border-bottom:1px solid #182230}
+.sec-hd{display:flex;align-items:center;gap:10px;padding:6px 10px;background:#050a10;border-bottom:1px solid #182230}
+.sec-hd h3{font-size:11px;letter-spacing:2px;color:#FFD600;font-weight:600}
+.sec-hd .sub{color:#6c7a89;font-size:10px}
+.sec-hd .links{margin-left:auto;display:flex;gap:8px;font-size:10px}
+.sec-hd .links a{color:#6c7a89}
+.sec-hd .links a:hover{color:#00B0FF}
+.sec-body{padding:8px 10px}
+
+/* TRADE STATUS */
+#trade-status{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:#182230}
+#trade-status .cell{background:#000;padding:6px 10px}
+#trade-status .cell .k{color:#6c7a89;font-size:10px;letter-spacing:1px}
+#trade-status .cell .v{font-size:14px;font-weight:600;margin-top:2px}
+
+/* CHART GRID */
+#chart-grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1px;background:#182230;height:62vh;min-height:520px}
+.chart-wrap{position:relative;background:#000;overflow:hidden}
+.chart{position:absolute;top:0;left:0;right:0;bottom:0}
+.chart-hdr{position:absolute;top:4px;left:6px;z-index:5;font-size:11px;color:#d7dde3;font-weight:600;letter-spacing:1px;pointer-events:none}
+.chart-hdr .sym{color:#FFD600}
+.chart-hdr .tf{color:#6c7a89;margin-left:6px;font-size:10px}
+.chart-hdr .val{color:#00FF5A;margin-left:8px;font-size:11px}
+.chart-hdr .chg{margin-left:6px;font-size:10px}
+.chart-tfs{position:absolute;top:4px;right:6px;z-index:6;display:flex;gap:1px;background:#182230}
+.chart-tfs button{background:#000;color:#6c7a89;border:none;padding:2px 6px;font-size:10px;cursor:pointer;font-family:inherit}
+.chart-tfs button.on{background:#FFD600;color:#000}
+.chart-tfs button:hover{color:#d7dde3}
+.chart-tfs button.on:hover{color:#000}
+
+/* PRICE BOX STACK (OVERLAY) */
+.price-stack{position:absolute;top:0;right:0;width:78px;height:100%;pointer-events:none;z-index:10}
+.pbox{position:absolute;right:0;width:78px;display:flex;flex-direction:column;justify-content:center;padding:2px 4px;font-family:"SF Mono",Menlo,Consolas,monospace;line-height:1.05;overflow:hidden}
+.pbox .lbl{font-size:9px;font-weight:700;letter-spacing:1px}
+.pbox .val{font-size:11px;font-weight:700}
+.pbox.high{background:#FFD600;color:#000}
+.pbox.cur{background:#00FF5A;color:#000}
+.pbox.ent{background:#FF9100;color:#000}
+.pbox.low{background:#00B0FF;color:#fff}
+
+/* PRICE MATRIX */
+#price-matrix table{width:100%;border-collapse:collapse;font-family:"SF Mono",Menlo,Consolas,monospace}
+#price-matrix th,#price-matrix td{padding:6px 10px;text-align:right;border-bottom:1px solid #182230;font-size:11px}
+#price-matrix th{color:#6c7a89;font-weight:500;text-align:right;font-size:10px;letter-spacing:1px;background:#050a10}
+#price-matrix th:first-child,#price-matrix td:first-child{text-align:left;color:#FFD600;font-weight:600}
+#price-matrix tr:hover td{background:#050a10}
+
+/* EVENTS */
+#events .evlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1px;background:#182230}
+.ev{background:#000;padding:6px 8px;font-size:11px;border-left:2px solid #182230}
+.ev.h{border-left-color:#ff0015}
+.ev.m{border-left-color:#FF9100}
+.ev.l{border-left-color:#6c7a89}
+.ev .ev-top{display:flex;justify-content:space-between;color:#6c7a89;font-size:10px;letter-spacing:1px}
+.ev .ev-tt{font-weight:600;color:#d7dde3;margin-top:2px}
+.ev .ev-ft{color:#6c7a89;font-size:10px;margin-top:2px;font-family:"SF Mono",Menlo,Consolas,monospace}
+
+/* HISTORICAL / MECH / SCEN / EXEC */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#182230}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#182230}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#182230}
+.cell{background:#000;padding:8px 10px}
+.cell .ck{color:#6c7a89;font-size:10px;letter-spacing:1px;margin-bottom:3px}
+.cell .cv{font-size:12px}
+.cell .cb{font-size:13px;font-weight:600}
+
+/* MECHANISM CHAIN */
+.chain{display:flex;align-items:stretch;flex-wrap:wrap;gap:1px;background:#182230}
+.chain .node{background:#000;padding:6px 10px;font-size:11px;flex:1;min-width:140px}
+.chain .node .nk{color:#6c7a89;font-size:10px;letter-spacing:1px}
+.chain .node .nv{color:#d7dde3;font-size:11px;margin-top:2px}
+.chain .arrow{background:#000;padding:6px 4px;color:#FFD600;display:flex;align-items:center;font-family:"SF Mono",Menlo,Consolas,monospace}
+
+/* TERMINOLOGY */
+#terminology .terms{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1px;background:#182230}
+.term{background:#000;padding:8px 10px;font-size:11px}
+.term .tt{color:#FFD600;font-weight:700;font-size:11px;letter-spacing:1px}
+.term .td{color:#d7dde3;margin-top:3px;line-height:1.4}
+
+/* FOOTER */
+#footer{padding:8px 10px;color:#6c7a89;font-size:10px;border-top:1px solid #182230;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+#footer .pill{background:#050a10;border:1px solid #182230;padding:2px 6px;border-radius:0}
+
+/* STATUS INDICATOR */
+.st-dot{display:inline-block;width:6px;height:6px;background:#6c7a89;margin-right:4px;vertical-align:middle}
+.st-dot.ok{background:#07f911}
+.st-dot.warn{background:#FFD600}
+.st-dot.err{background:#ff0015}
+
+@media(max-width:900px){
+#macro-header{grid-template-columns:repeat(2,1fr)}
+#trade-status{grid-template-columns:repeat(2,1fr)}
+#chart-grid{grid-template-columns:1fr;grid-template-rows:repeat(4,40vh);height:auto}
+.grid2,.grid3,.grid4{grid-template-columns:1fr}
 }
 </style>
 </head>
-
 <body>
 
-<div class="grid">
-<div id="c1" class="chart"></div>
-<div id="c2" class="chart"></div>
-<div id="c3" class="chart"></div>
-<div id="c4" class="chart"></div>
+<nav id="term-nav">
+<span class="brand">ATLAS FX</span>
+<a href="#macro-header">Macro</a><span class="sep">·</span>
+<a href="#trade-status">Trade</a><span class="sep">·</span>
+<a href="#chart-grid">Charts</a><span class="sep">·</span>
+<a href="#price-matrix">Matrix</a><span class="sep">·</span>
+<a href="#events">Events</a><span class="sep">·</span>
+<a href="#historical">Historical</a><span class="sep">·</span>
+<a href="#mechanism">Mechanism</a><span class="sep">·</span>
+<a href="#scenario">Scenario</a><span class="sep">·</span>
+<a href="#execution">Execution</a><span class="sep">·</span>
+<a href="#terminology">Glossary</a>
+<span class="src" id="data-src"><span class="st-dot" id="st-dot"></span><span id="st-txt">INIT</span> · <b id="src-name">—</b> · <span id="src-time">—</span></span>
+</nav>
+
+<header id="macro-header">
+<div class="cell"><div class="k">BIAS</div><div class="v" id="mh-bias">—</div><div class="s" id="mh-bias-s">awaiting data</div></div>
+<div class="cell"><div class="k">CONVICTION</div><div class="v" id="mh-conv">—</div><div class="s" id="mh-conv-s">awaiting data</div></div>
+<div class="cell"><div class="k">RISK</div><div class="v" id="mh-risk">—</div><div class="s" id="mh-risk-s">awaiting data</div></div>
+<div class="cell"><div class="k">USD</div><div class="v" id="mh-usd">—</div><div class="s" id="mh-usd-s">awaiting data</div></div>
+<div class="cell"><div class="k">VOLATILITY</div><div class="v" id="mh-vol">—</div><div class="s" id="mh-vol-s">awaiting data</div></div>
+</header>
+
+<section class="sec" id="sec-trade">
+<div class="sec-hd"><h3>TRADE STATUS</h3><span class="sub">session snapshot</span>
+<div class="links"><a href="#t-bias">bias</a><a href="#t-conv">conviction</a><a href="#t-flow">flow</a><a href="#t-regime">regime</a><a href="#t-validity">validity</a></div></div>
+<div id="trade-status">
+<div class="cell"><div class="k">BIAS</div><div class="v" id="ts-bias">—</div></div>
+<div class="cell"><div class="k">CONVICTION</div><div class="v" id="ts-conv">—</div></div>
+<div class="cell"><div class="k">FLOW</div><div class="v" id="ts-flow">—</div></div>
+<div class="cell"><div class="k">REGIME</div><div class="v" id="ts-regime">—</div></div>
+<div class="cell"><div class="k">VALIDITY</div><div class="v" id="ts-validity">—</div></div>
+</div>
+</section>
+
+<section class="sec" id="sec-charts">
+<div class="sec-hd"><h3>CHART MATRIX</h3><span class="sub">DXY · US10Y · EQUITIES · USDJPY — synced zoom/pan/crosshair</span>
+<div class="links"><a href="#t-ohlc">ohlc</a><a href="#t-dxy">dxy</a><a href="#t-us10y">us10y</a><a href="#t-usdjpy">usdjpy</a><a href="#t-atr">atr</a></div></div>
+<div id="chart-grid">
+<div class="chart-wrap" data-sym="DXY">
+  <div class="chart-hdr"><span class="sym">DXY</span><span class="tf">—</span><span class="val">—</span><span class="chg">—</span></div>
+  <div class="chart-tfs"><button data-tf="5m">5m</button><button data-tf="15m">15m</button><button data-tf="1h" class="on">1h</button><button data-tf="4h">4h</button></div>
+  <div class="chart" id="ch-DXY"></div>
+  <div class="price-stack" id="ps-DXY"></div>
+</div>
+<div class="chart-wrap" data-sym="US10Y">
+  <div class="chart-hdr"><span class="sym">US10Y</span><span class="tf">—</span><span class="val">—</span><span class="chg">—</span></div>
+  <div class="chart-tfs"><button data-tf="5m">5m</button><button data-tf="15m">15m</button><button data-tf="1h" class="on">1h</button><button data-tf="4h">4h</button></div>
+  <div class="chart" id="ch-US10Y"></div>
+  <div class="price-stack" id="ps-US10Y"></div>
+</div>
+<div class="chart-wrap" data-sym="EQUITIES">
+  <div class="chart-hdr"><span class="sym">EQUITIES</span><span class="tf">—</span><span class="val">—</span><span class="chg">—</span></div>
+  <div class="chart-tfs"><button data-tf="5m">5m</button><button data-tf="15m">15m</button><button data-tf="1h" class="on">1h</button><button data-tf="4h">4h</button></div>
+  <div class="chart" id="ch-EQUITIES"></div>
+  <div class="price-stack" id="ps-EQUITIES"></div>
+</div>
+<div class="chart-wrap" data-sym="USDJPY">
+  <div class="chart-hdr"><span class="sym">USDJPY</span><span class="tf">—</span><span class="val">—</span><span class="chg">—</span></div>
+  <div class="chart-tfs"><button data-tf="5m">5m</button><button data-tf="15m">15m</button><button data-tf="1h" class="on">1h</button><button data-tf="4h">4h</button></div>
+  <div class="chart" id="ch-USDJPY"></div>
+  <div class="price-stack" id="ps-USDJPY"></div>
+</div>
+</div>
+</section>
+
+<section class="sec" id="sec-matrix">
+<div class="sec-hd"><h3>PRICE MATRIX</h3><span class="sub">EURUSD · GBPUSD · USDJPY · AUDJPY</span>
+<div class="links"><a href="#t-pips">pips</a><a href="#t-range">range</a><a href="#t-session">session</a></div></div>
+<div id="price-matrix"><table>
+<thead><tr><th>PAIR</th><th>PRICE</th><th>CHG</th><th>%</th><th>HIGH</th><th>LOW</th><th>RANGE</th><th>BIAS</th></tr></thead>
+<tbody id="pm-body">
+<tr><td>EURUSD</td><td colspan="7" class="mut">loading…</td></tr>
+<tr><td>GBPUSD</td><td colspan="7" class="mut">loading…</td></tr>
+<tr><td>USDJPY</td><td colspan="7" class="mut">loading…</td></tr>
+<tr><td>AUDJPY</td><td colspan="7" class="mut">loading…</td></tr>
+</tbody>
+</table></div>
+</section>
+
+<section class="sec" id="sec-events">
+<div class="sec-hd"><h3>EVENT INTELLIGENCE</h3><span class="sub">CPI · NFP · CB SPEAKERS · RATES · GDP · PMI</span>
+<div class="links"><a href="#t-cpi">cpi</a><a href="#t-nfp">nfp</a><a href="#t-fomc">fomc</a><a href="#t-gdp">gdp</a><a href="#t-pmi">pmi</a></div></div>
+<div class="sec-body"><div id="events"><div class="evlist" id="ev-list"><div class="ev l"><div class="ev-top"><span>—</span><span>—</span></div><div class="ev-tt">loading calendar…</div></div></div></div></div>
+</section>
+
+<section class="sec" id="sec-hist">
+<div class="sec-hd"><h3>HISTORICAL CONTEXT ENGINE</h3><span class="sub">rank current move vs recent regime</span>
+<div class="links"><a href="#t-zscore">z-score</a><a href="#t-percentile">percentile</a><a href="#t-regime">regime</a></div></div>
+<div class="sec-body"><div class="grid4" id="hist-grid">
+<div class="cell"><div class="ck">DXY MOVE</div><div class="cv mut">—</div></div>
+<div class="cell"><div class="ck">US10Y MOVE</div><div class="cv mut">—</div></div>
+<div class="cell"><div class="ck">EQUITIES MOVE</div><div class="cv mut">—</div></div>
+<div class="cell"><div class="ck">USDJPY MOVE</div><div class="cv mut">—</div></div>
+</div></div>
+</section>
+
+<section class="sec" id="sec-mech">
+<div class="sec-hd"><h3>MECHANISM CHAIN</h3><span class="sub">cause → effect propagation</span>
+<div class="links"><a href="#t-yield">yield</a><a href="#t-carry">carry</a><a href="#t-risk">risk</a></div></div>
+<div class="sec-body"><div class="chain" id="mech-chain"><div class="node"><div class="nk">STAGE 1</div><div class="nv mut">awaiting data</div></div></div></div>
+</section>
+
+<section class="sec" id="sec-scen">
+<div class="sec-hd"><h3>SCENARIO ENGINE</h3><span class="sub">primary · alternative · invalidation</span>
+<div class="links"><a href="#t-primary">primary</a><a href="#t-alt">alt</a><a href="#t-inv">inv</a></div></div>
+<div class="sec-body"><div class="grid3" id="scen-grid">
+<div class="cell"><div class="ck">PRIMARY</div><div class="cv mut">—</div></div>
+<div class="cell"><div class="ck">ALTERNATIVE</div><div class="cv mut">—</div></div>
+<div class="cell"><div class="ck">INVALIDATION</div><div class="cv mut">—</div></div>
+</div></div>
+</section>
+
+<section class="sec" id="sec-exec">
+<div class="sec-hd"><h3>EXECUTION MAP</h3><span class="sub">entry · stop · target · flow</span>
+<div class="links"><a href="#t-entry">entry</a><a href="#t-stop">stop</a><a href="#t-target">target</a><a href="#t-r">r-multiple</a></div></div>
+<div class="sec-body"><div class="grid4" id="exec-grid">
+<div class="cell"><div class="ck">ENTRY</div><div class="cb mut">—</div></div>
+<div class="cell"><div class="ck">STOP</div><div class="cb mut">—</div></div>
+<div class="cell"><div class="ck">TARGET</div><div class="cb mut">—</div></div>
+<div class="cell"><div class="ck">FLOW</div><div class="cb mut">—</div></div>
+</div></div>
+</section>
+
+<section class="sec" id="sec-terms">
+<div class="sec-hd"><h3>TERMINOLOGY INDEX</h3><span class="sub">glossary</span></div>
+<div class="sec-body"><div id="terminology"><div class="terms" id="terms-list"></div></div></div>
+</section>
+
+<div id="footer">
+<span class="pill" id="ft-build">BUILD —</span>
+<span class="pill" id="ft-ts">—</span>
+<span class="pill" id="ft-src">SOURCE —</span>
+<span class="pill" id="ft-latency">LATENCY —</span>
+<span class="pill">ATLAS FX MACRO DASHBOARD · PRODUCTION</span>
 </div>
 
+<script src="./echarts.min.js"></script>
 <script>
-
-function buildData(seed){
-
-let base = 1.1700 + seed*0.002
-
-return [
-[base,base+0.0010,base-0.0008,base+0.0005],
-[base+0.0005,base+0.0015,base+0.0002,base+0.0012],
-[base+0.0012,base+0.0020,base+0.0009,base+0.0018],
-[base+0.0018,base+0.0023,base+0.0014,base+0.0016],
-[base+0.0016,base+0.0026,base+0.0012,base+0.0022],
-[base+0.0022,base+0.0030,base+0.0020,base+0.0026],
-[base+0.0026,base+0.0034,base+0.0022,base+0.0031],
-[base+0.0031,base+0.0036,base+0.0027,base+0.0029],
-[base+0.0029,base+0.0039,base+0.0026,base+0.0035],
-[base+0.0035,base+0.0042,base+0.0032,base+0.0039]
-]
-
-}
-
-function makeChart(id,data){
-
-const chart = echarts.init(document.getElementById(id))
-
-chart.setOption({
-
-backgroundColor:"#000",
-
-grid:{
-left:5,
-right:45,
-top:5,
-bottom:20
-},
-
-xAxis:{
-type:"category",
-data:["1","2","3","4","5","6","7","8","9","10"],
-axisLine:{lineStyle:{color:"#182230"}},
-axisLabel:{color:"#6c7a89"}
-},
-
-yAxis:{
-scale:true,
-position:"right",
-axisLine:{lineStyle:{color:"#182230"}},
-axisLabel:{color:"#6c7a89"},
-splitLine:{lineStyle:{color:"#182230"}}
-},
-
-series:[{
-type:"candlestick",
-data:data.map(d=>[d[0],d[3],d[2],d[1]]),
-itemStyle:{
-color:"#07f911",
-color0:"#ff0015",
-borderColor:"#07f911",
-borderColor0:"#ff0015"
-}
-}]
-
-})
-
-}
-
-makeChart("c1",buildData(0))
-makeChart("c2",buildData(1))
-makeChart("c3",buildData(2))
-makeChart("c4",buildData(3))
-
+/* ATLAS FX — RUNTIME BOOT (stage 1 skeleton) */
+(function(){
+  var t0 = performance.now();
+  var buildId = "ATLAS-" + Math.floor(Date.now()/1000).toString(36).toUpperCase();
+  document.getElementById("ft-build").textContent = "BUILD " + buildId;
+  document.getElementById("ft-ts").textContent = new Date().toISOString().replace("T"," ").replace(/\..*/,"") + " UTC";
+  window.ATLAS = window.ATLAS || {};
+  window.ATLAS.boot = { t0: t0, buildId: buildId };
+  window.ATLAS.status = function(state, name, msg){
+    var dot = document.getElementById("st-dot");
+    var txt = document.getElementById("st-txt");
+    var nm = document.getElementById("src-name");
+    var tm = document.getElementById("src-time");
+    dot.className = "st-dot " + (state||"");
+    txt.textContent = (msg||state||"").toUpperCase();
+    if(name) nm.textContent = name;
+    tm.textContent = new Date().toISOString().substr(11,8) + "Z";
+  };
+  window.ATLAS.status("warn","—","BOOT");
+})();
 </script>
-
 </body>
 </html>
