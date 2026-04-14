@@ -2,34 +2,104 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>ECharts Test</title>
+<title>ATLAS FX Macro</title>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 
+<style>
+body{
+background:#0b0f14;
+color:#fff;
+font-family:system-ui;
+margin:0;
+}
+
+.header{
+padding:15px;
+border-bottom:1px solid #222;
+font-size:18px;
+}
+
+.grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+grid-template-rows:50vh 50vh;
+gap:6px;
+padding:6px;
+}
+
+.chart{
+background:#0b0f14;
+border:1px solid #1c2430;
+}
+</style>
 </head>
 
-<body style="background:#111;color:white;">
+<body>
 
-<div id="chart" style="width:100%;height:500px;"></div>
+<div class="header">
+ATLAS FX — Macro Overview
+</div>
+
+<div class="grid">
+<div id="c1" class="chart"></div>
+<div id="c2" class="chart"></div>
+<div id="c3" class="chart"></div>
+<div id="c4" class="chart"></div>
+</div>
 
 <script>
-var chart = echarts.init(document.getElementById('chart'));
+
+function buildChart(id,data){
+
+var chart = echarts.init(document.getElementById(id));
 
 chart.setOption({
-    backgroundColor: '#111',
-    xAxis: {
-        type: 'category',
-        data: ['Mon','Tue','Wed','Thu','Fri']
-    },
-    yAxis: {
-        type: 'value'
-    },
-    series: [{
-        data: [120,200,150,80,70],
-        type: 'line',
-        smooth: true
-    }]
+backgroundColor:'#0b0f14',
+
+grid:{
+left:40,
+right:20,
+top:20,
+bottom:30
+},
+
+xAxis:{
+type:'category',
+data:['Mon','Tue','Wed','Thu','Fri'],
+axisLine:{lineStyle:{color:'#333'}},
+axisLabel:{color:'#888'}
+},
+
+yAxis:{
+type:'value',
+axisLine:{lineStyle:{color:'#333'}},
+splitLine:{lineStyle:{color:'#1a1a1a'}},
+axisLabel:{color:'#888'}
+},
+
+series:[{
+data:data,
+type:'line',
+smooth:true,
+symbol:'none',
+lineStyle:{
+width:2,
+color:'#4da3ff'
+},
+areaStyle:{
+color:'rgba(77,163,255,0.08)'
+}
+}]
 });
+
+}
+
+buildChart('c1',[120,200,150,80,70]);
+buildChart('c2',[60,90,120,140,160]);
+buildChart('c3',[200,180,150,130,100]);
+buildChart('c4',[20,40,35,60,90]);
+
 </script>
 
 </body>
