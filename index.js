@@ -1,3 +1,4 @@
+"use strict";
 /* ATLAS FX - index.js
    Discord -> Dashboard bridge.
 
@@ -11,8 +12,6 @@
    to /load?symbol= via local fetch, and reacts with the bar-chart emoji.
 
    Run:   DISCORD_TOKEN=<token> node index.js   */
-
-"use strict";
 
 const http = require("http");
 const fs   = require("fs");
