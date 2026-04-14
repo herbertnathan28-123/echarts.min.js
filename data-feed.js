@@ -108,14 +108,39 @@ A.aggregate = function(bars, factor){
   if(bucket) out.push(bucket);
   return out;
 };
+A.demoFallback = function(sym, tf){
+  var seedMap = { DXY:103.2, US10Y:4.25, EQUITIES:5200, USDJPY:151.5, EURUSD:1.085, GBPUSD:1.265, AUDJPY:97.5 };
+  var base = seedMap[sym] != null ? seedMap[sym] : 100;
+  var t = A.TFS[tf] || A.TFS["1h"];
+  var step = (tf==="5m"?5:tf==="15m"?15:tf==="1h"?60:240)*60*1000;
+  var now = Date.now();
+  var bars = [];
+  var p = base;
+  for(var i=t.barsMax-1;i>=0;i--){
+    var o = p;
+    var drift = (Math.sin(i*0.11)+Math.cos(i*0.23))*base*0.0008;
+    var noise = (Math.random()-0.5)*base*0.0015;
+    var c = o + drift + noise;
+    var h = Math.max(o,c) + Math.abs(noise)*1.2;
+    var l = Math.min(o,c) - Math.abs(noise)*1.2;
+    bars.push([now - i*step, o, h, l, c]);
+    p = c;
+  }
+  return { provider:"DEMO", bars:bars };
+};
 A.Feed = {
   fetchSymbol: function(sym, tf){
-    var t = A.TFS[tf];
+    var t = A.TFS[tf] || A.TFS["1h"];
     var providers = [A.tvFetch, A.tdFetch, A.yfFetch];
     var idx = 0;
-    return new Promise(function(res,rej){
+    return new Promise(function(res){
       (function go(){
-        if(idx>=providers.length){ rej(new Error("no provider for "+sym)); return; }
+        if(idx>=providers.length){
+          var d = A.demoFallback(sym, tf);
+          d.bars = A.aggregate(d.bars, t.agg).slice(-t.barsMax);
+          A.src.provider = "DEMO"; A.src.t = Date.now();
+          res(d); return;
+        }
         providers[idx++](sym, tf).then(function(r){
           r.bars = A.aggregate(r.bars, t.agg).slice(-t.barsMax);
           A.src.provider = r.provider;
@@ -132,5 +157,17 @@ A.Feed = {
       return j;
     });
   }
+};
+/* PUBLIC MODULE API */
+window.DataFeed = {
+  init: async function(){ return true; },
+  getBars: async function(symbol, timeframe){
+    var tf = timeframe || "1h";
+    var r = await A.Feed.fetchSymbol(symbol, tf);
+    return r.bars.map(function(b){
+      return { time:b[0], open:b[1], high:b[2], low:b[3], close:b[4] };
+    });
+  },
+  getProvider: function(){ return A.src.provider; }
 };
 })();

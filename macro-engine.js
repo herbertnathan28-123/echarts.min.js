@@ -95,4 +95,19 @@ A.Macro = {
     };
   }
 };
+/* PUBLIC MODULE API */
+window.MacroEngine = {
+  init: async function(){
+    A.Macro.update();
+    if(A.Corey) A.Corey.update();
+    if(A.Spidey) A.Spidey.update();
+    if(A.Jane){
+      A.Jane.renderTerms && A.Jane.renderTerms();
+      A.Jane.update && A.Jane.update();
+      A.Jane.loadMatrix && A.Jane.loadMatrix();
+      A.Jane.loadEvents && A.Jane.loadEvents();
+    }
+    return true;
+  }
+};
 })();

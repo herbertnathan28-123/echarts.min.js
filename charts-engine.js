@@ -161,4 +161,22 @@ A.Charts = {
   positionBoxes: positionBoxes,
   applyData: applyData
 };
+/* PUBLIC MODULE API */
+window.ChartsEngine = {
+  init: async function(){
+    A.Charts.init();
+    await A.Charts.loadAll();
+    return true;
+  },
+  load: async function(symbol){
+    if(A.SYMBOLS[symbol]){
+      try { await A.Charts.loadSymbol(symbol); } catch(e){}
+    } else {
+      try { await A.Feed.fetchSymbol(symbol, "1h"); } catch(e){}
+    }
+    await A.Charts.loadAll();
+    return true;
+  },
+  loadAll: async function(){ return A.Charts.loadAll(); }
+};
 })();

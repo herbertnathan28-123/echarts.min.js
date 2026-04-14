@@ -65,4 +65,11 @@ A.Execution = {
     A.Execution.state = { dir:dir, entry:entry, stop:stop, target:target, r:rMultiple, atr:a, flow:flowLabel };
   }
 };
+/* PUBLIC MODULE API */
+window.ExecutionEngine = {
+  init: async function(){
+    A.Execution.update();
+    return true;
+  }
+};
 })();

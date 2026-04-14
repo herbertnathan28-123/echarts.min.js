@@ -200,30 +200,31 @@ a{color:#00B0FF;text-decoration:none}a:hover{text-decoration:underline}
     document.getElementById("src-time").textContent = new Date().toISOString().substr(11,8) + "Z";
   };
   A.status("warn","—","BOOT");
-  function go(){
-    A.Charts.init();
-    A.Jane.renderTerms();
-    var refresh = function(){
-      var start = performance.now();
-      A.Charts.loadAll().then(function(){
-        A.Macro.update();
-        A.Corey.update();
-        A.Spidey.update();
-        A.Jane.update();
-        A.Execution.update();
-        document.getElementById("ft-src").textContent = "SOURCE " + (A.src.provider||"—");
-        document.getElementById("ft-latency").textContent = "LATENCY " + Math.round(performance.now()-start) + "ms";
-      }).catch(function(e){ A.status("err","—","LOAD FAIL"); });
-    };
-    refresh();
-    setInterval(refresh, 45000);
-    A.Jane.loadEvents();
-    setInterval(function(){ A.Jane.loadEvents(); }, 10*60*1000);
-    A.Jane.loadMatrix();
-    setInterval(function(){ A.Jane.loadMatrix(); }, 30000);
-  }
-  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", go); else setTimeout(go,0);
 })();
+window.addEventListener("DOMContentLoaded", async () => {
+  var A = window.ATLAS, start = performance.now();
+  try {
+    await DataFeed.init();
+    await ChartsEngine.init();
+    await MacroEngine.init();
+    await ExecutionEngine.init();
+    await ChartsEngine.load("EURUSD");
+    await MacroEngine.init();
+    await ExecutionEngine.init();
+    document.getElementById("ft-src").textContent = "SOURCE " + (A.src.provider||"—");
+    document.getElementById("ft-latency").textContent = "LATENCY " + Math.round(performance.now()-start) + "ms";
+  } catch(e){ A.status("err","—","BOOT FAIL"); console.error("ATLAS boot error", e); }
+  setInterval(async () => {
+    try {
+      var s = performance.now();
+      await ChartsEngine.loadAll();
+      await MacroEngine.init();
+      await ExecutionEngine.init();
+      document.getElementById("ft-src").textContent = "SOURCE " + (A.src.provider||"—");
+      document.getElementById("ft-latency").textContent = "LATENCY " + Math.round(performance.now()-s) + "ms";
+    } catch(e){}
+  }, 45000);
+});
 </script>
 </body>
 </html>
