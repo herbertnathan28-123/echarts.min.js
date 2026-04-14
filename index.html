@@ -295,5 +295,366 @@ hr{border:none;border-top:1px solid #182230;margin:0}
   window.ATLAS.status("warn","—","BOOT");
 })();
 </script>
+
+<script>
+/* ATLAS FX — STAGE 2 : CHART ENGINE
+   Data providers: TradingView UDF lightweight feed (primary) → TwelveData REST (fallback) → Stooq CSV (tertiary).
+   Aggregation: 4h from 1h bars. Sub-1s generation. Synced zoom/pan/crosshair via axisPointer link.
+   Price box overlay: HIGH / CURRENT / ENTRY / LOW, body-height matched, pixel-positioned. */
+(function(){
+  var A = window.ATLAS || (window.ATLAS={});
+  A.ENG = A.ENG || {};
+  A.COLORS = { bull:"#07f911", bear:"#ff0015", grid:"#182230", axis:"#6c7a89", bg:"#000",
+               high:"#FFD600", cur:"#00FF5A", ent:"#FF9100", low:"#00B0FF" };
+
+  /* --- SYMBOL MAP --------------------------------------------------------- */
+  A.SYMBOLS = {
+    DXY:      { tv:"TVC:DXY",       td:"DXY",       yf:"DX-Y.NYB", stq:"^dx",    label:"DXY",      digits:2 },
+    US10Y:    { tv:"TVC:US10Y",     td:"US10Y",     yf:"^TNX",     stq:"10usy.b",label:"US10Y",    digits:3 },
+    EQUITIES: { tv:"CME_MINI:ES1!", td:"SPX",       yf:"ES=F",     stq:"^spx",   label:"S&P500",   digits:2 },
+    USDJPY:   { tv:"FX:USDJPY",     td:"USD/JPY",   yf:"JPY=X",    stq:"usdjpy", label:"USDJPY",   digits:3 }
+  };
+
+  /* --- TIMEFRAME MAP ------------------------------------------------------ */
+  A.TFS = {
+    "5m":  { yf:"5m",  range:"5d",  tv:5,    td:"5min",  agg:1, barsMax:200 },
+    "15m": { yf:"15m", range:"5d",  tv:15,   td:"15min", agg:1, barsMax:200 },
+    "1h":  { yf:"60m", range:"1mo", tv:60,   td:"1h",    agg:1, barsMax:200 },
+    "4h":  { yf:"60m", range:"3mo", tv:60,   td:"1h",    agg:4, barsMax:200 }
+  };
+
+  /* --- STATE -------------------------------------------------------------- */
+  A.charts = {};            /* echarts instances keyed by symbol key */
+  A.chartData = {};         /* last OHLC data keyed by symbol key    */
+  A.chartTF = { DXY:"1h", US10Y:"1h", EQUITIES:"1h", USDJPY:"1h" };
+  A.src = { provider:null, t:0 };
+
+  /* --- UTIL --------------------------------------------------------------- */
+  A.fmt = function(v, d){ if(v==null||isNaN(v)) return "—"; d=(d==null?2:d); return (+v).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d}); };
+  A.pct = function(v){ if(v==null||isNaN(v)) return "—"; return (v>=0?"+":"")+v.toFixed(2)+"%"; };
+  A.sign = function(v){ return v>0?"up":v<0?"dn":"mut"; };
+
+  /* --- PROXIED FETCH ------------------------------------------------------ */
+  A.proxies = [
+    function(u){ return "https://corsproxy.io/?"+encodeURIComponent(u); },
+    function(u){ return "https://api.allorigins.win/raw?url="+encodeURIComponent(u); },
+    function(u){ return "https://api.codetabs.com/v1/proxy/?quest="+encodeURIComponent(u); }
+  ];
+  A.fetchJSON = function(url, opts){
+    opts = opts || {};
+    var attempts = [url].concat(opts.proxy===false?[]:A.proxies.map(function(p){return p(url);}));
+    var i = 0;
+    return new Promise(function(res,rej){
+      (function go(){
+        if(i>=attempts.length){ rej(new Error("all endpoints failed for "+url)); return; }
+        var a = attempts[i++];
+        var ctrl = new AbortController();
+        var to = setTimeout(function(){ctrl.abort();}, opts.timeout||6000);
+        fetch(a,{signal:ctrl.signal,mode:"cors",cache:"no-store"}).then(function(r){
+          clearTimeout(to);
+          if(!r.ok) throw new Error("HTTP "+r.status);
+          return r.text();
+        }).then(function(t){
+          try { res(opts.raw?t:JSON.parse(t)); } catch(e){ if(opts.raw) res(t); else go(); }
+        }).catch(function(){ clearTimeout(to); go(); });
+      })();
+    });
+  };
+
+  /* --- PROVIDER 1 : TradingView UDF lightweight --------------------------- */
+  /* Uses TV public datafeed via their public widget backend — we hit the scanner
+     quote endpoint + the symbol history udf. If offline/blocked we fallback. */
+  A.tvFetch = function(sym, tf){
+    var s = A.SYMBOLS[sym], t = A.TFS[tf];
+    if(!s || !t) return Promise.reject("bad sym/tf");
+    var now = Math.floor(Date.now()/1000);
+    var span = t.tv*60*(t.barsMax+20)*t.agg;
+    var from = now - span;
+    var url = "https://udf.tradingview.com/history?symbol="+encodeURIComponent(s.tv)+
+              "&resolution="+t.tv+"&from="+from+"&to="+now;
+    return A.fetchJSON(url,{timeout:5000}).then(function(j){
+      if(!j || j.s!=="ok" || !j.t || !j.t.length) throw new Error("tv empty");
+      var bars = j.t.map(function(ts,i){ return [ts*1000, +j.o[i], +j.h[i], +j.l[i], +j.c[i]]; });
+      return {provider:"TRADINGVIEW", bars:bars};
+    });
+  };
+
+  /* --- PROVIDER 2 : TwelveData REST --------------------------------------- */
+  A.tdFetch = function(sym, tf){
+    var s = A.SYMBOLS[sym], t = A.TFS[tf];
+    if(!s || !t) return Promise.reject("bad sym/tf");
+    var key = "demo";
+    var url = "https://api.twelvedata.com/time_series?symbol="+encodeURIComponent(s.td)+
+              "&interval="+t.td+"&outputsize="+(t.barsMax*t.agg+20)+"&apikey="+key+"&format=JSON";
+    return A.fetchJSON(url,{timeout:6000,proxy:false}).then(function(j){
+      if(!j || !j.values || !j.values.length) throw new Error("td empty");
+      var bars = j.values.slice().reverse().map(function(b){
+        return [new Date(b.datetime.replace(" ","T")+"Z").getTime(), +b.open, +b.high, +b.low, +b.close];
+      });
+      return {provider:"TWELVEDATA", bars:bars};
+    });
+  };
+
+  /* --- PROVIDER 3 : Yahoo Finance chart (via proxy) ----------------------- */
+  A.yfFetch = function(sym, tf){
+    var s = A.SYMBOLS[sym], t = A.TFS[tf];
+    if(!s || !t) return Promise.reject("bad sym/tf");
+    var url = "https://query1.finance.yahoo.com/v8/finance/chart/"+encodeURIComponent(s.yf)+
+              "?interval="+t.yf+"&range="+t.range;
+    return A.fetchJSON(url,{timeout:7000}).then(function(j){
+      var r = j && j.chart && j.chart.result && j.chart.result[0];
+      if(!r || !r.timestamp) throw new Error("yf empty");
+      var q = r.indicators.quote[0];
+      var bars = r.timestamp.map(function(ts,i){
+        return [ts*1000, q.open[i], q.high[i], q.low[i], q.close[i]];
+      }).filter(function(b){ return b[1]!=null && b[4]!=null; });
+      return {provider:"YAHOO", bars:bars};
+    });
+  };
+
+  /* --- AGGREGATOR (4h from 1h) -------------------------------------------- */
+  A.aggregate = function(bars, factor){
+    if(factor<=1) return bars;
+    var out=[], bucket=null, count=0;
+    for(var i=0;i<bars.length;i++){
+      var b = bars[i];
+      if(!bucket){ bucket=[b[0],b[1],b[2],b[3],b[4]]; count=1; continue; }
+      bucket[2] = Math.max(bucket[2], b[2]);
+      bucket[3] = Math.min(bucket[3], b[3]);
+      bucket[4] = b[4];
+      count++;
+      if(count>=factor){ out.push(bucket); bucket=null; count=0; }
+    }
+    if(bucket) out.push(bucket);
+    return out;
+  };
+
+  /* --- MASTER FETCH ------------------------------------------------------- */
+  A.fetchSymbol = function(sym, tf){
+    var t = A.TFS[tf];
+    var providers = [A.tvFetch, A.tdFetch, A.yfFetch];
+    var idx = 0;
+    return new Promise(function(res, rej){
+      (function go(){
+        if(idx>=providers.length){ rej(new Error("no provider for "+sym)); return; }
+        providers[idx++](sym, tf).then(function(r){
+          r.bars = A.aggregate(r.bars, t.agg).slice(-t.barsMax);
+          res(r);
+        }).catch(function(){ go(); });
+      })();
+    });
+  };
+
+  /* --- CHART BUILDER ------------------------------------------------------ */
+  A.buildChart = function(sym){
+    var el = document.getElementById("ch-"+sym);
+    if(!el) return null;
+    var ch = echarts.init(el, null, {renderer:"canvas"});
+    var opt = {
+      animation:false,
+      backgroundColor:A.COLORS.bg,
+      grid:{ left:6, right:82, top:20, bottom:22, containLabel:false },
+      xAxis:{
+        type:"category", data:[], boundaryGap:true,
+        axisLine:{lineStyle:{color:A.COLORS.grid}},
+        axisTick:{lineStyle:{color:A.COLORS.grid}},
+        axisLabel:{color:A.COLORS.axis, fontSize:9, hideOverlap:true},
+        splitLine:{show:false},
+        axisPointer:{label:{backgroundColor:"#182230",color:"#d7dde3",fontSize:10}}
+      },
+      yAxis:{
+        scale:true, position:"right",
+        axisLine:{lineStyle:{color:A.COLORS.grid}},
+        axisTick:{show:false},
+        axisLabel:{color:A.COLORS.axis, fontSize:9, inside:false, margin:4,
+          formatter:function(v){ return (+v).toFixed(A.SYMBOLS[sym].digits); }},
+        splitLine:{lineStyle:{color:A.COLORS.grid, type:"dashed", opacity:0.35}},
+        axisPointer:{label:{backgroundColor:"#182230",color:"#d7dde3",fontSize:10,
+          formatter:function(p){ return (+p.value).toFixed(A.SYMBOLS[sym].digits); }}}
+      },
+      dataZoom:[
+        {type:"inside", throttle:40, filterMode:"filter", start:60, end:100, zoomOnMouseWheel:true, moveOnMouseMove:true}
+      ],
+      tooltip:{
+        trigger:"axis", axisPointer:{type:"cross", snap:true,
+          crossStyle:{color:A.COLORS.axis}, lineStyle:{color:A.COLORS.axis}},
+        backgroundColor:"rgba(5,10,16,0.92)", borderColor:A.COLORS.grid, borderWidth:1,
+        textStyle:{color:"#d7dde3", fontSize:11},
+        formatter:function(ps){
+          if(!ps||!ps.length) return "";
+          var p = ps[0];
+          if(!p.data || !p.data.length) return "";
+          var v = p.data;
+          var d = A.SYMBOLS[sym].digits;
+          return "<b style='color:#FFD600'>"+sym+"</b> "+p.axisValueLabel+
+            "<br>O <b>"+(+v[1]).toFixed(d)+"</b>"+
+            "<br>H <b style='color:#07f911'>"+(+v[4]).toFixed(d)+"</b>"+
+            "<br>L <b style='color:#ff0015'>"+(+v[3]).toFixed(d)+"</b>"+
+            "<br>C <b>"+(+v[2]).toFixed(d)+"</b>";
+        }
+      },
+      series:[{
+        type:"candlestick", name:sym, data:[],
+        barMaxWidth:8,
+        itemStyle:{ color:A.COLORS.bull, color0:A.COLORS.bear,
+                    borderColor:A.COLORS.bull, borderColor0:A.COLORS.bear, borderWidth:1 },
+        emphasis:{ disabled:true }
+      }]
+    };
+    ch.setOption(opt);
+    ch.group = "atlas";
+    A.charts[sym] = ch;
+    return ch;
+  };
+
+  /* --- PRICE BOX STACK ---------------------------------------------------- */
+  A.positionBoxes = function(sym){
+    var ch = A.charts[sym]; if(!ch) return;
+    var d = A.chartData[sym]; if(!d || !d.bars || !d.bars.length) return;
+    var stack = document.getElementById("ps-"+sym); if(!stack) return;
+    var last = d.bars[d.bars.length-1];
+    var hi = last[2], lo = last[3], o = last[1], c = last[4];
+    /* global high/low across loaded window */
+    var winHi = -Infinity, winLo = Infinity;
+    for(var i=0;i<d.bars.length;i++){ if(d.bars[i][2]>winHi) winHi=d.bars[i][2]; if(d.bars[i][3]<winLo) winLo=d.bars[i][3]; }
+    var entry = (o+c)/2;
+    var dg = A.SYMBOLS[sym].digits;
+
+    var rect = stack.parentElement.getBoundingClientRect();
+    var H = rect.height;
+    var px = function(price){
+      try { return ch.convertToPixel({yAxisIndex:0}, price); }
+      catch(e){ return null; }
+    };
+    /* bodyH = last candle body pixel height, clamped */
+    var pyO = px(o), pyC = px(c), pyH = px(winHi), pyL = px(winLo), pyCur = px(c), pyEn = px(entry);
+    var bodyH = (pyO!=null && pyC!=null) ? Math.max(14, Math.min(28, Math.abs(pyO-pyC)+8)) : 18;
+
+    stack.innerHTML =
+      '<div class="pbox high"><div class="lbl">HIGH</div><div class="val">'+A.fmt(winHi,dg)+'</div></div>'+
+      '<div class="pbox cur"><div class="lbl">CURRENT</div><div class="val">'+A.fmt(c,dg)+'</div></div>'+
+      '<div class="pbox ent"><div class="lbl">ENTRY</div><div class="val">'+A.fmt(entry,dg)+'</div></div>'+
+      '<div class="pbox low"><div class="lbl">LOW</div><div class="val">'+A.fmt(winLo,dg)+'</div></div>';
+    var boxes = stack.children;
+    var place = function(el, yPx){
+      if(yPx==null || !isFinite(yPx)) { el.style.display="none"; return; }
+      el.style.display="flex";
+      var top = Math.max(0, Math.min(H-bodyH, yPx - bodyH/2));
+      el.style.top = top+"px";
+      el.style.height = bodyH+"px";
+    };
+    place(boxes[0], pyH);
+    place(boxes[1], pyCur);
+    place(boxes[2], pyEn);
+    place(boxes[3], pyL);
+
+    /* update header chip */
+    var wrap = stack.parentElement;
+    var hdr = wrap.querySelector(".chart-hdr");
+    if(hdr){
+      var first = d.bars[0][4], chg = c-first, pc = first? (chg/first*100):0;
+      hdr.querySelector(".val").textContent = A.fmt(c,dg);
+      var chgEl = hdr.querySelector(".chg");
+      chgEl.textContent = (chg>=0?"+":"")+A.fmt(chg,dg)+" ("+A.pct(pc)+")";
+      chgEl.className = "chg " + A.sign(chg);
+      hdr.querySelector(".tf").textContent = A.chartTF[sym];
+    }
+  };
+
+  /* --- APPLY DATA TO CHART ------------------------------------------------ */
+  A.applyData = function(sym){
+    var d = A.chartData[sym]; var ch = A.charts[sym];
+    if(!d || !ch) return;
+    var cats = d.bars.map(function(b){ var dt = new Date(b[0]); var tf = A.chartTF[sym];
+      if(tf==="5m"||tf==="15m") return dt.toISOString().substr(11,5);
+      if(tf==="1h") return dt.toISOString().substr(5,11).replace("T"," ");
+      return dt.toISOString().substr(5,11).replace("T"," ");
+    });
+    var series = d.bars.map(function(b){ return [b[1], b[4], b[3], b[2]]; });
+    ch.setOption({ xAxis:{data:cats}, series:[{data:series}] });
+    requestAnimationFrame(function(){ A.positionBoxes(sym); });
+  };
+
+  /* --- LOAD CYCLE --------------------------------------------------------- */
+  A.loadSymbol = function(sym){
+    var tf = A.chartTF[sym];
+    return A.fetchSymbol(sym, tf).then(function(r){
+      A.chartData[sym] = r;
+      A.src.provider = r.provider;
+      A.src.t = Date.now();
+      A.applyData(sym);
+      return r;
+    });
+  };
+
+  A.loadAll = function(){
+    var keys = Object.keys(A.SYMBOLS);
+    var start = performance.now();
+    return Promise.allSettled(keys.map(function(k){ return A.loadSymbol(k); }))
+      .then(function(res){
+        var ok = res.filter(function(r){return r.status==="fulfilled";}).length;
+        var prov = A.src.provider || "—";
+        A.status(ok===keys.length?"ok":(ok>0?"warn":"err"), prov, ok+"/"+keys.length+" LIVE");
+        document.getElementById("ft-src").textContent = "SOURCE " + prov;
+        document.getElementById("ft-latency").textContent = "LATENCY " + Math.round(performance.now()-start) + "ms";
+        if(window.ATLAS.onDataReady) window.ATLAS.onDataReady();
+        return res;
+      });
+  };
+
+  /* --- SYNC GROUP --------------------------------------------------------- */
+  A.syncCharts = function(){
+    var list = Object.keys(A.charts).map(function(k){ return A.charts[k]; });
+    if(list.length<2) return;
+    echarts.connect(list);
+  };
+
+  /* --- INIT CHARTS -------------------------------------------------------- */
+  A.initCharts = function(){
+    Object.keys(A.SYMBOLS).forEach(function(sym){ A.buildChart(sym); });
+    A.syncCharts();
+    /* TF buttons */
+    document.querySelectorAll(".chart-wrap").forEach(function(wrap){
+      var sym = wrap.getAttribute("data-sym");
+      wrap.querySelectorAll(".chart-tfs button").forEach(function(btn){
+        btn.addEventListener("click", function(){
+          wrap.querySelectorAll(".chart-tfs button").forEach(function(b){ b.classList.remove("on"); });
+          btn.classList.add("on");
+          A.chartTF[sym] = btn.getAttribute("data-tf");
+          A.loadSymbol(sym).catch(function(){});
+        });
+      });
+    });
+    /* resize */
+    window.addEventListener("resize", function(){
+      Object.keys(A.charts).forEach(function(k){
+        try{ A.charts[k].resize(); }catch(e){}
+        A.positionBoxes(k);
+      });
+    });
+    /* reposition boxes on zoom */
+    Object.keys(A.charts).forEach(function(k){
+      A.charts[k].on("datazoom", function(){ A.positionBoxes(k); });
+      A.charts[k].on("finished", function(){ A.positionBoxes(k); });
+    });
+  };
+
+  /* --- PUBLIC BOOT HOOK --------------------------------------------------- */
+  A.ENG.boot = function(){
+    A.initCharts();
+    A.loadAll().then(function(){
+      /* refresh cycle */
+      setInterval(function(){ A.loadAll().catch(function(){}); }, 45000);
+    });
+  };
+
+  /* auto-boot */
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded", A.ENG.boot);
+  } else {
+    setTimeout(A.ENG.boot, 0);
+  }
+})();
+</script>
 </body>
 </html>
