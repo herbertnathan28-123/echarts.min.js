@@ -1,10 +1,10 @@
-/* ATLAS FX — index.js
-   Discord → Dashboard bridge.
+/* ATLAS FX - index.js
+   Discord -> Dashboard bridge.
 
    Serves the dashboard on :3000 (static from repo root).
-   Endpoint:   GET /load?symbol=XYZ   → broadcasts to all connected dashboards (SSE).
-   Endpoint:   GET /events            → Server-Sent Events stream pushing {symbol,t} payloads.
-   Endpoint:   GET /latest            → current latest symbol (diagnostic).
+   Endpoint:   GET /load?symbol=XYZ   -> broadcasts to all connected dashboards (SSE).
+   Endpoint:   GET /events            -> Server-Sent Events stream pushing {symbol,t} payloads.
+   Endpoint:   GET /latest            -> current latest symbol (diagnostic).
 
    Discord bot (activates if DISCORD_TOKEN env var is set and discord.js is installed)
    listens for messages matching !SYMBOL, SYMBOL, or $SYMBOL. Strips prefix, forwards
@@ -63,7 +63,7 @@ const server = http.createServer((req, res) => {
     if(!sym){ res.statusCode = 400; res.setHeader("Content-Type","application/json"); return res.end(JSON.stringify({ok:false,error:"missing or invalid symbol"})); }
     latestSymbol = sym;
     broadcast(sym);
-    console.log(`[atlas] /load → ${sym}  (${subscribers.size} subscriber${subscribers.size===1?"":"s"})`);
+    console.log(`[atlas] /load -> ${sym}  (${subscribers.size} subscriber${subscribers.size===1?"":"s"})`);
     res.setHeader("Content-Type","application/json");
     return res.end(JSON.stringify({ok:true, symbol:sym, t:Date.now(), subscribers:subscribers.size}));
   }
@@ -102,18 +102,18 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`[atlas] dashboard → http://localhost:${PORT}`);
-  console.log(`[atlas] trigger    → http://localhost:${PORT}/load?symbol=XYZ`);
-  console.log(`[atlas] events     → http://localhost:${PORT}/events (SSE)`);
+  console.log(`[atlas] dashboard -> http://localhost:${PORT}`);
+  console.log(`[atlas] trigger    -> http://localhost:${PORT}/load?symbol=XYZ`);
+  console.log(`[atlas] events     -> http://localhost:${PORT}/events (SSE)`);
 });
 
 /* ----------------------- DISCORD BOT ----------------------- */
 (async () => {
   const token = process.env.DISCORD_TOKEN;
-  if(!token){ console.log("[atlas] DISCORD_TOKEN not set — discord bot disabled"); return; }
+  if(!token){ console.log("[atlas] DISCORD_TOKEN not set - discord bot disabled"); return; }
   let djs;
   try { djs = require("discord.js"); }
-  catch(e){ console.log("[atlas] discord.js not installed — run: npm i discord.js   (bot disabled)"); return; }
+  catch(e){ console.log("[atlas] discord.js not installed - run: npm i discord.js   (bot disabled)"); return; }
   const { Client, GatewayIntentBits, Events, Partials } = djs;
   const client = new Client({
     intents: [
@@ -146,12 +146,12 @@ server.listen(PORT, () => {
       if(!sym) return;
       const r = await fetchLocal(`/load?symbol=${encodeURIComponent(sym)}`);
       if(r && r.ok){
-        try { await msg.react("📊"); } catch(e){}
-        console.log(`[atlas] discord → ${sym} by ${msg.author?.tag||"?"}`);
+        try { await msg.react("\u{1F4CA}"); } catch(e){}
+        console.log(`[atlas] discord -> ${sym} by ${msg.author?.tag||"?"}`);
       }
     } catch(e){ console.error("[atlas] bridge err", e.message||e); }
   });
-  client.once(Events.ClientReady, (c) => console.log(`[atlas] discord bot ready → ${c.user.tag}`));
+  client.once(Events.ClientReady, (c) => console.log(`[atlas] discord bot ready -> ${c.user.tag}`));
   client.login(token).catch((e) => console.error("[atlas] discord login failed", e.message||e));
 })();
 

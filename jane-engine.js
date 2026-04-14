@@ -1,21 +1,22 @@
-/* ATLAS FX — jane-engine.js
-   JANE: price matrix (EURUSD/GBPUSD/USDJPY/AUDJPY) + Event Intelligence (ForexFactory feed) + Terminology glossary.
-   Matrix refreshes 30s. Calendar refreshes 10m. All live — no static data. */
+/* ATLAS FX - jane-engine.js (MINIMAL)
+   Price matrix (last 5, dedupe, click reload) + event intelligence fallback + short glossary. */
 (function(){
 var A = window.ATLAS;
 A.pmCache = {};
 A.searchHistory = [];
-A.activeSymbol = null;
-function digitsFor(sym){ if(A.FX[sym]) return A.FX[sym].digits; if(A.SYMBOLS[sym]) return A.SYMBOLS[sym].digits; return 4; }
+A.activeSymbol = A.activeSymbol || "EURUSD";
+
+function digitsFor(sym){ if(A.FX && A.FX[sym]) return A.FX[sym].digits; if(A.SYMBOLS && A.SYMBOLS[sym]) return A.SYMBOLS[sym].digits; return 4; }
+
 function matrixRow(pair){
   var c = A.pmCache[pair]; var dg = digitsFor(pair);
   var active = (A.activeSymbol===pair);
-  var rowAttrs = ' data-sym="'+pair+'" class="pm-row'+(active?' active':'')+'"';
-  if(!c) return '<tr'+rowAttrs+'><td>'+pair+'</td><td colspan="7" class="mut">queued…</td></tr>';
+  var attrs = ' data-sym="'+pair+'" class="pm-row'+(active?' active':'')+'"';
+  if(!c) return '<tr'+attrs+'><td>'+pair+'</td><td colspan="7" class="mut">queued...</td></tr>';
   var pc = c.pc, chg = c.chg, cls = pc>0?"up":pc<0?"dn":"mut";
   var biasWord = pc>0.2?"LONG": pc<-0.2?"SHORT":"FLAT";
-  var biasCls = pc>0.2?"up": pc<-0.2?"dn":"mut";
-  return '<tr'+rowAttrs+'>'+
+  var biasCls  = pc>0.2?"up":  pc<-0.2?"dn":"mut";
+  return '<tr'+attrs+'>'+
     '<td>'+pair+'</td>'+
     '<td>'+A.fmt(c.last,dg)+'</td>'+
     '<td class="'+cls+'">'+(chg>=0?"+":"")+A.fmt(chg,dg)+'</td>'+
@@ -25,14 +26,14 @@ function matrixRow(pair){
     '<td>'+A.fmt(c.hi-c.lo,dg)+'</td>'+
     '<td class="'+biasCls+'">'+biasWord+'</td></tr>';
 }
+
 function renderMatrix(){
   var body = document.getElementById("pm-body"); if(!body) return;
   if(!A.searchHistory.length){
-    body.innerHTML = '<tr><td colspan="8" class="mut" style="text-align:left">no search history — use input above or trigger via !SYMBOL / $SYMBOL from Discord</td></tr>';
+    body.innerHTML = '<tr><td colspan="8" class="mut" style="text-align:left">no search history - use input above or trigger via !SYMBOL / $SYMBOL from Discord</td></tr>';
     return;
   }
   body.innerHTML = A.searchHistory.map(matrixRow).join("");
-  /* bind click */
   Array.prototype.forEach.call(body.querySelectorAll("tr.pm-row"), function(tr){
     tr.addEventListener("click", function(){
       var s = tr.getAttribute("data-sym");
@@ -40,8 +41,9 @@ function renderMatrix(){
     });
   });
 }
+
 function fetchMatrixPair(p){
-  return A.Feed.fetchSymbol(p, "1h").then(function(r){
+  return A.Feed.fetchSymbol(p, "1H").then(function(r){
     var b = r.bars; if(!b||!b.length) return;
     var last = b[b.length-1][4];
     var first = b[0][4];
@@ -50,6 +52,7 @@ function fetchMatrixPair(p){
     A.pmCache[p] = { last:last, first:first, chg:last-first, pc:(last-first)/first*100, hi:hi, lo:lo };
   });
 }
+
 window.addSearch = function(symbol){
   if(!symbol) return;
   var s = (""+symbol).toUpperCase().replace(/[^A-Z]/g,"");
@@ -60,15 +63,17 @@ window.addSearch = function(symbol){
   if(!A.pmCache[s]) fetchMatrixPair(s).then(renderMatrix).catch(renderMatrix);
   renderMatrix();
 };
+
 window.reloadSymbol = function(symbol){
   if(!symbol) return;
   var s = (""+symbol).toUpperCase().replace(/[^A-Z]/g,"");
   A.activeSymbol = s;
   window.addSearch(s);
-  try { ChartsEngine && ChartsEngine.load && ChartsEngine.load(s); } catch(e){}
-  try { MacroEngine && MacroEngine.load && MacroEngine.load(s); } catch(e){}
-  try { ExecutionEngine && ExecutionEngine.load && ExecutionEngine.load(s); } catch(e){}
+  try { window.ChartsEngine    && ChartsEngine.load    && ChartsEngine.load(s); } catch(e){}
+  try { window.MacroEngine     && MacroEngine.run      && MacroEngine.run(s); } catch(e){}
+  try { window.ExecutionEngine && ExecutionEngine.load && ExecutionEngine.load(s); } catch(e){}
 };
+
 function evClass(imp){
   var s = (imp||"").toLowerCase();
   if(s.indexOf("high")>=0) return "h";
@@ -89,6 +94,49 @@ function includeEvent(title){
   var t = (title||"").toLowerCase();
   return /cpi|inflation|pce|ppi|nfp|non-farm|non farm|payroll|unemployment|fomc|rate decision|speech|speaks|testifies|press conf|gdp|growth|pmi|ism|manufacturing|services/.test(t);
 }
+
+var EV_FALLBACK =
+  '<div class="ev-fallback">'+
+    '<div class="evf-hd">No major high-impact events currently scheduled.</div>'+
+    '<div class="evf-sub">Market is reacting to:</div>'+
+    '<ul class="evf-list">'+
+      '<li>DXY movement</li>'+
+      '<li>US10Y yield movement</li>'+
+      '<li>Equity risk flow</li>'+
+    '</ul>'+
+    '<div class="evf-interp"><b>Interpretation:</b> Current conditions are flow-driven, not news-driven.</div>'+
+  '</div>';
+
+var TERMS = [
+  ["DXY","US Dollar Index. Weighted average of USD vs EUR, JPY, GBP, CAD, SEK, CHF. Proxy for broad USD strength."],
+  ["US10Y","Yield on the 10-year US Treasury. Benchmark for long-duration rates; drives USD carry and discount rates."],
+  ["EQUITIES","S&P 500 futures. Primary risk proxy - rising equities generally correlate with risk-on flows."],
+  ["USDJPY","Dollar-Yen spot. Most rate-sensitive major via the 10Y differential; carries global risk and stress signals."],
+  ["CPI","Consumer Price Index. Headline inflation print; dominates front-end rates and USD reaction."],
+  ["NFP","Non-Farm Payrolls. Monthly US jobs report; drives yields and DXY on labour tightness signal."],
+  ["FOMC","Federal Open Market Committee. Sets US policy rate; statement and presser shift term premium and USD."],
+  ["GDP","Gross Domestic Product. Backward-looking growth gauge; revisions move Fed pricing."],
+  ["PMI","Purchasing Managers Index. Forward-looking activity gauge; above 50 = expansion, below 50 = contraction."],
+  ["CB SPEAKERS","Central bank officials speaking publicly. Often pre-signal policy pivots outside of meetings."],
+  ["BIAS","Net directional conviction in USD or risk, composited from DXY, yields, equities, and FX."],
+  ["CONVICTION","Degree of alignment across cross-asset signals. High = majors confirm the same narrative."],
+  ["FLOW","Aggregate flow direction into or out of USD, inferred from DXY and USDJPY behaviour."],
+  ["REGIME","Macro market mode - RISK-ON, RISK-OFF or MIXED - from equity, yield, and USD behaviour."],
+  ["VALIDITY","Window during which the current thesis is assumed to hold absent an invalidation trigger."],
+  ["ENTRY","Price at which the execution plan engages. Computed from mid of latest candle plus an ATR buffer."],
+  ["STOP","Risk invalidation level. Derived from an ATR multiple beyond the structural pivot."],
+  ["TARGET","Primary profit objective. 2R baseline, extended on regime alignment."],
+  ["R-MULTIPLE","Ratio of profit to initial risk. 1R = distance from entry to stop."],
+  ["ATR","Average True Range. Volatility measure used for stop and target sizing."],
+  ["Z-SCORE","Number of standard deviations the current move is from its mean. Above 2 = regime-breaking."],
+  ["PERCENTILE","Rank of the current move within the recent distribution of moves."],
+  ["CARRY","Return from holding a higher-yielding currency funded by a lower-yielding one."],
+  ["YIELD DIFFERENTIAL","Spread between two sovereign yields. Primary driver of FX pairs like USDJPY."],
+  ["RISK-ON","Regime favouring growth and credit exposure - equities up, USD/JPY bid, defensives lag."],
+  ["RISK-OFF","Regime favouring safe-haven flows - USD, CHF, JPY bid, equities lower."],
+  ["POI","Point of Interest. A price level the plan is targeting or defending - entry, stop, or target zone."]
+];
+
 A.Jane = {
   loadMatrix: function(){
     if(!A.searchHistory.length){
@@ -101,13 +149,13 @@ A.Jane = {
     var list = document.getElementById("ev-list"); if(!list) return;
     return A.Feed.fetchEvents().then(function(evts){
       var now = Date.now();
-      var filtered = evts.filter(function(e){
+      var filtered = (evts||[]).filter(function(e){
         if(!e || !e.title) return false;
         if(!includeEvent(e.title)) return false;
         var t = new Date(e.date).getTime();
         return t >= now - 6*3600*1000 && t <= now + 7*24*3600*1000;
       }).sort(function(a,b){ return new Date(a.date) - new Date(b.date); }).slice(0,24);
-      if(!filtered.length){ list.innerHTML = '<div class="ev l"><div class="ev-top"><span>—</span><span>—</span></div><div class="ev-tt">no high-impact events in window</div></div>'; return; }
+      if(!filtered.length){ list.innerHTML = EV_FALLBACK; return; }
       list.innerHTML = filtered.map(function(e){
         var dt = new Date(e.date);
         var cls = evClass(e.impact);
@@ -115,55 +163,21 @@ A.Jane = {
         var when = dt.toISOString().substr(5,11).replace("T"," ") + "Z";
         var ccy = e.country||"";
         var fc = (e.forecast!=null&&e.forecast!=="")?("F "+e.forecast):"";
-        var pv = (e.previous!=null&&e.previous!=="")?(" · P "+e.previous):"";
+        var pv = (e.previous!=null&&e.previous!=="")?(" . P "+e.previous):"";
         return '<div class="ev '+cls+'">'+
-          '<div class="ev-top"><span>'+ccy+' · '+ty+'</span><span>'+when+'</span></div>'+
+          '<div class="ev-top"><span>'+ccy+' . '+ty+'</span><span>'+when+'</span></div>'+
           '<div class="ev-tt">'+e.title+'</div>'+
           '<div class="ev-ft">'+fc+pv+'</div></div>';
       }).join("");
     }).catch(function(){
-      list.innerHTML = '<div class="ev l"><div class="ev-top"><span>—</span><span>OFFLINE</span></div><div class="ev-tt">calendar feed unavailable</div></div>';
+      list.innerHTML = EV_FALLBACK;
     });
   },
   update: function(){ renderMatrix(); },
   renderTerms: function(){
-    var T = [
-      ["DXY","US Dollar Index. Weighted geometric average of USD vs EUR, JPY, GBP, CAD, SEK, CHF. Proxy for broad USD strength."],
-      ["US10Y","Yield on 10-year US Treasury. Benchmark for long-duration rates; drives USD carry and discount rates."],
-      ["EQUITIES","S&P 500 E-mini futures (ES) — primary risk proxy. Rising equities generally correlate with risk-on flows."],
-      ["USDJPY","Dollar-Yen spot. Highly rate-sensitive via 10Y differential; global carry and risk-off funding vehicle."],
-      ["CPI","Consumer Price Index. Headline inflation print; dominates front-end rates and USD reaction function."],
-      ["NFP","Non-Farm Payrolls. Monthly US jobs report; drives yields and DXY on labour tightness signal."],
-      ["FOMC","Federal Open Market Committee. Sets US policy rate; statement/presser shifts term premium and USD."],
-      ["GDP","Gross Domestic Product. Backward-looking growth gauge; revisions move Fed pricing."],
-      ["PMI","Purchasing Managers Index. Forward-looking activity gauge. >50 expansion, <50 contraction."],
-      ["CB SPEAKERS","Central bank official communications — often pre-signal policy pivots outside meetings."],
-      ["BIAS","Net directional conviction in USD or risk, composited from DXY, yields, equities, FX."],
-      ["CONVICTION","Degree of alignment across cross-asset signals. High = majors confirm the same narrative."],
-      ["FLOW","Aggregate flow direction into or out of USD — inferred from DXY × JPY behaviour."],
-      ["REGIME","Macro market mode — RISK-ON, RISK-OFF or MIXED — from equity + yield + USD behaviour."],
-      ["VALIDITY","Window during which the current thesis is assumed to hold absent invalidation trigger."],
-      ["ENTRY","Price at which the execution plan engages. Computed from mid of latest candle ± ATR buffer."],
-      ["STOP","Risk invalidation level. Derived from ATR multiple beyond structural pivot."],
-      ["TARGET","Primary profit objective. 2R baseline, extended on regime alignment."],
-      ["R-MULTIPLE","Ratio of profit to initial risk. 1R = distance from entry to stop."],
-      ["ATR","Average True Range. Volatility measure used for stop and target sizing."],
-      ["Z-SCORE","Number of standard deviations the current move is from its mean. >|2| = regime-breaking."],
-      ["PERCENTILE","Rank of the current move within the recent distribution of moves."],
-      ["CARRY","Return from holding a higher-yielding currency funded by a lower-yielding one."],
-      ["YIELD DIFFERENTIAL","Spread between two sovereign yields — primary driver of FX pairs like USDJPY."],
-      ["RISK-ON","Regime favouring growth/credit exposure — equities up, USD/JPY bid, defensives lag."],
-      ["RISK-OFF","Regime favouring safe-haven flows — USD/CHF/JPY bid, equities lower."],
-      ["MECHANISM","Causal chain: catalyst → transmission → cross-asset response → FX terminal → outcome."],
-      ["SCENARIO","Branching plan: primary (base case), alternative (contrarian), invalidation (kill switch)."],
-      ["PRIMARY","Base-case trade aligned with current regime and conviction."],
-      ["ALTERNATIVE","Contingent trade activated if primary regime fails specific criteria."],
-      ["INVALIDATION","Hard level or condition negating thesis; forces exit/flip."]
-    ];
     var host = document.getElementById("terms-list"); if(!host) return;
-    host.innerHTML = T.map(function(r){
-      var id = "t-"+r[0].toLowerCase().replace(/[^a-z0-9]+/g,"");
-      return '<div class="term" id="'+id+'"><div class="tt">'+r[0]+'</div><div class="td">'+r[1]+'</div></div>';
+    host.innerHTML = TERMS.map(function(r){
+      return '<div class="term"><div class="tt">'+r[0]+'</div><div class="td">'+r[1]+'</div></div>';
     }).join("");
   }
 };

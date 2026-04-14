@@ -3,65 +3,163 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ATLAS FX — Macro Dashboard</title>
+<title>ATLAS FX - Macro Dashboard</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{background:#000;color:#d7dde3;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.35}
+html,body{background:#000000;color:#d7dde3;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.35}
 a{color:#00B0FF;text-decoration:none}a:hover{text-decoration:underline}
 .mono{font-family:"SF Mono",Menlo,Consolas,monospace}
 .up{color:#07f911}.dn{color:#ff0015}.mut{color:#6c7a89}
 .hi{color:#FFD600}.or{color:#FF9100}.bl{color:#00B0FF}.gn{color:#00FF5A}
-#term-nav{position:sticky;top:0;z-index:200;background:#000;border-bottom:1px solid #182230;padding:6px 10px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:11px}
+
+/* TOP NAV */
+#term-nav{position:sticky;top:0;z-index:200;background:#000;border-bottom:1px solid #1a1a1a;padding:6px 10px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:11px}
 #term-nav .brand{color:#FFD600;font-weight:700;letter-spacing:1px;margin-right:10px}
-#term-nav a{color:#6c7a89}#term-nav a:hover{color:#00B0FF}
-#term-nav .sep{color:#182230}
+#term-nav a{color:#6c7a89}
+#term-nav a:hover{color:#00B0FF}
+#term-nav .sep{color:#1a1a1a}
 #term-nav .src{margin-left:auto;color:#6c7a89;font-size:10px}
 #term-nav .src b{color:#00FF5A}
-#macro-header{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:#182230;border-bottom:1px solid #182230}
-#macro-header .cell{background:#000;padding:8px 10px}
-#macro-header .cell .k{color:#6c7a89;font-size:10px;letter-spacing:1px}
-#macro-header .cell .v{font-size:16px;font-weight:600;margin-top:2px}
-#macro-header .cell .s{font-size:10px;color:#6c7a89;margin-top:2px}
-.sec{border-bottom:1px solid #182230}
-.sec-hd{display:flex;align-items:center;gap:10px;padding:6px 10px;background:#050a10;border-bottom:1px solid #182230}
+.st-dot{display:inline-block;width:6px;height:6px;background:#6c7a89;margin-right:4px;vertical-align:middle}
+.st-dot.ok{background:#07f911}.st-dot.warn{background:#FFD600}.st-dot.err{background:#ff0015}
+
+/* SECTION BASE */
+.sec{border-bottom:1px solid #1a1a1a}
+.sec-hd{display:flex;align-items:center;gap:10px;padding:7px 10px;background:#050a10;border-bottom:1px solid #1a1a1a}
 .sec-hd h3{font-size:11px;letter-spacing:2px;color:#FFD600;font-weight:600}
 .sec-hd .sub{color:#6c7a89;font-size:10px}
-.sec-hd .links{margin-left:auto;display:flex;gap:8px;font-size:10px}
-.sec-hd .links a{color:#6c7a89}.sec-hd .links a:hover{color:#00B0FF}
 .sec-body{padding:8px 10px}
-#trade-status{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:#182230}
-#trade-status .cell{background:#000;padding:6px 10px}
+
+/* CHART MATRIX (HTF + LTF) */
+.matrix-wrap{border-bottom:1px solid #1a1a1a}
+.matrix-hd{display:flex;align-items:center;gap:10px;padding:6px 10px;background:#050a10;border-bottom:1px solid #1a1a1a}
+.matrix-hd h3{font-size:11px;letter-spacing:2px;color:#FFD600;font-weight:600}
+.matrix-hd .sub{color:#6c7a89;font-size:10px}
+.matrix-hd .sym-label{color:#00FF5A;font-weight:700;letter-spacing:1px;margin-left:4px}
+.matrix-grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1px;background:#1a1a1a;height:58vh;min-height:480px}
+.chart-panel{position:relative;background:#000;overflow:hidden}
+.panel-hdr{position:absolute;top:0;left:0;right:0;z-index:5;display:flex;align-items:center;gap:8px;padding:4px 8px;background:rgba(0,0,0,0.75);font-size:11px;pointer-events:none;border-bottom:1px solid #1a1a1a}
+.panel-hdr .sym{color:#FFD600;font-weight:700;letter-spacing:1px}
+.panel-hdr .tf{color:#6c7a89;font-size:10px}
+.panel-hdr .last{color:#fff;font-weight:700;font-family:"SF Mono",Menlo,Consolas,monospace}
+.panel-hdr .chg{font-size:10px;font-family:"SF Mono",Menlo,Consolas,monospace}
+.panel-hdr .quotes{margin-left:auto;display:flex;gap:1px}
+.panel-hdr .quotes .q{background:#050a10;border:1px solid #1a1a1a;padding:2px 6px;font-size:9px;letter-spacing:1px;font-family:"SF Mono",Menlo,Consolas,monospace;text-align:center}
+.panel-hdr .quotes .q .l{display:block;color:#6c7a89;font-size:8px}
+.panel-hdr .quotes .q .v{display:block;color:#fff;font-weight:700}
+.panel-hdr .quotes .sell .l{color:#ffee58}
+.panel-hdr .quotes .buy  .l{color:#b22833}
+.panel-hdr .quotes .spread .l{color:#6c7a89}
+.chart{position:absolute;top:0;left:0;right:0;bottom:0}
+
+/* EXECUTION MAP - 60/40 */
+#exec-wrap{display:grid;grid-template-columns:60% 40%;gap:1px;background:#1a1a1a}
+#exec-grid{background:#000}
+#exec-context{background:#000;padding:10px 12px}
+.exec-tbl{width:100%;border-collapse:collapse;font-family:"SF Mono",Menlo,Consolas,monospace;background:#000}
+.exec-tbl th,.exec-tbl td{padding:14px 12px;border-bottom:1px solid #1a1a1a;font-size:13px;vertical-align:middle;text-align:left;line-height:1.35}
+.exec-tbl thead th{background:#050a10;color:#6c7a89;font-weight:500;font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:8px 12px}
+.exec-tbl .xr-bar{display:inline-block;width:6px;height:22px;background:#00B0FF;margin-right:10px;vertical-align:middle}
+.exec-tbl .xr-sub{color:#6c7a89;margin-left:10px;font-size:10px;letter-spacing:1px;text-transform:none;font-weight:normal}
+.exec-tbl td.xr-l{width:60%}
+.exec-tbl td.xr-r{width:40%;text-align:right;letter-spacing:0.5px}
+.exec-tbl .xr-lab{display:inline-block;letter-spacing:1.5px;font-size:12px;font-weight:700;vertical-align:middle}
+.exec-tbl .xr-rec{display:inline-block;margin-left:14px;font-weight:700;font-size:14px;vertical-align:middle}
+.exec-tbl tr.xc-entry .xr-bar,.exec-tbl tr.xc-entry .xr-lab,.exec-tbl tr.xc-entry .xr-rec,.exec-tbl tr.xc-entry .xr-r{color:#07f911}
+.exec-tbl tr.xc-entry .xr-bar{background:#07f911}
+.exec-tbl tr.xc-ext   .xr-bar,.exec-tbl tr.xc-ext   .xr-lab,.exec-tbl tr.xc-ext   .xr-rec,.exec-tbl tr.xc-ext   .xr-r{color:#FF9100}
+.exec-tbl tr.xc-ext   .xr-bar{background:#FF9100}
+.exec-tbl tr.xc-exit  .xr-bar,.exec-tbl tr.xc-exit  .xr-lab,.exec-tbl tr.xc-exit  .xr-rec,.exec-tbl tr.xc-exit  .xr-r{color:#ff0015}
+.exec-tbl tr.xc-exit  .xr-bar{background:#ff0015}
+.exec-tbl tr.xc-trend .xr-bar,.exec-tbl tr.xc-trend .xr-lab,.exec-tbl tr.xc-trend .xr-r{color:#FFD600}
+.exec-tbl tr.xc-trend .xr-bar{background:#FFD600}
+.exec-tbl tr.xc-neu   .xr-bar,.exec-tbl tr.xc-neu   .xr-lab,.exec-tbl tr.xc-neu   .xr-r{color:#6c7a89}
+.exec-tbl tr.xc-neu   .xr-bar{background:#6c7a89}
+.exec-tbl tr.xc-stop  .xr-bar,.exec-tbl tr.xc-stop  .xr-lab,.exec-tbl tr.xc-stop  .xr-rec,.exec-tbl tr.xc-stop  .xr-r{color:#ff0015}
+.exec-tbl tr.xc-stop  .xr-bar{background:#ff0015}
+.exec-tbl tr.xc-warn td{color:#FFD600;font-weight:700;letter-spacing:2px;text-align:left;background:#050a10;border-top:1px solid #1a1a1a}
+.exec-tbl tr.xc-warn .xr-bar{background:#FFD600}
+.ctx-sec{margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #1a1a1a}
+.ctx-sec:last-child{border-bottom:none;margin-bottom:0}
+.ctx-k{color:#6c7a89;font-size:10px;letter-spacing:2px;font-weight:600;margin-bottom:4px}
+.ctx-hd{font-size:14px;font-weight:700;letter-spacing:1px;margin-bottom:4px}
+.ctx-body{font-size:12px;color:#d7dde3;line-height:1.5}
+.ctx-list{margin:6px 0 0 16px;padding:0}
+.ctx-list li{font-size:12px;color:#d7dde3;line-height:1.5;margin-bottom:4px}
+.exec-gh-hd{color:#FFD600;font-size:11px;letter-spacing:2px;font-weight:700;margin-top:12px;padding:8px 10px;background:#050a10;border-top:1px solid #1a1a1a;border-bottom:1px solid #1a1a1a}
+.exec-gh-body{padding:8px 10px}
+.exec-gh-row{display:flex;gap:12px;padding:6px 0;border-bottom:1px solid #1a1a1a;font-size:11px}
+.exec-gh-row:last-child{border-bottom:none}
+.exec-gh-lbl{flex:0 0 240px;color:#FFD600;font-weight:600;letter-spacing:1px;font-size:10px}
+.exec-gh-txt{flex:1;color:#d7dde3;line-height:1.5}
+
+/* TRADE STATUS */
+#trade-status{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:#1a1a1a}
+#trade-status .cell{background:#000;padding:8px 10px}
 #trade-status .cell .k{color:#6c7a89;font-size:10px;letter-spacing:1px}
 #trade-status .cell .v{font-size:14px;font-weight:600;margin-top:2px}
-#chart-grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1px;background:#182230;height:62vh;min-height:520px}
-.chart-wrap{position:relative;background:#000;overflow:hidden}
-.chart{position:absolute;top:0;left:0;right:0;bottom:0}
-.chart-hdr{position:absolute;top:4px;left:6px;z-index:5;font-size:11px;color:#d7dde3;font-weight:600;letter-spacing:1px;pointer-events:none}
-.chart-hdr .sym{color:#FFD600}
-.chart-hdr .tf{color:#6c7a89;margin-left:6px;font-size:10px}
-.chart-hdr .val{color:#00FF5A;margin-left:8px;font-size:11px}
-.chart-hdr .chg{margin-left:6px;font-size:10px}
-.chart-tfs{position:absolute;top:4px;right:6px;z-index:6;display:flex;gap:1px;background:#182230}
-.chart-tfs button{background:#000;color:#6c7a89;border:none;padding:2px 6px;font-size:10px;cursor:pointer;font-family:inherit}
-.chart-tfs button.on{background:#FFD600;color:#000}
-.chart-tfs button:hover{color:#d7dde3}.chart-tfs button.on:hover{color:#000}
-.price-stack{position:absolute;top:0;right:0;width:78px;height:100%;pointer-events:none;z-index:10}
-.pbox{position:absolute;right:0;width:78px;display:flex;flex-direction:column;justify-content:center;padding:2px 4px;font-family:"SF Mono",Menlo,Consolas,monospace;line-height:1.05;overflow:hidden}
-.pbox .lbl{font-size:9px;font-weight:700;letter-spacing:1px}
-.pbox .val{font-size:11px;font-weight:700}
-.pbox.high{background:#FFD600;color:#000}
-.pbox.cur{background:#00FF5A;color:#000}
-.pbox.ent{background:#FF9100;color:#000}
-.pbox.low{background:#00B0FF;color:#fff}
+
+/* HISTORICAL CONTEXT */
+#hist-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#1a1a1a}
+.hist-col{background:#000;padding:8px 10px}
+.hc-k{color:#FFD600;font-size:10px;letter-spacing:2px;font-weight:700;margin-bottom:4px}
+.hc-role{color:#d7dde3;font-size:11px;line-height:1.5;margin-bottom:6px}
+.hc-stats{margin-bottom:6px}
+.hc-row{display:flex;justify-content:space-between;font-family:"SF Mono",Menlo,Consolas,monospace;font-size:11px;padding:2px 0}
+.hc-lbl{color:#6c7a89;letter-spacing:1px}
+.hc-mean,.hc-conc{font-size:11px;line-height:1.5;margin-top:6px;color:#d7dde3}
+.hc-mean b,.hc-conc b{color:#FFD600;letter-spacing:1px;font-size:10px}
+#hist-narrative,#hist-why{background:#000;padding:10px;margin-top:1px;border-top:1px solid #1a1a1a;font-size:12px;line-height:1.5}
+.hist-take,.hist-why-wrap{}
+
+/* MECHANISM CHAIN */
+#mech-chain{display:flex;flex-wrap:wrap;gap:1px;background:#1a1a1a}
+.chain-box{flex:1;min-width:220px;background:#000;padding:10px}
+.cb-step{color:#6c7a89;font-size:9px;letter-spacing:2px}
+.cb-lbl{color:#FFD600;font-size:11px;letter-spacing:2px;font-weight:700;margin:3px 0}
+.cb-body{font-size:11px;line-height:1.5;color:#d7dde3;margin-bottom:6px}
+.cb-gh{font-size:11px;line-height:1.5;color:#6c7a89;font-style:italic}
+.chain-box.up .cb-lbl{color:#07f911}
+.chain-box.dn .cb-lbl{color:#ff0015}
+.chain-box.hi .cb-lbl{color:#FFD600}
+.chain-box.gn .cb-lbl{color:#00FF5A}
+
+/* SCENARIO */
+#scen-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#1a1a1a}
+.scen-col{background:#000;padding:10px}
+.sc-k{color:#6c7a89;font-size:10px;letter-spacing:2px;font-weight:600;margin-bottom:4px}
+.sc-hd{font-size:13px;font-weight:700;letter-spacing:1px;margin-bottom:6px}
+.sc-t{font-size:11px;line-height:1.5;color:#d7dde3;margin-bottom:6px}
+.sc-gh{font-size:11px;line-height:1.5;color:#6c7a89}
+.sc-gh b{color:#FFD600;letter-spacing:1px;font-size:10px}
+
+/* EVENTS */
+#ev-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1px;background:#1a1a1a}
+.ev{background:#000;padding:6px 8px;font-size:11px;border-left:2px solid #1a1a1a}
+.ev.h{border-left-color:#ff0015}
+.ev.m{border-left-color:#FF9100}
+.ev.l{border-left-color:#6c7a89}
+.ev .ev-top{display:flex;justify-content:space-between;color:#6c7a89;font-size:10px;letter-spacing:1px}
+.ev .ev-tt{font-weight:600;color:#d7dde3;margin-top:2px}
+.ev .ev-ft{color:#6c7a89;font-size:10px;margin-top:2px;font-family:"SF Mono",Menlo,Consolas,monospace}
+.ev-fallback{background:#000;padding:14px 16px;border-left:2px solid #FFD600;font-size:12px;line-height:1.6;grid-column:1/-1}
+.evf-hd{color:#FFD600;font-size:13px;font-weight:700;letter-spacing:1px;margin-bottom:8px}
+.evf-sub{color:#d7dde3;margin-bottom:4px}
+.evf-list{margin:4px 0 8px 18px}
+.evf-list li{color:#d7dde3;margin-bottom:2px}
+.evf-interp{color:#d7dde3;margin-top:4px}
+.evf-interp b{color:#FFD600;letter-spacing:1px}
+
+/* PRICE MATRIX */
 #price-matrix{position:relative}
-#pm-search{display:flex;gap:6px;padding:6px 10px;background:#050a10;border-bottom:1px solid #182230;align-items:center}
-#pm-search input{background:#000;border:1px solid #182230;color:#d7dde3;font-family:"SF Mono",Menlo,Consolas,monospace;font-size:11px;padding:4px 8px;width:180px;letter-spacing:1px;text-transform:uppercase;outline:none}
+#pm-search{display:flex;gap:6px;padding:6px 10px;background:#050a10;border-bottom:1px solid #1a1a1a;align-items:center}
+#pm-search input{background:#000;border:1px solid #1a1a1a;color:#d7dde3;font-family:"SF Mono",Menlo,Consolas,monospace;font-size:11px;padding:4px 8px;width:180px;letter-spacing:1px;text-transform:uppercase;outline:none}
 #pm-search input:focus{border-color:#FFD600}
 #pm-search button{background:#FFD600;color:#000;border:none;font-family:inherit;font-size:10px;padding:4px 10px;letter-spacing:1px;cursor:pointer;font-weight:700}
 #pm-search button:hover{background:#fff}
 #pm-search .hint{color:#6c7a89;font-size:10px;letter-spacing:1px;margin-left:4px}
 #price-matrix table{width:100%;border-collapse:collapse;font-family:"SF Mono",Menlo,Consolas,monospace}
-#price-matrix th,#price-matrix td{padding:6px 10px;text-align:right;border-bottom:1px solid #182230;font-size:11px}
+#price-matrix th,#price-matrix td{padding:6px 10px;text-align:right;border-bottom:1px solid #1a1a1a;font-size:11px}
 #price-matrix th{color:#6c7a89;font-weight:500;font-size:10px;letter-spacing:1px;background:#050a10}
 #price-matrix th:first-child,#price-matrix td:first-child{text-align:left;color:#FFD600;font-weight:600}
 #price-matrix tr.pm-row{cursor:pointer;transition:background 0.08s}
@@ -69,150 +167,139 @@ a{color:#00B0FF;text-decoration:none}a:hover{text-decoration:underline}
 #price-matrix tr.pm-row.active td{background:rgba(255,214,0,0.10);color:#FFD600;font-weight:700}
 #price-matrix tr.pm-row.active td:first-child{color:#FFD600}
 
-/* EXECUTION LOCKED TABLE */
-.exec-tbl{width:100%;border-collapse:collapse;font-family:"SF Mono",Menlo,Consolas,monospace;background:#000}
-.exec-tbl th,.exec-tbl td{padding:7px 10px;border-bottom:1px solid #182230;font-size:11px;vertical-align:middle;text-align:left}
-.exec-tbl thead th{background:#050a10;color:#6c7a89;font-weight:500;font-size:10px;letter-spacing:2px;text-transform:uppercase}
-.exec-tbl .xr-dot{color:#00B0FF;margin-right:6px;font-size:10px}
-.exec-tbl .xr-sub{color:#6c7a89;margin-left:10px;font-size:10px;letter-spacing:1px;text-transform:none}
-.exec-tbl td.xr-l{width:62%}
-.exec-tbl td.xr-r{width:38%;text-align:right;letter-spacing:0.5px}
-.exec-tbl .xr-emo{display:inline-block;width:18px;margin-right:6px;font-size:12px}
-.exec-tbl .xr-lab{display:inline-block;letter-spacing:1.5px;font-size:11px;font-weight:600}
-.exec-tbl .xr-rec{display:inline-block;margin-left:12px;font-weight:700;font-size:12px}
-.exec-tbl tr.xc-entry .xr-lab,.exec-tbl tr.xc-entry .xr-rec,.exec-tbl tr.xc-entry .xr-r{color:#07f911}
-.exec-tbl tr.xc-ext   .xr-lab,.exec-tbl tr.xc-ext   .xr-rec,.exec-tbl tr.xc-ext   .xr-r{color:#FF9100}
-.exec-tbl tr.xc-exit  .xr-lab,.exec-tbl tr.xc-exit  .xr-rec,.exec-tbl tr.xc-exit  .xr-r{color:#ff0015}
-.exec-tbl tr.xc-trend .xr-lab,.exec-tbl tr.xc-trend .xr-r{color:#FFD600}
-.exec-tbl tr.xc-neu   .xr-lab,.exec-tbl tr.xc-neu   .xr-r{color:#6c7a89}
-.exec-tbl tr.xc-stop  .xr-lab,.exec-tbl tr.xc-stop  .xr-rec,.exec-tbl tr.xc-stop  .xr-r{color:#ff0015}
-.exec-tbl tr.xc-warn td{color:#FFD600;font-weight:700;letter-spacing:2px;text-align:left;background:#050a10;border-top:1px solid #182230}
-.exec-tbl tr.xc-warn .xr-emo{font-size:12px}
-#events .evlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1px;background:#182230}
-.ev{background:#000;padding:6px 8px;font-size:11px;border-left:2px solid #182230}
-.ev.h{border-left-color:#ff0015}.ev.m{border-left-color:#FF9100}.ev.l{border-left-color:#6c7a89}
-.ev .ev-top{display:flex;justify-content:space-between;color:#6c7a89;font-size:10px;letter-spacing:1px}
-.ev .ev-tt{font-weight:600;color:#d7dde3;margin-top:2px}
-.ev .ev-ft{color:#6c7a89;font-size:10px;margin-top:2px;font-family:"SF Mono",Menlo,Consolas,monospace}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#182230}
-.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#182230}
-.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#182230}
-.cell{background:#000;padding:8px 10px}
-.cell .ck{color:#6c7a89;font-size:10px;letter-spacing:1px;margin-bottom:3px}
-.cell .cv{font-size:12px}
-.cell .cb{font-size:13px;font-weight:600}
-.chain{display:flex;align-items:stretch;flex-wrap:wrap;gap:1px;background:#182230}
-.chain .node{background:#000;padding:6px 10px;font-size:11px;flex:1;min-width:140px}
-.chain .node .nk{color:#6c7a89;font-size:10px;letter-spacing:1px}
-.chain .node .nv{color:#d7dde3;font-size:11px;margin-top:2px}
-.chain .arrow{background:#000;padding:6px 4px;color:#FFD600;display:flex;align-items:center;font-family:"SF Mono",Menlo,Consolas,monospace}
-#terminology .terms{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1px;background:#182230}
+/* TERMINOLOGY */
+#terms-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1px;background:#1a1a1a}
 .term{background:#000;padding:8px 10px;font-size:11px}
 .term .tt{color:#FFD600;font-weight:700;font-size:11px;letter-spacing:1px}
-.term .td{color:#d7dde3;margin-top:3px;line-height:1.4}
-#footer{padding:8px 10px;color:#6c7a89;font-size:10px;border-top:1px solid #182230;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-#footer .pill{background:#050a10;border:1px solid #182230;padding:2px 6px}
-.st-dot{display:inline-block;width:6px;height:6px;background:#6c7a89;margin-right:4px;vertical-align:middle}
-.st-dot.ok{background:#07f911}.st-dot.warn{background:#FFD600}.st-dot.err{background:#ff0015}
-.agent{display:flex;gap:6px;align-items:center;font-size:10px;color:#6c7a89}
-.agent b{color:#FFD600;letter-spacing:1px}
+.term .td{color:#d7dde3;margin-top:3px;line-height:1.5}
+
+/* FOOTER */
+#footer{padding:8px 10px;color:#6c7a89;font-size:10px;border-top:1px solid #1a1a1a;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+#footer .pill{background:#050a10;border:1px solid #1a1a1a;padding:2px 6px}
+
 @media(max-width:900px){
-#macro-header{grid-template-columns:repeat(2,1fr)}
+.matrix-grid{grid-template-columns:1fr;grid-template-rows:repeat(4,40vh);height:auto}
 #trade-status{grid-template-columns:repeat(2,1fr)}
-#chart-grid{grid-template-columns:1fr;grid-template-rows:repeat(4,40vh);height:auto}
-.grid2,.grid3,.grid4{grid-template-columns:1fr}}
+#exec-wrap{grid-template-columns:1fr}
+#hist-grid,#scen-grid{grid-template-columns:1fr}
+.exec-gh-lbl{flex:0 0 160px}
+}
 </style>
 </head>
 <body>
+
 <nav id="term-nav">
 <span class="brand">ATLAS FX</span>
-<a href="#macro-header">Macro</a><span class="sep">·</span>
-<a href="#sec-trade">Trade</a><span class="sep">·</span>
-<a href="#sec-charts">Charts</a><span class="sep">·</span>
-<a href="#sec-matrix">Matrix</a><span class="sep">·</span>
-<a href="#sec-events">Events</a><span class="sep">·</span>
-<a href="#sec-hist">Historical</a><span class="sep">·</span>
-<a href="#sec-mech">Mechanism</a><span class="sep">·</span>
-<a href="#sec-scen">Scenario</a><span class="sep">·</span>
-<a href="#sec-exec">Execution</a><span class="sep">·</span>
+<a href="#sec-htf">HTF</a><span class="sep">.</span>
+<a href="#sec-ltf">LTF</a><span class="sep">.</span>
+<a href="#sec-exec">Execution</a><span class="sep">.</span>
+<a href="#sec-trade">Status</a><span class="sep">.</span>
+<a href="#sec-hist">Historical</a><span class="sep">.</span>
+<a href="#sec-mech">Mechanism</a><span class="sep">.</span>
+<a href="#sec-scen">Scenario</a><span class="sep">.</span>
+<a href="#sec-events">Events</a><span class="sep">.</span>
+<a href="#sec-matrix">Matrix</a><span class="sep">.</span>
 <a href="#sec-terms">Glossary</a>
-<span class="src"><span class="st-dot" id="st-dot"></span><span id="st-txt">INIT</span> · <b id="src-name">—</b> · <span id="src-time">—</span></span>
+<span class="src"><span class="st-dot" id="st-dot"></span><span id="st-txt">INIT</span> . <b id="src-name">-</b> . <span id="src-time">-</span></span>
 </nav>
-<header id="macro-header">
-<div class="cell"><div class="k">BIAS</div><div class="v" id="mh-bias">—</div><div class="s" id="mh-bias-s">awaiting data</div></div>
-<div class="cell"><div class="k">CONVICTION</div><div class="v" id="mh-conv">—</div><div class="s" id="mh-conv-s">awaiting data</div></div>
-<div class="cell"><div class="k">RISK</div><div class="v" id="mh-risk">—</div><div class="s" id="mh-risk-s">awaiting data</div></div>
-<div class="cell"><div class="k">USD</div><div class="v" id="mh-usd">—</div><div class="s" id="mh-usd-s">awaiting data</div></div>
-<div class="cell"><div class="k">VOLATILITY</div><div class="v" id="mh-vol">—</div><div class="s" id="mh-vol-s">awaiting data</div></div>
-</header>
+
+<!-- 1. HTF CHART MATRIX -->
+<section class="matrix-wrap" id="sec-htf">
+<div class="matrix-hd"><h3>HTF CHART MATRIX</h3><span class="sub">1W . 1D . 4H . 1H -</span><span class="sym-label">EURUSD</span></div>
+<div class="matrix-grid">
+<div class="chart-panel"><div class="panel-hdr"><span class="sym">-</span><span class="tf">1W</span><span class="last">-</span><span class="chg">-</span><div class="quotes"><span class="q sell"><span class="l">SELL</span><span class="v">-</span></span><span class="q spread"><span class="l">SPR</span><span class="v">-</span></span><span class="q buy"><span class="l">BUY</span><span class="v">-</span></span></div></div><div class="chart" id="ch-htf-1W"></div></div>
+<div class="chart-panel"><div class="panel-hdr"><span class="sym">-</span><span class="tf">1D</span><span class="last">-</span><span class="chg">-</span><div class="quotes"><span class="q sell"><span class="l">SELL</span><span class="v">-</span></span><span class="q spread"><span class="l">SPR</span><span class="v">-</span></span><span class="q buy"><span class="l">BUY</span><span class="v">-</span></span></div></div><div class="chart" id="ch-htf-1D"></div></div>
+<div class="chart-panel"><div class="panel-hdr"><span class="sym">-</span><span class="tf">4H</span><span class="last">-</span><span class="chg">-</span><div class="quotes"><span class="q sell"><span class="l">SELL</span><span class="v">-</span></span><span class="q spread"><span class="l">SPR</span><span class="v">-</span></span><span class="q buy"><span class="l">BUY</span><span class="v">-</span></span></div></div><div class="chart" id="ch-htf-4H"></div></div>
+<div class="chart-panel"><div class="panel-hdr"><span class="sym">-</span><span class="tf">1H</span><span class="last">-</span><span class="chg">-</span><div class="quotes"><span class="q sell"><span class="l">SELL</span><span class="v">-</span></span><span class="q spread"><span class="l">SPR</span><span class="v">-</span></span><span class="q buy"><span class="l">BUY</span><span class="v">-</span></span></div></div><div class="chart" id="ch-htf-1H"></div></div>
+</div>
+</section>
+
+<!-- 2. LTF CHART MATRIX -->
+<section class="matrix-wrap" id="sec-ltf">
+<div class="matrix-hd"><h3>LTF CHART MATRIX</h3><span class="sub">30M . 15M . 5M . 1M -</span><span class="sym-label">EURUSD</span></div>
+<div class="matrix-grid">
+<div class="chart-panel"><div class="panel-hdr"><span class="sym">-</span><span class="tf">30M</span><span class="last">-</span><span class="chg">-</span><div class="quotes"><span class="q sell"><span class="l">SELL</span><span class="v">-</span></span><span class="q spread"><span class="l">SPR</span><span class="v">-</span></span><span class="q buy"><span class="l">BUY</span><span class="v">-</span></span></div></div><div class="chart" id="ch-ltf-30M"></div></div>
+<div class="chart-panel"><div class="panel-hdr"><span class="sym">-</span><span class="tf">15M</span><span class="last">-</span><span class="chg">-</span><div class="quotes"><span class="q sell"><span class="l">SELL</span><span class="v">-</span></span><span class="q spread"><span class="l">SPR</span><span class="v">-</span></span><span class="q buy"><span class="l">BUY</span><span class="v">-</span></span></div></div><div class="chart" id="ch-ltf-15M"></div></div>
+<div class="chart-panel"><div class="panel-hdr"><span class="sym">-</span><span class="tf">5M</span><span class="last">-</span><span class="chg">-</span><div class="quotes"><span class="q sell"><span class="l">SELL</span><span class="v">-</span></span><span class="q spread"><span class="l">SPR</span><span class="v">-</span></span><span class="q buy"><span class="l">BUY</span><span class="v">-</span></span></div></div><div class="chart" id="ch-ltf-5M"></div></div>
+<div class="chart-panel"><div class="panel-hdr"><span class="sym">-</span><span class="tf">1M</span><span class="last">-</span><span class="chg">-</span><div class="quotes"><span class="q sell"><span class="l">SELL</span><span class="v">-</span></span><span class="q spread"><span class="l">SPR</span><span class="v">-</span></span><span class="q buy"><span class="l">BUY</span><span class="v">-</span></span></div></div><div class="chart" id="ch-ltf-1M"></div></div>
+</div>
+</section>
+
+<!-- 3. EXECUTION MAP -->
+<section class="sec" id="sec-exec">
+<div class="sec-hd"><h3>EXECUTION MAP</h3><span class="sub">recommended . range / action . context</span></div>
+<div id="exec-wrap">
+<div id="exec-grid"></div>
+<div id="exec-context"></div>
+</div>
+<div id="exec-explainer"></div>
+</section>
+
+<!-- 4. TRADE STATUS -->
 <section class="sec" id="sec-trade">
-<div class="sec-hd"><h3>TRADE STATUS</h3><span class="sub">session snapshot · <span class="agent">agent <b id="ag-jane">JANE</b></span></span>
-<div class="links"><a href="#t-bias">bias</a><a href="#t-conv">conviction</a><a href="#t-flow">flow</a><a href="#t-regime">regime</a><a href="#t-validity">validity</a></div></div>
+<div class="sec-hd"><h3>BIAS . CONVICTION . FLOW . REGIME . VALIDITY</h3><span class="sub">session snapshot</span></div>
 <div id="trade-status">
-<div class="cell"><div class="k">BIAS</div><div class="v" id="ts-bias">—</div></div>
-<div class="cell"><div class="k">CONVICTION</div><div class="v" id="ts-conv">—</div></div>
-<div class="cell"><div class="k">FLOW</div><div class="v" id="ts-flow">—</div></div>
-<div class="cell"><div class="k">REGIME</div><div class="v" id="ts-regime">—</div></div>
-<div class="cell"><div class="k">VALIDITY</div><div class="v" id="ts-validity">—</div></div>
-</div></section>
-<section class="sec" id="sec-charts">
-<div class="sec-hd"><h3>CHART MATRIX</h3><span class="sub">DXY · US10Y · EQUITIES · USDJPY — synced</span>
-<div class="links"><a href="#t-ohlc">ohlc</a><a href="#t-dxy">dxy</a><a href="#t-us10y">us10y</a><a href="#t-usdjpy">usdjpy</a><a href="#t-atr">atr</a></div></div>
-<div id="chart-grid">
-<div class="chart-wrap" data-sym="DXY"><div class="chart-hdr"><span class="sym">DXY</span><span class="tf">—</span><span class="val">—</span><span class="chg">—</span></div><div class="chart-tfs"><button data-tf="5m">5m</button><button data-tf="15m">15m</button><button data-tf="1h" class="on">1h</button><button data-tf="4h">4h</button></div><div class="chart" id="ch-DXY"></div><div class="price-stack" id="ps-DXY"></div></div>
-<div class="chart-wrap" data-sym="US10Y"><div class="chart-hdr"><span class="sym">US10Y</span><span class="tf">—</span><span class="val">—</span><span class="chg">—</span></div><div class="chart-tfs"><button data-tf="5m">5m</button><button data-tf="15m">15m</button><button data-tf="1h" class="on">1h</button><button data-tf="4h">4h</button></div><div class="chart" id="ch-US10Y"></div><div class="price-stack" id="ps-US10Y"></div></div>
-<div class="chart-wrap" data-sym="EQUITIES"><div class="chart-hdr"><span class="sym">EQUITIES</span><span class="tf">—</span><span class="val">—</span><span class="chg">—</span></div><div class="chart-tfs"><button data-tf="5m">5m</button><button data-tf="15m">15m</button><button data-tf="1h" class="on">1h</button><button data-tf="4h">4h</button></div><div class="chart" id="ch-EQUITIES"></div><div class="price-stack" id="ps-EQUITIES"></div></div>
-<div class="chart-wrap" data-sym="USDJPY"><div class="chart-hdr"><span class="sym">USDJPY</span><span class="tf">—</span><span class="val">—</span><span class="chg">—</span></div><div class="chart-tfs"><button data-tf="5m">5m</button><button data-tf="15m">15m</button><button data-tf="1h" class="on">1h</button><button data-tf="4h">4h</button></div><div class="chart" id="ch-USDJPY"></div><div class="price-stack" id="ps-USDJPY"></div></div>
-</div></section>
+<div class="cell"><div class="k">BIAS</div><div class="v" id="ts-bias">-</div></div>
+<div class="cell"><div class="k">CONVICTION</div><div class="v" id="ts-conv">-</div></div>
+<div class="cell"><div class="k">FLOW</div><div class="v" id="ts-flow">-</div></div>
+<div class="cell"><div class="k">REGIME</div><div class="v" id="ts-regime">-</div></div>
+<div class="cell"><div class="k">VALIDITY</div><div class="v" id="ts-validity">-</div></div>
+</div>
+</section>
+
+<!-- 5. HISTORICAL CONTEXT -->
+<section class="sec" id="sec-hist">
+<div class="sec-hd"><h3>HISTORICAL CONTEXT ENGINE</h3><span class="sub">four drivers . move . volatility . meaning . conclusion</span></div>
+<div id="hist-grid"></div>
+<div id="hist-narrative"></div>
+<div id="hist-why"></div>
+</section>
+
+<!-- 6. MECHANISM CHAIN -->
+<section class="sec" id="sec-mech">
+<div class="sec-hd"><h3>MECHANISM CHAIN</h3><span class="sub">catalyst -> transmission -> risk response -> fx terminal -> outcome</span></div>
+<div id="mech-chain"></div>
+</section>
+
+<!-- 7. SCENARIO -->
+<section class="sec" id="sec-scen">
+<div class="sec-hd"><h3>SCENARIO ENGINE</h3><span class="sub">primary . alternative . invalidation</span></div>
+<div id="scen-grid"></div>
+</section>
+
+<!-- 8. EVENTS -->
+<section class="sec" id="sec-events">
+<div class="sec-hd"><h3>EVENT INTELLIGENCE</h3><span class="sub">CPI . NFP . CB SPEAKERS . RATES . GDP . PMI</span></div>
+<div class="sec-body"><div id="ev-list"></div></div>
+</section>
+
+<!-- 9. PRICE MATRIX -->
 <section class="sec" id="sec-matrix">
-<div class="sec-hd"><h3>PRICE MATRIX</h3><span class="sub">EURUSD · GBPUSD · USDJPY · AUDJPY · <span class="agent">agent <b>JANE</b></span></span>
-<div class="links"><a href="#t-pips">pips</a><a href="#t-range">range</a><a href="#t-session">session</a></div></div>
+<div class="sec-hd"><h3>PRICE MATRIX</h3><span class="sub">last 5 searches . click row to reload</span></div>
 <div id="price-matrix">
 <form id="pm-search" onsubmit="event.preventDefault();var v=document.getElementById('pm-in').value;if(v){window.reloadSymbol(v);document.getElementById('pm-in').value='';}">
-<input id="pm-in" type="text" placeholder="SYMBOL — e.g. EURUSD" maxlength="10" autocomplete="off">
+<input id="pm-in" type="text" placeholder="SYMBOL - e.g. EURUSD" maxlength="10" autocomplete="off">
 <button type="submit">LOAD</button>
-<span class="hint">history · max 5 · click row to reload · discord trigger: !SYMBOL $SYMBOL</span>
+<span class="hint">max 5 . deduped . !SYMBOL / $SYMBOL triggers from Discord</span>
 </form>
-<table><thead><tr><th>PAIR</th><th>PRICE</th><th>CHG</th><th>%</th><th>HIGH</th><th>LOW</th><th>RANGE</th><th>BIAS</th></tr></thead><tbody id="pm-body"></tbody></table></div>
+<table><thead><tr><th>PAIR</th><th>PRICE</th><th>CHG</th><th>%</th><th>HIGH</th><th>LOW</th><th>RANGE</th><th>BIAS</th></tr></thead><tbody id="pm-body"></tbody></table>
+</div>
 </section>
-<section class="sec" id="sec-events">
-<div class="sec-hd"><h3>EVENT INTELLIGENCE</h3><span class="sub">CPI · NFP · CB SPEAKERS · RATES · GDP · PMI · <span class="agent">agent <b>JANE</b></span></span>
-<div class="links"><a href="#t-cpi">cpi</a><a href="#t-nfp">nfp</a><a href="#t-fomc">fomc</a><a href="#t-gdp">gdp</a><a href="#t-pmi">pmi</a></div></div>
-<div class="sec-body"><div id="events"><div class="evlist" id="ev-list"></div></div></div>
-</section>
-<section class="sec" id="sec-hist">
-<div class="sec-hd"><h3>HISTORICAL CONTEXT ENGINE</h3><span class="sub">regime ranking · <span class="agent">agent <b>SPIDEY</b></span></span>
-<div class="links"><a href="#t-zscore">z-score</a><a href="#t-percentile">percentile</a><a href="#t-regime">regime</a></div></div>
-<div class="sec-body"><div class="grid4" id="hist-grid">
-<div class="cell"><div class="ck">DXY MOVE</div><div class="cv mut">—</div></div>
-<div class="cell"><div class="ck">US10Y MOVE</div><div class="cv mut">—</div></div>
-<div class="cell"><div class="ck">EQUITIES MOVE</div><div class="cv mut">—</div></div>
-<div class="cell"><div class="ck">USDJPY MOVE</div><div class="cv mut">—</div></div>
-</div></div></section>
-<section class="sec" id="sec-mech">
-<div class="sec-hd"><h3>MECHANISM CHAIN</h3><span class="sub">cause → effect · <span class="agent">agent <b>COREY</b></span></span>
-<div class="links"><a href="#t-yield">yield</a><a href="#t-carry">carry</a><a href="#t-risk">risk</a></div></div>
-<div class="sec-body"><div class="chain" id="mech-chain"></div></div></section>
-<section class="sec" id="sec-scen">
-<div class="sec-hd"><h3>SCENARIO ENGINE</h3><span class="sub">primary · alternative · invalidation · <span class="agent">agent <b>SPIDEY</b></span></span>
-<div class="links"><a href="#t-primary">primary</a><a href="#t-alt">alt</a><a href="#t-inv">inv</a></div></div>
-<div class="sec-body"><div class="grid3" id="scen-grid"></div></div></section>
-<section class="sec" id="sec-exec">
-<div class="sec-hd"><h3>EXECUTION MAP</h3><span class="sub">entry · stop · target · flow · <span class="agent">agent <b>EXEC</b></span></span>
-<div class="links"><a href="#t-entry">entry</a><a href="#t-stop">stop</a><a href="#t-target">target</a><a href="#t-r">r-multiple</a></div></div>
-<div class="sec-body"><div class="grid4" id="exec-grid"></div></div></section>
+
+<!-- 10. TERMINOLOGY -->
 <section class="sec" id="sec-terms">
 <div class="sec-hd"><h3>TERMINOLOGY INDEX</h3><span class="sub">glossary</span></div>
-<div class="sec-body"><div id="terminology"><div class="terms" id="terms-list"></div></div></div>
+<div class="sec-body"><div id="terms-list"></div></div>
 </section>
+
 <div id="footer">
-<span class="pill" id="ft-build">BUILD —</span>
-<span class="pill" id="ft-ts">—</span>
-<span class="pill" id="ft-src">SOURCE —</span>
-<span class="pill" id="ft-latency">LATENCY —</span>
-<span class="pill">COREY · SPIDEY · JANE</span>
-<span class="pill">ATLAS FX MACRO DASHBOARD · PRODUCTION</span>
+<span class="pill" id="ft-build">BUILD -</span>
+<span class="pill" id="ft-ts">-</span>
+<span class="pill" id="ft-src">SOURCE -</span>
+<span class="pill" id="ft-latency">LATENCY -</span>
+<span class="pill">ATLAS FX MACRO DASHBOARD . PRODUCTION</span>
 </div>
+
 <script src="./echarts.min.js"></script>
 <script src="./data-feed.js"></script>
 <script src="./charts-engine.js"></script>
@@ -230,14 +317,18 @@ a{color:#00B0FF;text-decoration:none}a:hover{text-decoration:underline}
   document.getElementById("ft-ts").textContent = new Date().toISOString().replace("T"," ").replace(/\..*/,"") + " UTC";
   A.boot = { t0:t0, buildId:buildId };
   A.status = function(state, name, msg){
-    document.getElementById("st-dot").className = "st-dot " + (state||"");
-    document.getElementById("st-txt").textContent = (msg||state||"").toUpperCase();
-    if(name) document.getElementById("src-name").textContent = name;
-    document.getElementById("src-time").textContent = new Date().toISOString().substr(11,8) + "Z";
+    var dot = document.getElementById("st-dot");
+    var txt = document.getElementById("st-txt");
+    var nm  = document.getElementById("src-name");
+    var tm  = document.getElementById("src-time");
+    if(dot) dot.className = "st-dot " + (state||"");
+    if(txt) txt.textContent = (msg||state||"").toUpperCase();
+    if(name && nm) nm.textContent = name;
+    if(tm) tm.textContent = new Date().toISOString().substr(11,8) + "Z";
   };
-  A.status("warn","—","BOOT");
+  A.status("warn","-","BOOT");
 })();
-window.addEventListener("DOMContentLoaded", async () => {
+window.addEventListener("DOMContentLoaded", async function(){
   var A = window.ATLAS, start = performance.now();
   try {
     await DataFeed.init();
@@ -245,15 +336,14 @@ window.addEventListener("DOMContentLoaded", async () => {
     await MacroEngine.init();
     await ExecutionEngine.init();
     await ChartsEngine.load("EURUSD");
-    await MacroEngine.run("EURUSD");
-    await ExecutionEngine.run("EURUSD");
-    document.getElementById("ft-src").textContent = "SOURCE " + (A.src.provider||"—");
+    await MacroEngine.run();
+    await ExecutionEngine.run();
+    document.getElementById("ft-src").textContent = "SOURCE " + (A.src.provider||"-");
     document.getElementById("ft-latency").textContent = "LATENCY " + Math.round(performance.now()-start) + "ms";
-  } catch(e){ A.status("err","—","BOOT FAIL"); console.error("ATLAS boot error", e); }
-  /* Discord → Dashboard SSE bridge */
+  } catch(e){ A.status("err","-","BOOT FAIL"); console.error("ATLAS boot error", e); }
   try {
-    var bridgeHost = (location.protocol.startsWith("http") ? location.origin : "http://localhost:3000");
-    var es = new EventSource(bridgeHost + "/events");
+    var host = (location.protocol.indexOf("http")===0 ? location.origin : "http://localhost:3000");
+    var es = new EventSource(host + "/events");
     es.onmessage = async function(e){
       try {
         var data = JSON.parse(e.data);
@@ -265,15 +355,15 @@ window.addEventListener("DOMContentLoaded", async () => {
         }
       } catch(err){}
     };
-    es.onerror = function(){ /* silent — bridge may be offline */ };
+    es.onerror = function(){};
   } catch(e){}
-  setInterval(async () => {
+  setInterval(async function(){
     try {
       var s = performance.now();
       await ChartsEngine.loadAll();
       await MacroEngine.run();
       await ExecutionEngine.run();
-      document.getElementById("ft-src").textContent = "SOURCE " + (A.src.provider||"—");
+      document.getElementById("ft-src").textContent = "SOURCE " + (A.src.provider||"-");
       document.getElementById("ft-latency").textContent = "LATENCY " + Math.round(performance.now()-s) + "ms";
     } catch(e){}
   }, 45000);
