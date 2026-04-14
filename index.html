@@ -2,75 +2,33 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>ATLAS FX Macro Engine</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ATLAS FX Charts</title>
+
 <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 
 <style>
 body{
 margin:0;
-background:#0b0f14;
-color:#c9d1d9;
+background:#000;
 font-family:system-ui;
-}
-
-.header{
-padding:14px;
-border-bottom:1px solid #1c2430;
-font-size:18px;
-}
-
-.status{
-display:flex;
-gap:20px;
-padding:10px 14px;
-border-bottom:1px solid #1c2430;
-background:#0e141b;
-font-size:13px;
 }
 
 .grid{
 display:grid;
 grid-template-columns:1fr 1fr;
-grid-template-rows:40vh 40vh;
-gap:6px;
-padding:6px;
+grid-template-rows:50vh 50vh;
+gap:1px;
+background:#111;
 }
 
 .chart{
-background:#0b0f14;
-border:1px solid #1c2430;
+background:#000;
 }
-
-.execution{
-padding:12px;
-border-top:1px solid #1c2430;
-background:#0e141b;
-font-size:13px;
-}
-
-.label{
-color:#6c7a89;
-margin-right:6px;
-}
-
-.bull{color:#5cff9c}
-.bear{color:#ff5c5c}
-.neutral{color:#ffd166}
 </style>
 </head>
 
 <body>
-
-<div class="header">
-ATLAS FX — Macro Engine
-</div>
-
-<div class="status">
-<div><span class="label">Bias:</span> <span id="bias"></span></div>
-<div><span class="label">Risk:</span> <span id="risk"></span></div>
-<div><span class="label">USD:</span> <span id="usd"></span></div>
-<div><span class="label">Volatility:</span> <span id="vol"></span></div>
-</div>
 
 <div class="grid">
 <div id="c1" class="chart"></div>
@@ -79,95 +37,70 @@ ATLAS FX — Macro Engine
 <div id="c4" class="chart"></div>
 </div>
 
-<div class="execution">
-<div>ENTRY ZONE:  —</div>
-<div>STOP LOSS:   —</div>
-<div>TARGET:      —</div>
-</div>
-
 <script>
 
-function chart(id,title,data,color){
+function makeChart(id){
 
-var c = echarts.init(document.getElementById(id));
+var chart = echarts.init(document.getElementById(id));
 
-c.setOption({
+var data = [
+['09:00',1.1700,1.1710,1.1690,1.1705],
+['09:05',1.1705,1.1720,1.1700,1.1715],
+['09:10',1.1715,1.1730,1.1710,1.1725],
+['09:15',1.1725,1.1735,1.1715,1.1720],
+['09:20',1.1720,1.1740,1.1718,1.1735],
+['09:25',1.1735,1.1750,1.1730,1.1742],
+['09:30',1.1742,1.1755,1.1738,1.1750],
+['09:35',1.1750,1.1760,1.1740,1.1745],
+['09:40',1.1745,1.1765,1.1742,1.1760],
+['09:45',1.1760,1.1770,1.1750,1.1765]
+];
 
-backgroundColor:'#0b0f14',
+chart.setOption({
 
-title:{
-text:title,
-left:10,
-top:6,
-textStyle:{
-color:'#8aa0b8',
-fontSize:12
-}
-},
+backgroundColor:'#000',
 
 grid:{
-left:40,
-right:15,
-top:35,
-bottom:25
+left:45,
+right:50,
+top:10,
+bottom:20
 },
 
 xAxis:{
 type:'category',
-data:['Mon','Tue','Wed','Thu','Fri'],
-axisLine:{lineStyle:{color:'#222'}},
-axisLabel:{color:'#666'}
+data:data.map(x=>x[0]),
+axisLine:{lineStyle:{color:'#182230'}},
+axisLabel:{color:'#6c7a89'},
+splitLine:{show:false}
 },
 
 yAxis:{
-type:'value',
-axisLabel:{color:'#666'},
-splitLine:{lineStyle:{color:'#141a22'}}
+scale:true,
+axisLine:{lineStyle:{color:'#182230'}},
+axisLabel:{color:'#6c7a89'},
+splitLine:{lineStyle:{color:'#182230'}}
 },
 
 series:[{
-data:data,
-type:'line',
-smooth:true,
-symbol:'none',
-lineStyle:{width:2,color:color},
-areaStyle:{color:color,opacity:0.08}
+type:'candlestick',
+data:data.map(x=>[x[1],x[4],x[3],x[2]]),
+
+itemStyle:{
+color:'#07f911',
+color0:'#ff0015',
+borderColor:'#07f911',
+borderColor0:'#ff0015'
+}
 }]
 });
+
 }
 
-var dxy=[104,105,103,102,101]
-var yields=[4.2,4.25,4.30,4.35,4.40]
-var risk=[5200,5180,5150,5120,5090]
-var jpy=[152,152.2,151.8,152.6,153]
-
-chart('c1','DXY — Dollar Pressure',dxy,'#4da3ff')
-chart('c2','US10Y — Yield Trend',yields,'#ffb347')
-chart('c3','Equities — Risk Flow',risk,'#ff5c5c')
-chart('c4','JPY — Intervention Risk',jpy,'#5cff9c')
-
-function trend(arr){
-return arr[arr.length-1] > arr[0]
-}
-
-var usd = trend(yields) && !trend(dxy)
-var riskoff = !trend(risk)
-
-document.getElementById('usd').innerHTML =
-usd ? '<span class="bull">Supported</span>' :
-'<span class="bear">Weak</span>'
-
-document.getElementById('risk').innerHTML =
-riskoff ? '<span class="bear">Risk Off</span>' :
-'<span class="bull">Risk On</span>'
-
-document.getElementById('bias').innerHTML =
-usd && riskoff ?
-'<span class="bull">USD Bullish</span>' :
-'<span class="neutral">Mixed</span>'
-
-document.getElementById('vol').innerHTML =
-'<span class="neutral">Normal</span>'
+makeChart('c1');
+makeChart('c2');
+makeChart('c3');
+makeChart('c4');
 
 </script>
 
