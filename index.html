@@ -7,51 +7,32 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{background:#000;color:#d7dde3;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.35}
-a{color:#00B0FF;text-decoration:none}
-a:hover{text-decoration:underline}
-hr{border:none;border-top:1px solid #182230;margin:0}
+a{color:#00B0FF;text-decoration:none}a:hover{text-decoration:underline}
 .mono{font-family:"SF Mono",Menlo,Consolas,monospace}
-.up{color:#07f911}
-.dn{color:#ff0015}
-.mut{color:#6c7a89}
-.hi{color:#FFD600}
-.or{color:#FF9100}
-.bl{color:#00B0FF}
-.gn{color:#00FF5A}
-
-/* TOP TERMINOLOGY NAV */
+.up{color:#07f911}.dn{color:#ff0015}.mut{color:#6c7a89}
+.hi{color:#FFD600}.or{color:#FF9100}.bl{color:#00B0FF}.gn{color:#00FF5A}
 #term-nav{position:sticky;top:0;z-index:200;background:#000;border-bottom:1px solid #182230;padding:6px 10px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:11px}
 #term-nav .brand{color:#FFD600;font-weight:700;letter-spacing:1px;margin-right:10px}
-#term-nav a{color:#6c7a89}
-#term-nav a:hover{color:#00B0FF}
+#term-nav a{color:#6c7a89}#term-nav a:hover{color:#00B0FF}
 #term-nav .sep{color:#182230}
 #term-nav .src{margin-left:auto;color:#6c7a89;font-size:10px}
 #term-nav .src b{color:#00FF5A}
-
-/* MACRO HEADER */
 #macro-header{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:#182230;border-bottom:1px solid #182230}
 #macro-header .cell{background:#000;padding:8px 10px}
 #macro-header .cell .k{color:#6c7a89;font-size:10px;letter-spacing:1px}
 #macro-header .cell .v{font-size:16px;font-weight:600;margin-top:2px}
 #macro-header .cell .s{font-size:10px;color:#6c7a89;margin-top:2px}
-
-/* SECTION HEAD */
 .sec{border-bottom:1px solid #182230}
 .sec-hd{display:flex;align-items:center;gap:10px;padding:6px 10px;background:#050a10;border-bottom:1px solid #182230}
 .sec-hd h3{font-size:11px;letter-spacing:2px;color:#FFD600;font-weight:600}
 .sec-hd .sub{color:#6c7a89;font-size:10px}
 .sec-hd .links{margin-left:auto;display:flex;gap:8px;font-size:10px}
-.sec-hd .links a{color:#6c7a89}
-.sec-hd .links a:hover{color:#00B0FF}
+.sec-hd .links a{color:#6c7a89}.sec-hd .links a:hover{color:#00B0FF}
 .sec-body{padding:8px 10px}
-
-/* TRADE STATUS */
 #trade-status{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:#182230}
 #trade-status .cell{background:#000;padding:6px 10px}
 #trade-status .cell .k{color:#6c7a89;font-size:10px;letter-spacing:1px}
 #trade-status .cell .v{font-size:14px;font-weight:600;margin-top:2px}
-
-/* CHART GRID */
 #chart-grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1px;background:#182230;height:62vh;min-height:520px}
 .chart-wrap{position:relative;background:#000;overflow:hidden}
 .chart{position:absolute;top:0;left:0;right:0;bottom:0}
@@ -63,10 +44,7 @@ hr{border:none;border-top:1px solid #182230;margin:0}
 .chart-tfs{position:absolute;top:4px;right:6px;z-index:6;display:flex;gap:1px;background:#182230}
 .chart-tfs button{background:#000;color:#6c7a89;border:none;padding:2px 6px;font-size:10px;cursor:pointer;font-family:inherit}
 .chart-tfs button.on{background:#FFD600;color:#000}
-.chart-tfs button:hover{color:#d7dde3}
-.chart-tfs button.on:hover{color:#000}
-
-/* PRICE BOX STACK (OVERLAY) */
+.chart-tfs button:hover{color:#d7dde3}.chart-tfs button.on:hover{color:#000}
 .price-stack{position:absolute;top:0;right:0;width:78px;height:100%;pointer-events:none;z-index:10}
 .pbox{position:absolute;right:0;width:78px;display:flex;flex-direction:column;justify-content:center;padding:2px 4px;font-family:"SF Mono",Menlo,Consolas,monospace;line-height:1.05;overflow:hidden}
 .pbox .lbl{font-size:9px;font-weight:700;letter-spacing:1px}
@@ -75,25 +53,17 @@ hr{border:none;border-top:1px solid #182230;margin:0}
 .pbox.cur{background:#00FF5A;color:#000}
 .pbox.ent{background:#FF9100;color:#000}
 .pbox.low{background:#00B0FF;color:#fff}
-
-/* PRICE MATRIX */
 #price-matrix table{width:100%;border-collapse:collapse;font-family:"SF Mono",Menlo,Consolas,monospace}
 #price-matrix th,#price-matrix td{padding:6px 10px;text-align:right;border-bottom:1px solid #182230;font-size:11px}
-#price-matrix th{color:#6c7a89;font-weight:500;text-align:right;font-size:10px;letter-spacing:1px;background:#050a10}
+#price-matrix th{color:#6c7a89;font-weight:500;font-size:10px;letter-spacing:1px;background:#050a10}
 #price-matrix th:first-child,#price-matrix td:first-child{text-align:left;color:#FFD600;font-weight:600}
 #price-matrix tr:hover td{background:#050a10}
-
-/* EVENTS */
 #events .evlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1px;background:#182230}
 .ev{background:#000;padding:6px 8px;font-size:11px;border-left:2px solid #182230}
-.ev.h{border-left-color:#ff0015}
-.ev.m{border-left-color:#FF9100}
-.ev.l{border-left-color:#6c7a89}
+.ev.h{border-left-color:#ff0015}.ev.m{border-left-color:#FF9100}.ev.l{border-left-color:#6c7a89}
 .ev .ev-top{display:flex;justify-content:space-between;color:#6c7a89;font-size:10px;letter-spacing:1px}
 .ev .ev-tt{font-weight:600;color:#d7dde3;margin-top:2px}
 .ev .ev-ft{color:#6c7a89;font-size:10px;margin-top:2px;font-family:"SF Mono",Menlo,Consolas,monospace}
-
-/* HISTORICAL / MECH / SCEN / EXEC */
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#182230}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#182230}
 .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#182230}
@@ -101,55 +71,43 @@ hr{border:none;border-top:1px solid #182230;margin:0}
 .cell .ck{color:#6c7a89;font-size:10px;letter-spacing:1px;margin-bottom:3px}
 .cell .cv{font-size:12px}
 .cell .cb{font-size:13px;font-weight:600}
-
-/* MECHANISM CHAIN */
 .chain{display:flex;align-items:stretch;flex-wrap:wrap;gap:1px;background:#182230}
 .chain .node{background:#000;padding:6px 10px;font-size:11px;flex:1;min-width:140px}
 .chain .node .nk{color:#6c7a89;font-size:10px;letter-spacing:1px}
 .chain .node .nv{color:#d7dde3;font-size:11px;margin-top:2px}
 .chain .arrow{background:#000;padding:6px 4px;color:#FFD600;display:flex;align-items:center;font-family:"SF Mono",Menlo,Consolas,monospace}
-
-/* TERMINOLOGY */
 #terminology .terms{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1px;background:#182230}
 .term{background:#000;padding:8px 10px;font-size:11px}
 .term .tt{color:#FFD600;font-weight:700;font-size:11px;letter-spacing:1px}
 .term .td{color:#d7dde3;margin-top:3px;line-height:1.4}
-
-/* FOOTER */
 #footer{padding:8px 10px;color:#6c7a89;font-size:10px;border-top:1px solid #182230;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-#footer .pill{background:#050a10;border:1px solid #182230;padding:2px 6px;border-radius:0}
-
-/* STATUS INDICATOR */
+#footer .pill{background:#050a10;border:1px solid #182230;padding:2px 6px}
 .st-dot{display:inline-block;width:6px;height:6px;background:#6c7a89;margin-right:4px;vertical-align:middle}
-.st-dot.ok{background:#07f911}
-.st-dot.warn{background:#FFD600}
-.st-dot.err{background:#ff0015}
-
+.st-dot.ok{background:#07f911}.st-dot.warn{background:#FFD600}.st-dot.err{background:#ff0015}
+.agent{display:flex;gap:6px;align-items:center;font-size:10px;color:#6c7a89}
+.agent b{color:#FFD600;letter-spacing:1px}
 @media(max-width:900px){
 #macro-header{grid-template-columns:repeat(2,1fr)}
 #trade-status{grid-template-columns:repeat(2,1fr)}
 #chart-grid{grid-template-columns:1fr;grid-template-rows:repeat(4,40vh);height:auto}
-.grid2,.grid3,.grid4{grid-template-columns:1fr}
-}
+.grid2,.grid3,.grid4{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-
 <nav id="term-nav">
 <span class="brand">ATLAS FX</span>
 <a href="#macro-header">Macro</a><span class="sep">·</span>
-<a href="#trade-status">Trade</a><span class="sep">·</span>
-<a href="#chart-grid">Charts</a><span class="sep">·</span>
-<a href="#price-matrix">Matrix</a><span class="sep">·</span>
-<a href="#events">Events</a><span class="sep">·</span>
-<a href="#historical">Historical</a><span class="sep">·</span>
-<a href="#mechanism">Mechanism</a><span class="sep">·</span>
-<a href="#scenario">Scenario</a><span class="sep">·</span>
-<a href="#execution">Execution</a><span class="sep">·</span>
-<a href="#terminology">Glossary</a>
-<span class="src" id="data-src"><span class="st-dot" id="st-dot"></span><span id="st-txt">INIT</span> · <b id="src-name">—</b> · <span id="src-time">—</span></span>
+<a href="#sec-trade">Trade</a><span class="sep">·</span>
+<a href="#sec-charts">Charts</a><span class="sep">·</span>
+<a href="#sec-matrix">Matrix</a><span class="sep">·</span>
+<a href="#sec-events">Events</a><span class="sep">·</span>
+<a href="#sec-hist">Historical</a><span class="sep">·</span>
+<a href="#sec-mech">Mechanism</a><span class="sep">·</span>
+<a href="#sec-scen">Scenario</a><span class="sep">·</span>
+<a href="#sec-exec">Execution</a><span class="sep">·</span>
+<a href="#sec-terms">Glossary</a>
+<span class="src"><span class="st-dot" id="st-dot"></span><span id="st-txt">INIT</span> · <b id="src-name">—</b> · <span id="src-time">—</span></span>
 </nav>
-
 <header id="macro-header">
 <div class="cell"><div class="k">BIAS</div><div class="v" id="mh-bias">—</div><div class="s" id="mh-bias-s">awaiting data</div></div>
 <div class="cell"><div class="k">CONVICTION</div><div class="v" id="mh-conv">—</div><div class="s" id="mh-conv-s">awaiting data</div></div>
@@ -157,9 +115,8 @@ hr{border:none;border-top:1px solid #182230;margin:0}
 <div class="cell"><div class="k">USD</div><div class="v" id="mh-usd">—</div><div class="s" id="mh-usd-s">awaiting data</div></div>
 <div class="cell"><div class="k">VOLATILITY</div><div class="v" id="mh-vol">—</div><div class="s" id="mh-vol-s">awaiting data</div></div>
 </header>
-
 <section class="sec" id="sec-trade">
-<div class="sec-hd"><h3>TRADE STATUS</h3><span class="sub">session snapshot</span>
+<div class="sec-hd"><h3>TRADE STATUS</h3><span class="sub">session snapshot · <span class="agent">agent <b id="ag-jane">JANE</b></span></span>
 <div class="links"><a href="#t-bias">bias</a><a href="#t-conv">conviction</a><a href="#t-flow">flow</a><a href="#t-regime">regime</a><a href="#t-validity">validity</a></div></div>
 <div id="trade-status">
 <div class="cell"><div class="k">BIAS</div><div class="v" id="ts-bias">—</div></div>
@@ -167,493 +124,105 @@ hr{border:none;border-top:1px solid #182230;margin:0}
 <div class="cell"><div class="k">FLOW</div><div class="v" id="ts-flow">—</div></div>
 <div class="cell"><div class="k">REGIME</div><div class="v" id="ts-regime">—</div></div>
 <div class="cell"><div class="k">VALIDITY</div><div class="v" id="ts-validity">—</div></div>
-</div>
-</section>
-
+</div></section>
 <section class="sec" id="sec-charts">
-<div class="sec-hd"><h3>CHART MATRIX</h3><span class="sub">DXY · US10Y · EQUITIES · USDJPY — synced zoom/pan/crosshair</span>
+<div class="sec-hd"><h3>CHART MATRIX</h3><span class="sub">DXY · US10Y · EQUITIES · USDJPY — synced</span>
 <div class="links"><a href="#t-ohlc">ohlc</a><a href="#t-dxy">dxy</a><a href="#t-us10y">us10y</a><a href="#t-usdjpy">usdjpy</a><a href="#t-atr">atr</a></div></div>
 <div id="chart-grid">
-<div class="chart-wrap" data-sym="DXY">
-  <div class="chart-hdr"><span class="sym">DXY</span><span class="tf">—</span><span class="val">—</span><span class="chg">—</span></div>
-  <div class="chart-tfs"><button data-tf="5m">5m</button><button data-tf="15m">15m</button><button data-tf="1h" class="on">1h</button><button data-tf="4h">4h</button></div>
-  <div class="chart" id="ch-DXY"></div>
-  <div class="price-stack" id="ps-DXY"></div>
-</div>
-<div class="chart-wrap" data-sym="US10Y">
-  <div class="chart-hdr"><span class="sym">US10Y</span><span class="tf">—</span><span class="val">—</span><span class="chg">—</span></div>
-  <div class="chart-tfs"><button data-tf="5m">5m</button><button data-tf="15m">15m</button><button data-tf="1h" class="on">1h</button><button data-tf="4h">4h</button></div>
-  <div class="chart" id="ch-US10Y"></div>
-  <div class="price-stack" id="ps-US10Y"></div>
-</div>
-<div class="chart-wrap" data-sym="EQUITIES">
-  <div class="chart-hdr"><span class="sym">EQUITIES</span><span class="tf">—</span><span class="val">—</span><span class="chg">—</span></div>
-  <div class="chart-tfs"><button data-tf="5m">5m</button><button data-tf="15m">15m</button><button data-tf="1h" class="on">1h</button><button data-tf="4h">4h</button></div>
-  <div class="chart" id="ch-EQUITIES"></div>
-  <div class="price-stack" id="ps-EQUITIES"></div>
-</div>
-<div class="chart-wrap" data-sym="USDJPY">
-  <div class="chart-hdr"><span class="sym">USDJPY</span><span class="tf">—</span><span class="val">—</span><span class="chg">—</span></div>
-  <div class="chart-tfs"><button data-tf="5m">5m</button><button data-tf="15m">15m</button><button data-tf="1h" class="on">1h</button><button data-tf="4h">4h</button></div>
-  <div class="chart" id="ch-USDJPY"></div>
-  <div class="price-stack" id="ps-USDJPY"></div>
-</div>
-</div>
-</section>
-
+<div class="chart-wrap" data-sym="DXY"><div class="chart-hdr"><span class="sym">DXY</span><span class="tf">—</span><span class="val">—</span><span class="chg">—</span></div><div class="chart-tfs"><button data-tf="5m">5m</button><button data-tf="15m">15m</button><button data-tf="1h" class="on">1h</button><button data-tf="4h">4h</button></div><div class="chart" id="ch-DXY"></div><div class="price-stack" id="ps-DXY"></div></div>
+<div class="chart-wrap" data-sym="US10Y"><div class="chart-hdr"><span class="sym">US10Y</span><span class="tf">—</span><span class="val">—</span><span class="chg">—</span></div><div class="chart-tfs"><button data-tf="5m">5m</button><button data-tf="15m">15m</button><button data-tf="1h" class="on">1h</button><button data-tf="4h">4h</button></div><div class="chart" id="ch-US10Y"></div><div class="price-stack" id="ps-US10Y"></div></div>
+<div class="chart-wrap" data-sym="EQUITIES"><div class="chart-hdr"><span class="sym">EQUITIES</span><span class="tf">—</span><span class="val">—</span><span class="chg">—</span></div><div class="chart-tfs"><button data-tf="5m">5m</button><button data-tf="15m">15m</button><button data-tf="1h" class="on">1h</button><button data-tf="4h">4h</button></div><div class="chart" id="ch-EQUITIES"></div><div class="price-stack" id="ps-EQUITIES"></div></div>
+<div class="chart-wrap" data-sym="USDJPY"><div class="chart-hdr"><span class="sym">USDJPY</span><span class="tf">—</span><span class="val">—</span><span class="chg">—</span></div><div class="chart-tfs"><button data-tf="5m">5m</button><button data-tf="15m">15m</button><button data-tf="1h" class="on">1h</button><button data-tf="4h">4h</button></div><div class="chart" id="ch-USDJPY"></div><div class="price-stack" id="ps-USDJPY"></div></div>
+</div></section>
 <section class="sec" id="sec-matrix">
-<div class="sec-hd"><h3>PRICE MATRIX</h3><span class="sub">EURUSD · GBPUSD · USDJPY · AUDJPY</span>
+<div class="sec-hd"><h3>PRICE MATRIX</h3><span class="sub">EURUSD · GBPUSD · USDJPY · AUDJPY · <span class="agent">agent <b>JANE</b></span></span>
 <div class="links"><a href="#t-pips">pips</a><a href="#t-range">range</a><a href="#t-session">session</a></div></div>
-<div id="price-matrix"><table>
-<thead><tr><th>PAIR</th><th>PRICE</th><th>CHG</th><th>%</th><th>HIGH</th><th>LOW</th><th>RANGE</th><th>BIAS</th></tr></thead>
-<tbody id="pm-body">
-<tr><td>EURUSD</td><td colspan="7" class="mut">loading…</td></tr>
-<tr><td>GBPUSD</td><td colspan="7" class="mut">loading…</td></tr>
-<tr><td>USDJPY</td><td colspan="7" class="mut">loading…</td></tr>
-<tr><td>AUDJPY</td><td colspan="7" class="mut">loading…</td></tr>
-</tbody>
-</table></div>
+<div id="price-matrix"><table><thead><tr><th>PAIR</th><th>PRICE</th><th>CHG</th><th>%</th><th>HIGH</th><th>LOW</th><th>RANGE</th><th>BIAS</th></tr></thead><tbody id="pm-body"></tbody></table></div>
 </section>
-
 <section class="sec" id="sec-events">
-<div class="sec-hd"><h3>EVENT INTELLIGENCE</h3><span class="sub">CPI · NFP · CB SPEAKERS · RATES · GDP · PMI</span>
+<div class="sec-hd"><h3>EVENT INTELLIGENCE</h3><span class="sub">CPI · NFP · CB SPEAKERS · RATES · GDP · PMI · <span class="agent">agent <b>JANE</b></span></span>
 <div class="links"><a href="#t-cpi">cpi</a><a href="#t-nfp">nfp</a><a href="#t-fomc">fomc</a><a href="#t-gdp">gdp</a><a href="#t-pmi">pmi</a></div></div>
-<div class="sec-body"><div id="events"><div class="evlist" id="ev-list"><div class="ev l"><div class="ev-top"><span>—</span><span>—</span></div><div class="ev-tt">loading calendar…</div></div></div></div></div>
+<div class="sec-body"><div id="events"><div class="evlist" id="ev-list"></div></div></div>
 </section>
-
 <section class="sec" id="sec-hist">
-<div class="sec-hd"><h3>HISTORICAL CONTEXT ENGINE</h3><span class="sub">rank current move vs recent regime</span>
+<div class="sec-hd"><h3>HISTORICAL CONTEXT ENGINE</h3><span class="sub">regime ranking · <span class="agent">agent <b>SPIDEY</b></span></span>
 <div class="links"><a href="#t-zscore">z-score</a><a href="#t-percentile">percentile</a><a href="#t-regime">regime</a></div></div>
 <div class="sec-body"><div class="grid4" id="hist-grid">
 <div class="cell"><div class="ck">DXY MOVE</div><div class="cv mut">—</div></div>
 <div class="cell"><div class="ck">US10Y MOVE</div><div class="cv mut">—</div></div>
 <div class="cell"><div class="ck">EQUITIES MOVE</div><div class="cv mut">—</div></div>
 <div class="cell"><div class="ck">USDJPY MOVE</div><div class="cv mut">—</div></div>
-</div></div>
-</section>
-
+</div></div></section>
 <section class="sec" id="sec-mech">
-<div class="sec-hd"><h3>MECHANISM CHAIN</h3><span class="sub">cause → effect propagation</span>
+<div class="sec-hd"><h3>MECHANISM CHAIN</h3><span class="sub">cause → effect · <span class="agent">agent <b>COREY</b></span></span>
 <div class="links"><a href="#t-yield">yield</a><a href="#t-carry">carry</a><a href="#t-risk">risk</a></div></div>
-<div class="sec-body"><div class="chain" id="mech-chain"><div class="node"><div class="nk">STAGE 1</div><div class="nv mut">awaiting data</div></div></div></div>
-</section>
-
+<div class="sec-body"><div class="chain" id="mech-chain"></div></div></section>
 <section class="sec" id="sec-scen">
-<div class="sec-hd"><h3>SCENARIO ENGINE</h3><span class="sub">primary · alternative · invalidation</span>
+<div class="sec-hd"><h3>SCENARIO ENGINE</h3><span class="sub">primary · alternative · invalidation · <span class="agent">agent <b>SPIDEY</b></span></span>
 <div class="links"><a href="#t-primary">primary</a><a href="#t-alt">alt</a><a href="#t-inv">inv</a></div></div>
-<div class="sec-body"><div class="grid3" id="scen-grid">
-<div class="cell"><div class="ck">PRIMARY</div><div class="cv mut">—</div></div>
-<div class="cell"><div class="ck">ALTERNATIVE</div><div class="cv mut">—</div></div>
-<div class="cell"><div class="ck">INVALIDATION</div><div class="cv mut">—</div></div>
-</div></div>
-</section>
-
+<div class="sec-body"><div class="grid3" id="scen-grid"></div></div></section>
 <section class="sec" id="sec-exec">
-<div class="sec-hd"><h3>EXECUTION MAP</h3><span class="sub">entry · stop · target · flow</span>
+<div class="sec-hd"><h3>EXECUTION MAP</h3><span class="sub">entry · stop · target · flow · <span class="agent">agent <b>EXEC</b></span></span>
 <div class="links"><a href="#t-entry">entry</a><a href="#t-stop">stop</a><a href="#t-target">target</a><a href="#t-r">r-multiple</a></div></div>
-<div class="sec-body"><div class="grid4" id="exec-grid">
-<div class="cell"><div class="ck">ENTRY</div><div class="cb mut">—</div></div>
-<div class="cell"><div class="ck">STOP</div><div class="cb mut">—</div></div>
-<div class="cell"><div class="ck">TARGET</div><div class="cb mut">—</div></div>
-<div class="cell"><div class="ck">FLOW</div><div class="cb mut">—</div></div>
-</div></div>
-</section>
-
+<div class="sec-body"><div class="grid4" id="exec-grid"></div></div></section>
 <section class="sec" id="sec-terms">
 <div class="sec-hd"><h3>TERMINOLOGY INDEX</h3><span class="sub">glossary</span></div>
 <div class="sec-body"><div id="terminology"><div class="terms" id="terms-list"></div></div></div>
 </section>
-
 <div id="footer">
 <span class="pill" id="ft-build">BUILD —</span>
 <span class="pill" id="ft-ts">—</span>
 <span class="pill" id="ft-src">SOURCE —</span>
 <span class="pill" id="ft-latency">LATENCY —</span>
+<span class="pill">COREY · SPIDEY · JANE</span>
 <span class="pill">ATLAS FX MACRO DASHBOARD · PRODUCTION</span>
 </div>
-
 <script src="./echarts.min.js"></script>
+<script src="./data-feed.js"></script>
+<script src="./charts-engine.js"></script>
+<script src="./macro-engine.js"></script>
+<script src="./corey-engine.js"></script>
+<script src="./spidey-engine.js"></script>
+<script src="./jane-engine.js"></script>
+<script src="./execution-engine.js"></script>
 <script>
-/* ATLAS FX — RUNTIME BOOT (stage 1 skeleton) */
 (function(){
+  var A = window.ATLAS;
   var t0 = performance.now();
   var buildId = "ATLAS-" + Math.floor(Date.now()/1000).toString(36).toUpperCase();
   document.getElementById("ft-build").textContent = "BUILD " + buildId;
   document.getElementById("ft-ts").textContent = new Date().toISOString().replace("T"," ").replace(/\..*/,"") + " UTC";
-  window.ATLAS = window.ATLAS || {};
-  window.ATLAS.boot = { t0: t0, buildId: buildId };
-  window.ATLAS.status = function(state, name, msg){
-    var dot = document.getElementById("st-dot");
-    var txt = document.getElementById("st-txt");
-    var nm = document.getElementById("src-name");
-    var tm = document.getElementById("src-time");
-    dot.className = "st-dot " + (state||"");
-    txt.textContent = (msg||state||"").toUpperCase();
-    if(name) nm.textContent = name;
-    tm.textContent = new Date().toISOString().substr(11,8) + "Z";
+  A.boot = { t0:t0, buildId:buildId };
+  A.status = function(state, name, msg){
+    document.getElementById("st-dot").className = "st-dot " + (state||"");
+    document.getElementById("st-txt").textContent = (msg||state||"").toUpperCase();
+    if(name) document.getElementById("src-name").textContent = name;
+    document.getElementById("src-time").textContent = new Date().toISOString().substr(11,8) + "Z";
   };
-  window.ATLAS.status("warn","—","BOOT");
-})();
-</script>
-
-<script>
-/* ATLAS FX — STAGE 2 : CHART ENGINE
-   Data providers: TradingView UDF lightweight feed (primary) → TwelveData REST (fallback) → Stooq CSV (tertiary).
-   Aggregation: 4h from 1h bars. Sub-1s generation. Synced zoom/pan/crosshair via axisPointer link.
-   Price box overlay: HIGH / CURRENT / ENTRY / LOW, body-height matched, pixel-positioned. */
-(function(){
-  var A = window.ATLAS || (window.ATLAS={});
-  A.ENG = A.ENG || {};
-  A.COLORS = { bull:"#07f911", bear:"#ff0015", grid:"#182230", axis:"#6c7a89", bg:"#000",
-               high:"#FFD600", cur:"#00FF5A", ent:"#FF9100", low:"#00B0FF" };
-
-  /* --- SYMBOL MAP --------------------------------------------------------- */
-  A.SYMBOLS = {
-    DXY:      { tv:"TVC:DXY",       td:"DXY",       yf:"DX-Y.NYB", stq:"^dx",    label:"DXY",      digits:2 },
-    US10Y:    { tv:"TVC:US10Y",     td:"US10Y",     yf:"^TNX",     stq:"10usy.b",label:"US10Y",    digits:3 },
-    EQUITIES: { tv:"CME_MINI:ES1!", td:"SPX",       yf:"ES=F",     stq:"^spx",   label:"S&P500",   digits:2 },
-    USDJPY:   { tv:"FX:USDJPY",     td:"USD/JPY",   yf:"JPY=X",    stq:"usdjpy", label:"USDJPY",   digits:3 }
-  };
-
-  /* --- TIMEFRAME MAP ------------------------------------------------------ */
-  A.TFS = {
-    "5m":  { yf:"5m",  range:"5d",  tv:5,    td:"5min",  agg:1, barsMax:200 },
-    "15m": { yf:"15m", range:"5d",  tv:15,   td:"15min", agg:1, barsMax:200 },
-    "1h":  { yf:"60m", range:"1mo", tv:60,   td:"1h",    agg:1, barsMax:200 },
-    "4h":  { yf:"60m", range:"3mo", tv:60,   td:"1h",    agg:4, barsMax:200 }
-  };
-
-  /* --- STATE -------------------------------------------------------------- */
-  A.charts = {};            /* echarts instances keyed by symbol key */
-  A.chartData = {};         /* last OHLC data keyed by symbol key    */
-  A.chartTF = { DXY:"1h", US10Y:"1h", EQUITIES:"1h", USDJPY:"1h" };
-  A.src = { provider:null, t:0 };
-
-  /* --- UTIL --------------------------------------------------------------- */
-  A.fmt = function(v, d){ if(v==null||isNaN(v)) return "—"; d=(d==null?2:d); return (+v).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d}); };
-  A.pct = function(v){ if(v==null||isNaN(v)) return "—"; return (v>=0?"+":"")+v.toFixed(2)+"%"; };
-  A.sign = function(v){ return v>0?"up":v<0?"dn":"mut"; };
-
-  /* --- PROXIED FETCH ------------------------------------------------------ */
-  A.proxies = [
-    function(u){ return "https://corsproxy.io/?"+encodeURIComponent(u); },
-    function(u){ return "https://api.allorigins.win/raw?url="+encodeURIComponent(u); },
-    function(u){ return "https://api.codetabs.com/v1/proxy/?quest="+encodeURIComponent(u); }
-  ];
-  A.fetchJSON = function(url, opts){
-    opts = opts || {};
-    var attempts = [url].concat(opts.proxy===false?[]:A.proxies.map(function(p){return p(url);}));
-    var i = 0;
-    return new Promise(function(res,rej){
-      (function go(){
-        if(i>=attempts.length){ rej(new Error("all endpoints failed for "+url)); return; }
-        var a = attempts[i++];
-        var ctrl = new AbortController();
-        var to = setTimeout(function(){ctrl.abort();}, opts.timeout||6000);
-        fetch(a,{signal:ctrl.signal,mode:"cors",cache:"no-store"}).then(function(r){
-          clearTimeout(to);
-          if(!r.ok) throw new Error("HTTP "+r.status);
-          return r.text();
-        }).then(function(t){
-          try { res(opts.raw?t:JSON.parse(t)); } catch(e){ if(opts.raw) res(t); else go(); }
-        }).catch(function(){ clearTimeout(to); go(); });
-      })();
-    });
-  };
-
-  /* --- PROVIDER 1 : TradingView UDF lightweight --------------------------- */
-  /* Uses TV public datafeed via their public widget backend — we hit the scanner
-     quote endpoint + the symbol history udf. If offline/blocked we fallback. */
-  A.tvFetch = function(sym, tf){
-    var s = A.SYMBOLS[sym], t = A.TFS[tf];
-    if(!s || !t) return Promise.reject("bad sym/tf");
-    var now = Math.floor(Date.now()/1000);
-    var span = t.tv*60*(t.barsMax+20)*t.agg;
-    var from = now - span;
-    var url = "https://udf.tradingview.com/history?symbol="+encodeURIComponent(s.tv)+
-              "&resolution="+t.tv+"&from="+from+"&to="+now;
-    return A.fetchJSON(url,{timeout:5000}).then(function(j){
-      if(!j || j.s!=="ok" || !j.t || !j.t.length) throw new Error("tv empty");
-      var bars = j.t.map(function(ts,i){ return [ts*1000, +j.o[i], +j.h[i], +j.l[i], +j.c[i]]; });
-      return {provider:"TRADINGVIEW", bars:bars};
-    });
-  };
-
-  /* --- PROVIDER 2 : TwelveData REST --------------------------------------- */
-  A.tdFetch = function(sym, tf){
-    var s = A.SYMBOLS[sym], t = A.TFS[tf];
-    if(!s || !t) return Promise.reject("bad sym/tf");
-    var key = "demo";
-    var url = "https://api.twelvedata.com/time_series?symbol="+encodeURIComponent(s.td)+
-              "&interval="+t.td+"&outputsize="+(t.barsMax*t.agg+20)+"&apikey="+key+"&format=JSON";
-    return A.fetchJSON(url,{timeout:6000,proxy:false}).then(function(j){
-      if(!j || !j.values || !j.values.length) throw new Error("td empty");
-      var bars = j.values.slice().reverse().map(function(b){
-        return [new Date(b.datetime.replace(" ","T")+"Z").getTime(), +b.open, +b.high, +b.low, +b.close];
-      });
-      return {provider:"TWELVEDATA", bars:bars};
-    });
-  };
-
-  /* --- PROVIDER 3 : Yahoo Finance chart (via proxy) ----------------------- */
-  A.yfFetch = function(sym, tf){
-    var s = A.SYMBOLS[sym], t = A.TFS[tf];
-    if(!s || !t) return Promise.reject("bad sym/tf");
-    var url = "https://query1.finance.yahoo.com/v8/finance/chart/"+encodeURIComponent(s.yf)+
-              "?interval="+t.yf+"&range="+t.range;
-    return A.fetchJSON(url,{timeout:7000}).then(function(j){
-      var r = j && j.chart && j.chart.result && j.chart.result[0];
-      if(!r || !r.timestamp) throw new Error("yf empty");
-      var q = r.indicators.quote[0];
-      var bars = r.timestamp.map(function(ts,i){
-        return [ts*1000, q.open[i], q.high[i], q.low[i], q.close[i]];
-      }).filter(function(b){ return b[1]!=null && b[4]!=null; });
-      return {provider:"YAHOO", bars:bars};
-    });
-  };
-
-  /* --- AGGREGATOR (4h from 1h) -------------------------------------------- */
-  A.aggregate = function(bars, factor){
-    if(factor<=1) return bars;
-    var out=[], bucket=null, count=0;
-    for(var i=0;i<bars.length;i++){
-      var b = bars[i];
-      if(!bucket){ bucket=[b[0],b[1],b[2],b[3],b[4]]; count=1; continue; }
-      bucket[2] = Math.max(bucket[2], b[2]);
-      bucket[3] = Math.min(bucket[3], b[3]);
-      bucket[4] = b[4];
-      count++;
-      if(count>=factor){ out.push(bucket); bucket=null; count=0; }
-    }
-    if(bucket) out.push(bucket);
-    return out;
-  };
-
-  /* --- MASTER FETCH ------------------------------------------------------- */
-  A.fetchSymbol = function(sym, tf){
-    var t = A.TFS[tf];
-    var providers = [A.tvFetch, A.tdFetch, A.yfFetch];
-    var idx = 0;
-    return new Promise(function(res, rej){
-      (function go(){
-        if(idx>=providers.length){ rej(new Error("no provider for "+sym)); return; }
-        providers[idx++](sym, tf).then(function(r){
-          r.bars = A.aggregate(r.bars, t.agg).slice(-t.barsMax);
-          res(r);
-        }).catch(function(){ go(); });
-      })();
-    });
-  };
-
-  /* --- CHART BUILDER ------------------------------------------------------ */
-  A.buildChart = function(sym){
-    var el = document.getElementById("ch-"+sym);
-    if(!el) return null;
-    var ch = echarts.init(el, null, {renderer:"canvas"});
-    var opt = {
-      animation:false,
-      backgroundColor:A.COLORS.bg,
-      grid:{ left:6, right:82, top:20, bottom:22, containLabel:false },
-      xAxis:{
-        type:"category", data:[], boundaryGap:true,
-        axisLine:{lineStyle:{color:A.COLORS.grid}},
-        axisTick:{lineStyle:{color:A.COLORS.grid}},
-        axisLabel:{color:A.COLORS.axis, fontSize:9, hideOverlap:true},
-        splitLine:{show:false},
-        axisPointer:{label:{backgroundColor:"#182230",color:"#d7dde3",fontSize:10}}
-      },
-      yAxis:{
-        scale:true, position:"right",
-        axisLine:{lineStyle:{color:A.COLORS.grid}},
-        axisTick:{show:false},
-        axisLabel:{color:A.COLORS.axis, fontSize:9, inside:false, margin:4,
-          formatter:function(v){ return (+v).toFixed(A.SYMBOLS[sym].digits); }},
-        splitLine:{lineStyle:{color:A.COLORS.grid, type:"dashed", opacity:0.35}},
-        axisPointer:{label:{backgroundColor:"#182230",color:"#d7dde3",fontSize:10,
-          formatter:function(p){ return (+p.value).toFixed(A.SYMBOLS[sym].digits); }}}
-      },
-      dataZoom:[
-        {type:"inside", throttle:40, filterMode:"filter", start:60, end:100, zoomOnMouseWheel:true, moveOnMouseMove:true}
-      ],
-      tooltip:{
-        trigger:"axis", axisPointer:{type:"cross", snap:true,
-          crossStyle:{color:A.COLORS.axis}, lineStyle:{color:A.COLORS.axis}},
-        backgroundColor:"rgba(5,10,16,0.92)", borderColor:A.COLORS.grid, borderWidth:1,
-        textStyle:{color:"#d7dde3", fontSize:11},
-        formatter:function(ps){
-          if(!ps||!ps.length) return "";
-          var p = ps[0];
-          if(!p.data || !p.data.length) return "";
-          var v = p.data;
-          var d = A.SYMBOLS[sym].digits;
-          return "<b style='color:#FFD600'>"+sym+"</b> "+p.axisValueLabel+
-            "<br>O <b>"+(+v[1]).toFixed(d)+"</b>"+
-            "<br>H <b style='color:#07f911'>"+(+v[4]).toFixed(d)+"</b>"+
-            "<br>L <b style='color:#ff0015'>"+(+v[3]).toFixed(d)+"</b>"+
-            "<br>C <b>"+(+v[2]).toFixed(d)+"</b>";
-        }
-      },
-      series:[{
-        type:"candlestick", name:sym, data:[],
-        barMaxWidth:8,
-        itemStyle:{ color:A.COLORS.bull, color0:A.COLORS.bear,
-                    borderColor:A.COLORS.bull, borderColor0:A.COLORS.bear, borderWidth:1 },
-        emphasis:{ disabled:true }
-      }]
-    };
-    ch.setOption(opt);
-    ch.group = "atlas";
-    A.charts[sym] = ch;
-    return ch;
-  };
-
-  /* --- PRICE BOX STACK ---------------------------------------------------- */
-  A.positionBoxes = function(sym){
-    var ch = A.charts[sym]; if(!ch) return;
-    var d = A.chartData[sym]; if(!d || !d.bars || !d.bars.length) return;
-    var stack = document.getElementById("ps-"+sym); if(!stack) return;
-    var last = d.bars[d.bars.length-1];
-    var hi = last[2], lo = last[3], o = last[1], c = last[4];
-    /* global high/low across loaded window */
-    var winHi = -Infinity, winLo = Infinity;
-    for(var i=0;i<d.bars.length;i++){ if(d.bars[i][2]>winHi) winHi=d.bars[i][2]; if(d.bars[i][3]<winLo) winLo=d.bars[i][3]; }
-    var entry = (o+c)/2;
-    var dg = A.SYMBOLS[sym].digits;
-
-    var rect = stack.parentElement.getBoundingClientRect();
-    var H = rect.height;
-    var px = function(price){
-      try { return ch.convertToPixel({yAxisIndex:0}, price); }
-      catch(e){ return null; }
-    };
-    /* bodyH = last candle body pixel height, clamped */
-    var pyO = px(o), pyC = px(c), pyH = px(winHi), pyL = px(winLo), pyCur = px(c), pyEn = px(entry);
-    var bodyH = (pyO!=null && pyC!=null) ? Math.max(14, Math.min(28, Math.abs(pyO-pyC)+8)) : 18;
-
-    stack.innerHTML =
-      '<div class="pbox high"><div class="lbl">HIGH</div><div class="val">'+A.fmt(winHi,dg)+'</div></div>'+
-      '<div class="pbox cur"><div class="lbl">CURRENT</div><div class="val">'+A.fmt(c,dg)+'</div></div>'+
-      '<div class="pbox ent"><div class="lbl">ENTRY</div><div class="val">'+A.fmt(entry,dg)+'</div></div>'+
-      '<div class="pbox low"><div class="lbl">LOW</div><div class="val">'+A.fmt(winLo,dg)+'</div></div>';
-    var boxes = stack.children;
-    var place = function(el, yPx){
-      if(yPx==null || !isFinite(yPx)) { el.style.display="none"; return; }
-      el.style.display="flex";
-      var top = Math.max(0, Math.min(H-bodyH, yPx - bodyH/2));
-      el.style.top = top+"px";
-      el.style.height = bodyH+"px";
-    };
-    place(boxes[0], pyH);
-    place(boxes[1], pyCur);
-    place(boxes[2], pyEn);
-    place(boxes[3], pyL);
-
-    /* update header chip */
-    var wrap = stack.parentElement;
-    var hdr = wrap.querySelector(".chart-hdr");
-    if(hdr){
-      var first = d.bars[0][4], chg = c-first, pc = first? (chg/first*100):0;
-      hdr.querySelector(".val").textContent = A.fmt(c,dg);
-      var chgEl = hdr.querySelector(".chg");
-      chgEl.textContent = (chg>=0?"+":"")+A.fmt(chg,dg)+" ("+A.pct(pc)+")";
-      chgEl.className = "chg " + A.sign(chg);
-      hdr.querySelector(".tf").textContent = A.chartTF[sym];
-    }
-  };
-
-  /* --- APPLY DATA TO CHART ------------------------------------------------ */
-  A.applyData = function(sym){
-    var d = A.chartData[sym]; var ch = A.charts[sym];
-    if(!d || !ch) return;
-    var cats = d.bars.map(function(b){ var dt = new Date(b[0]); var tf = A.chartTF[sym];
-      if(tf==="5m"||tf==="15m") return dt.toISOString().substr(11,5);
-      if(tf==="1h") return dt.toISOString().substr(5,11).replace("T"," ");
-      return dt.toISOString().substr(5,11).replace("T"," ");
-    });
-    var series = d.bars.map(function(b){ return [b[1], b[4], b[3], b[2]]; });
-    ch.setOption({ xAxis:{data:cats}, series:[{data:series}] });
-    requestAnimationFrame(function(){ A.positionBoxes(sym); });
-  };
-
-  /* --- LOAD CYCLE --------------------------------------------------------- */
-  A.loadSymbol = function(sym){
-    var tf = A.chartTF[sym];
-    return A.fetchSymbol(sym, tf).then(function(r){
-      A.chartData[sym] = r;
-      A.src.provider = r.provider;
-      A.src.t = Date.now();
-      A.applyData(sym);
-      return r;
-    });
-  };
-
-  A.loadAll = function(){
-    var keys = Object.keys(A.SYMBOLS);
-    var start = performance.now();
-    return Promise.allSettled(keys.map(function(k){ return A.loadSymbol(k); }))
-      .then(function(res){
-        var ok = res.filter(function(r){return r.status==="fulfilled";}).length;
-        var prov = A.src.provider || "—";
-        A.status(ok===keys.length?"ok":(ok>0?"warn":"err"), prov, ok+"/"+keys.length+" LIVE");
-        document.getElementById("ft-src").textContent = "SOURCE " + prov;
+  A.status("warn","—","BOOT");
+  function go(){
+    A.Charts.init();
+    A.Jane.renderTerms();
+    var refresh = function(){
+      var start = performance.now();
+      A.Charts.loadAll().then(function(){
+        A.Macro.update();
+        A.Corey.update();
+        A.Spidey.update();
+        A.Jane.update();
+        A.Execution.update();
+        document.getElementById("ft-src").textContent = "SOURCE " + (A.src.provider||"—");
         document.getElementById("ft-latency").textContent = "LATENCY " + Math.round(performance.now()-start) + "ms";
-        if(window.ATLAS.onDataReady) window.ATLAS.onDataReady();
-        return res;
-      });
-  };
-
-  /* --- SYNC GROUP --------------------------------------------------------- */
-  A.syncCharts = function(){
-    var list = Object.keys(A.charts).map(function(k){ return A.charts[k]; });
-    if(list.length<2) return;
-    echarts.connect(list);
-  };
-
-  /* --- INIT CHARTS -------------------------------------------------------- */
-  A.initCharts = function(){
-    Object.keys(A.SYMBOLS).forEach(function(sym){ A.buildChart(sym); });
-    A.syncCharts();
-    /* TF buttons */
-    document.querySelectorAll(".chart-wrap").forEach(function(wrap){
-      var sym = wrap.getAttribute("data-sym");
-      wrap.querySelectorAll(".chart-tfs button").forEach(function(btn){
-        btn.addEventListener("click", function(){
-          wrap.querySelectorAll(".chart-tfs button").forEach(function(b){ b.classList.remove("on"); });
-          btn.classList.add("on");
-          A.chartTF[sym] = btn.getAttribute("data-tf");
-          A.loadSymbol(sym).catch(function(){});
-        });
-      });
-    });
-    /* resize */
-    window.addEventListener("resize", function(){
-      Object.keys(A.charts).forEach(function(k){
-        try{ A.charts[k].resize(); }catch(e){}
-        A.positionBoxes(k);
-      });
-    });
-    /* reposition boxes on zoom */
-    Object.keys(A.charts).forEach(function(k){
-      A.charts[k].on("datazoom", function(){ A.positionBoxes(k); });
-      A.charts[k].on("finished", function(){ A.positionBoxes(k); });
-    });
-  };
-
-  /* --- PUBLIC BOOT HOOK --------------------------------------------------- */
-  A.ENG.boot = function(){
-    A.initCharts();
-    A.loadAll().then(function(){
-      /* refresh cycle */
-      setInterval(function(){ A.loadAll().catch(function(){}); }, 45000);
-    });
-  };
-
-  /* auto-boot */
-  if(document.readyState==="loading"){
-    document.addEventListener("DOMContentLoaded", A.ENG.boot);
-  } else {
-    setTimeout(A.ENG.boot, 0);
+      }).catch(function(e){ A.status("err","—","LOAD FAIL"); });
+    };
+    refresh();
+    setInterval(refresh, 45000);
+    A.Jane.loadEvents();
+    setInterval(function(){ A.Jane.loadEvents(); }, 10*60*1000);
+    A.Jane.loadMatrix();
+    setInterval(function(){ A.Jane.loadMatrix(); }, 30000);
   }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", go); else setTimeout(go,0);
 })();
 </script>
 </body>
