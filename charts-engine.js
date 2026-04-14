@@ -169,14 +169,19 @@ window.ChartsEngine = {
     return true;
   },
   load: async function(symbol){
+    if(symbol){ A.activeSymbol = (""+symbol).toUpperCase(); }
     if(A.SYMBOLS[symbol]){
       try { await A.Charts.loadSymbol(symbol); } catch(e){}
-    } else {
-      try { await A.Feed.fetchSymbol(symbol, "1h"); } catch(e){}
+    } else if(symbol){
+      try {
+        var r = await A.Feed.fetchSymbol(symbol, "1h");
+        A.chartData[symbol] = r;
+      } catch(e){}
     }
     await A.Charts.loadAll();
     return true;
   },
+  run:     async function(symbol){ return window.ChartsEngine.load(symbol); },
   loadAll: async function(){ return A.Charts.loadAll(); }
 };
 })();

@@ -53,11 +53,41 @@ a{color:#00B0FF;text-decoration:none}a:hover{text-decoration:underline}
 .pbox.cur{background:#00FF5A;color:#000}
 .pbox.ent{background:#FF9100;color:#000}
 .pbox.low{background:#00B0FF;color:#fff}
+#price-matrix{position:relative}
+#pm-search{display:flex;gap:6px;padding:6px 10px;background:#050a10;border-bottom:1px solid #182230;align-items:center}
+#pm-search input{background:#000;border:1px solid #182230;color:#d7dde3;font-family:"SF Mono",Menlo,Consolas,monospace;font-size:11px;padding:4px 8px;width:180px;letter-spacing:1px;text-transform:uppercase;outline:none}
+#pm-search input:focus{border-color:#FFD600}
+#pm-search button{background:#FFD600;color:#000;border:none;font-family:inherit;font-size:10px;padding:4px 10px;letter-spacing:1px;cursor:pointer;font-weight:700}
+#pm-search button:hover{background:#fff}
+#pm-search .hint{color:#6c7a89;font-size:10px;letter-spacing:1px;margin-left:4px}
 #price-matrix table{width:100%;border-collapse:collapse;font-family:"SF Mono",Menlo,Consolas,monospace}
 #price-matrix th,#price-matrix td{padding:6px 10px;text-align:right;border-bottom:1px solid #182230;font-size:11px}
 #price-matrix th{color:#6c7a89;font-weight:500;font-size:10px;letter-spacing:1px;background:#050a10}
 #price-matrix th:first-child,#price-matrix td:first-child{text-align:left;color:#FFD600;font-weight:600}
-#price-matrix tr:hover td{background:#050a10}
+#price-matrix tr.pm-row{cursor:pointer;transition:background 0.08s}
+#price-matrix tr.pm-row:hover td{background:#0a1420}
+#price-matrix tr.pm-row.active td{background:rgba(255,214,0,0.10);color:#FFD600;font-weight:700}
+#price-matrix tr.pm-row.active td:first-child{color:#FFD600}
+
+/* EXECUTION LOCKED TABLE */
+.exec-tbl{width:100%;border-collapse:collapse;font-family:"SF Mono",Menlo,Consolas,monospace;background:#000}
+.exec-tbl th,.exec-tbl td{padding:7px 10px;border-bottom:1px solid #182230;font-size:11px;vertical-align:middle;text-align:left}
+.exec-tbl thead th{background:#050a10;color:#6c7a89;font-weight:500;font-size:10px;letter-spacing:2px;text-transform:uppercase}
+.exec-tbl .xr-dot{color:#00B0FF;margin-right:6px;font-size:10px}
+.exec-tbl .xr-sub{color:#6c7a89;margin-left:10px;font-size:10px;letter-spacing:1px;text-transform:none}
+.exec-tbl td.xr-l{width:62%}
+.exec-tbl td.xr-r{width:38%;text-align:right;letter-spacing:0.5px}
+.exec-tbl .xr-emo{display:inline-block;width:18px;margin-right:6px;font-size:12px}
+.exec-tbl .xr-lab{display:inline-block;letter-spacing:1.5px;font-size:11px;font-weight:600}
+.exec-tbl .xr-rec{display:inline-block;margin-left:12px;font-weight:700;font-size:12px}
+.exec-tbl tr.xc-entry .xr-lab,.exec-tbl tr.xc-entry .xr-rec,.exec-tbl tr.xc-entry .xr-r{color:#07f911}
+.exec-tbl tr.xc-ext   .xr-lab,.exec-tbl tr.xc-ext   .xr-rec,.exec-tbl tr.xc-ext   .xr-r{color:#FF9100}
+.exec-tbl tr.xc-exit  .xr-lab,.exec-tbl tr.xc-exit  .xr-rec,.exec-tbl tr.xc-exit  .xr-r{color:#ff0015}
+.exec-tbl tr.xc-trend .xr-lab,.exec-tbl tr.xc-trend .xr-r{color:#FFD600}
+.exec-tbl tr.xc-neu   .xr-lab,.exec-tbl tr.xc-neu   .xr-r{color:#6c7a89}
+.exec-tbl tr.xc-stop  .xr-lab,.exec-tbl tr.xc-stop  .xr-rec,.exec-tbl tr.xc-stop  .xr-r{color:#ff0015}
+.exec-tbl tr.xc-warn td{color:#FFD600;font-weight:700;letter-spacing:2px;text-align:left;background:#050a10;border-top:1px solid #182230}
+.exec-tbl tr.xc-warn .xr-emo{font-size:12px}
 #events .evlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1px;background:#182230}
 .ev{background:#000;padding:6px 8px;font-size:11px;border-left:2px solid #182230}
 .ev.h{border-left-color:#ff0015}.ev.m{border-left-color:#FF9100}.ev.l{border-left-color:#6c7a89}
@@ -137,7 +167,13 @@ a{color:#00B0FF;text-decoration:none}a:hover{text-decoration:underline}
 <section class="sec" id="sec-matrix">
 <div class="sec-hd"><h3>PRICE MATRIX</h3><span class="sub">EURUSD · GBPUSD · USDJPY · AUDJPY · <span class="agent">agent <b>JANE</b></span></span>
 <div class="links"><a href="#t-pips">pips</a><a href="#t-range">range</a><a href="#t-session">session</a></div></div>
-<div id="price-matrix"><table><thead><tr><th>PAIR</th><th>PRICE</th><th>CHG</th><th>%</th><th>HIGH</th><th>LOW</th><th>RANGE</th><th>BIAS</th></tr></thead><tbody id="pm-body"></tbody></table></div>
+<div id="price-matrix">
+<form id="pm-search" onsubmit="event.preventDefault();var v=document.getElementById('pm-in').value;if(v){window.reloadSymbol(v);document.getElementById('pm-in').value='';}">
+<input id="pm-in" type="text" placeholder="SYMBOL — e.g. EURUSD" maxlength="10" autocomplete="off">
+<button type="submit">LOAD</button>
+<span class="hint">history · max 5 · click row to reload · discord trigger: !SYMBOL $SYMBOL</span>
+</form>
+<table><thead><tr><th>PAIR</th><th>PRICE</th><th>CHG</th><th>%</th><th>HIGH</th><th>LOW</th><th>RANGE</th><th>BIAS</th></tr></thead><tbody id="pm-body"></tbody></table></div>
 </section>
 <section class="sec" id="sec-events">
 <div class="sec-hd"><h3>EVENT INTELLIGENCE</h3><span class="sub">CPI · NFP · CB SPEAKERS · RATES · GDP · PMI · <span class="agent">agent <b>JANE</b></span></span>
@@ -209,17 +245,34 @@ window.addEventListener("DOMContentLoaded", async () => {
     await MacroEngine.init();
     await ExecutionEngine.init();
     await ChartsEngine.load("EURUSD");
-    await MacroEngine.init();
-    await ExecutionEngine.init();
+    await MacroEngine.run("EURUSD");
+    await ExecutionEngine.run("EURUSD");
     document.getElementById("ft-src").textContent = "SOURCE " + (A.src.provider||"—");
     document.getElementById("ft-latency").textContent = "LATENCY " + Math.round(performance.now()-start) + "ms";
   } catch(e){ A.status("err","—","BOOT FAIL"); console.error("ATLAS boot error", e); }
+  /* Discord → Dashboard SSE bridge */
+  try {
+    var bridgeHost = (location.protocol.startsWith("http") ? location.origin : "http://localhost:3000");
+    var es = new EventSource(bridgeHost + "/events");
+    es.onmessage = async function(e){
+      try {
+        var data = JSON.parse(e.data);
+        if(data && data.symbol){
+          window.addSearch && window.addSearch(data.symbol);
+          await ChartsEngine.load(data.symbol);
+          await MacroEngine.run(data.symbol);
+          await ExecutionEngine.run(data.symbol);
+        }
+      } catch(err){}
+    };
+    es.onerror = function(){ /* silent — bridge may be offline */ };
+  } catch(e){}
   setInterval(async () => {
     try {
       var s = performance.now();
       await ChartsEngine.loadAll();
-      await MacroEngine.init();
-      await ExecutionEngine.init();
+      await MacroEngine.run();
+      await ExecutionEngine.run();
       document.getElementById("ft-src").textContent = "SOURCE " + (A.src.provider||"—");
       document.getElementById("ft-latency").textContent = "LATENCY " + Math.round(performance.now()-s) + "ms";
     } catch(e){}

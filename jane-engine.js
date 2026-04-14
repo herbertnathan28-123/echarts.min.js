@@ -4,13 +4,18 @@
 (function(){
 var A = window.ATLAS;
 A.pmCache = {};
+A.searchHistory = [];
+A.activeSymbol = null;
+function digitsFor(sym){ if(A.FX[sym]) return A.FX[sym].digits; if(A.SYMBOLS[sym]) return A.SYMBOLS[sym].digits; return 4; }
 function matrixRow(pair){
-  var c = A.pmCache[pair]; var dg = A.FX[pair].digits;
-  if(!c) return '<tr><td>'+pair+'</td><td colspan="7" class="mut">loading…</td></tr>';
+  var c = A.pmCache[pair]; var dg = digitsFor(pair);
+  var active = (A.activeSymbol===pair);
+  var rowAttrs = ' data-sym="'+pair+'" class="pm-row'+(active?' active':'')+'"';
+  if(!c) return '<tr'+rowAttrs+'><td>'+pair+'</td><td colspan="7" class="mut">queued…</td></tr>';
   var pc = c.pc, chg = c.chg, cls = pc>0?"up":pc<0?"dn":"mut";
   var biasWord = pc>0.2?"LONG": pc<-0.2?"SHORT":"FLAT";
   var biasCls = pc>0.2?"up": pc<-0.2?"dn":"mut";
-  return '<tr>'+
+  return '<tr'+rowAttrs+'>'+
     '<td>'+pair+'</td>'+
     '<td>'+A.fmt(c.last,dg)+'</td>'+
     '<td class="'+cls+'">'+(chg>=0?"+":"")+A.fmt(chg,dg)+'</td>'+
@@ -22,9 +27,48 @@ function matrixRow(pair){
 }
 function renderMatrix(){
   var body = document.getElementById("pm-body"); if(!body) return;
-  var pairs = Object.keys(A.FX);
-  body.innerHTML = pairs.map(matrixRow).join("");
+  if(!A.searchHistory.length){
+    body.innerHTML = '<tr><td colspan="8" class="mut" style="text-align:left">no search history — use input above or trigger via !SYMBOL / $SYMBOL from Discord</td></tr>';
+    return;
+  }
+  body.innerHTML = A.searchHistory.map(matrixRow).join("");
+  /* bind click */
+  Array.prototype.forEach.call(body.querySelectorAll("tr.pm-row"), function(tr){
+    tr.addEventListener("click", function(){
+      var s = tr.getAttribute("data-sym");
+      if(s) window.reloadSymbol(s);
+    });
+  });
 }
+function fetchMatrixPair(p){
+  return A.Feed.fetchSymbol(p, "1h").then(function(r){
+    var b = r.bars; if(!b||!b.length) return;
+    var last = b[b.length-1][4];
+    var first = b[0][4];
+    var hi = -Infinity, lo = Infinity;
+    for(var i=0;i<b.length;i++){ if(b[i][2]>hi) hi=b[i][2]; if(b[i][3]<lo) lo=b[i][3]; }
+    A.pmCache[p] = { last:last, first:first, chg:last-first, pc:(last-first)/first*100, hi:hi, lo:lo };
+  });
+}
+window.addSearch = function(symbol){
+  if(!symbol) return;
+  var s = (""+symbol).toUpperCase().replace(/[^A-Z]/g,"");
+  if(!s) return;
+  A.searchHistory = A.searchHistory.filter(function(x){ return x!==s; });
+  A.searchHistory.unshift(s);
+  if(A.searchHistory.length>5) A.searchHistory.length=5;
+  if(!A.pmCache[s]) fetchMatrixPair(s).then(renderMatrix).catch(renderMatrix);
+  renderMatrix();
+};
+window.reloadSymbol = function(symbol){
+  if(!symbol) return;
+  var s = (""+symbol).toUpperCase().replace(/[^A-Z]/g,"");
+  A.activeSymbol = s;
+  window.addSearch(s);
+  try { ChartsEngine && ChartsEngine.load && ChartsEngine.load(s); } catch(e){}
+  try { MacroEngine && MacroEngine.load && MacroEngine.load(s); } catch(e){}
+  try { ExecutionEngine && ExecutionEngine.load && ExecutionEngine.load(s); } catch(e){}
+};
 function evClass(imp){
   var s = (imp||"").toLowerCase();
   if(s.indexOf("high")>=0) return "h";
@@ -47,17 +91,11 @@ function includeEvent(title){
 }
 A.Jane = {
   loadMatrix: function(){
-    var pairs = Object.keys(A.FX);
-    return Promise.allSettled(pairs.map(function(p){
-      return A.Feed.fetchSymbol(p, "1h").then(function(r){
-        var b = r.bars; if(!b||!b.length) return;
-        var last = b[b.length-1][4];
-        var first = b[0][4];
-        var hi = -Infinity, lo = Infinity;
-        for(var i=0;i<b.length;i++){ if(b[i][2]>hi) hi=b[i][2]; if(b[i][3]<lo) lo=b[i][3]; }
-        A.pmCache[p] = { last:last, first:first, chg:last-first, pc:(last-first)/first*100, hi:hi, lo:lo };
-      });
-    })).then(function(){ renderMatrix(); });
+    if(!A.searchHistory.length){
+      ["EURUSD","GBPUSD","USDJPY","AUDJPY"].forEach(function(s){ window.addSearch(s); });
+    }
+    var pairs = A.searchHistory.slice();
+    return Promise.allSettled(pairs.map(fetchMatrixPair)).then(function(){ renderMatrix(); });
   },
   loadEvents: function(){
     var list = document.getElementById("ev-list"); if(!list) return;

@@ -96,18 +96,24 @@ A.Macro = {
   }
 };
 /* PUBLIC MODULE API */
+function macroRun(symbol){
+  if(symbol) A.activeSymbol = (""+symbol).toUpperCase();
+  A.Macro.update();
+  if(A.Corey) A.Corey.update();
+  if(A.Spidey) A.Spidey.update();
+  if(A.Jane && A.Jane.update) A.Jane.update();
+}
 window.MacroEngine = {
   init: async function(){
-    A.Macro.update();
-    if(A.Corey) A.Corey.update();
-    if(A.Spidey) A.Spidey.update();
+    macroRun();
     if(A.Jane){
       A.Jane.renderTerms && A.Jane.renderTerms();
-      A.Jane.update && A.Jane.update();
       A.Jane.loadMatrix && A.Jane.loadMatrix();
       A.Jane.loadEvents && A.Jane.loadEvents();
     }
     return true;
-  }
+  },
+  run:  async function(symbol){ macroRun(symbol); return true; },
+  load: async function(symbol){ macroRun(symbol); return true; }
 };
 })();
