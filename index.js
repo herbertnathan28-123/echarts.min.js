@@ -132,6 +132,13 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if(u.pathname === "/favicon.ico"){
+    res.statusCode = 204;
+    res.setHeader("Content-Type", "image/x-icon");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    return res.end();
+  }
+
   /* static */
   let p = decodeURIComponent(u.pathname);
   if(p === "/") p = "/index.html";

@@ -300,7 +300,13 @@ a{color:#00B0FF;text-decoration:none}a:hover{text-decoration:underline}
 <span class="pill">ATLAS FX MACRO DASHBOARD . PRODUCTION</span>
 </div>
 
-<script src="./echarts.min.js"></script>
+<!-- echarts.min.js in this repo is the ESM build - load it as a module and
+     expose the namespace on window.echarts before DOMContentLoaded fires so
+     charts-engine.js (classic script) can call echarts.init() at boot. -->
+<script type="module">
+  import * as echartsNs from "./echarts.min.js";
+  window.echarts = echartsNs;
+</script>
 <script src="./data-feed.js"></script>
 <script src="./charts-engine.js"></script>
 <script src="./macro-engine.js"></script>

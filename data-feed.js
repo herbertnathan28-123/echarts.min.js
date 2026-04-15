@@ -6,10 +6,13 @@
 var A = window.ATLAS = window.ATLAS || {};
 A.COLORS = { bull:"#07f911", bear:"#ff0015", grid:"#1a1a1a", axis:"#6c7a89", bg:"#000000",
   hi:"#2962ff", lo:"#2962ff", mid:"#fb8c00", bid:"#ffee58", ask:"#b22833", cross:"#ffffff" };
+/* Macro drivers via TwelveData ETF proxies (the index/rate tickers are not
+   available on the standard TwelveData tier; the ETFs track the same flow
+   direction which is all the macro engine uses). */
 A.SYMBOLS = {
-  DXY:      { td:"DXY",     label:"DXY",    digits:2 },
-  US10Y:    { td:"US10Y",   label:"US10Y",  digits:3 },
-  EQUITIES: { td:"SPX",     label:"S&P500", digits:2 },
+  DXY:      { td:"UUP",     label:"DXY",    digits:2 },
+  US10Y:    { td:"IEF",     label:"US10Y",  digits:2 },
+  EQUITIES: { td:"SPY",     label:"S&P500", digits:2 },
   USDJPY:   { td:"USD/JPY", label:"USDJPY", digits:3 }
 };
 A.FX = {
