@@ -107,34 +107,35 @@ var EV_FALLBACK =
     '<div class="evf-interp"><b>What this means for the trade:</b> Without an active news catalyst, the trade should be based on the macro picture in the Status and Mechanism sections. A surprise headline can change the picture quickly - keep position size sensible.</div>'+
   '</div>';
 
+/* Glossary entries: [code, plain-english one-liner used as a sub-label,
+   full beginner-readable definition]. Beginner-readable: every entry is
+   written so a non-trader can understand the term in two short sentences. */
 var TERMS = [
-  ["DXY","US Dollar Index. Weighted average of USD vs EUR, JPY, GBP, CAD, SEK, CHF. Proxy for broad USD strength."],
-  ["US10Y","Yield on the 10-year US Treasury. Benchmark for long-duration rates; drives USD carry and discount rates."],
-  ["EQUITIES","S&P 500 futures. Primary risk proxy - rising equities generally correlate with risk-on flows."],
-  ["USDJPY","Dollar-Yen spot. Most rate-sensitive major via the 10Y differential; carries global risk and stress signals."],
-  ["CPI","Consumer Price Index. Headline inflation print; dominates front-end rates and USD reaction."],
-  ["NFP","Non-Farm Payrolls. Monthly US jobs report; drives yields and DXY on labour tightness signal."],
-  ["FOMC","Federal Open Market Committee. Sets US policy rate; statement and presser shift term premium and USD."],
-  ["GDP","Gross Domestic Product. Backward-looking growth gauge; revisions move Fed pricing."],
-  ["PMI","Purchasing Managers Index. Forward-looking activity gauge; above 50 = expansion, below 50 = contraction."],
-  ["CB SPEAKERS","Central bank officials speaking publicly. Often pre-signal policy pivots outside of meetings."],
-  ["BIAS","Net directional conviction in USD or risk, composited from DXY, yields, equities, and FX."],
-  ["CONVICTION","Degree of alignment across cross-asset signals. High = majors confirm the same narrative."],
-  ["FLOW","Aggregate flow direction into or out of USD, inferred from DXY and USDJPY behaviour."],
-  ["REGIME","Macro market mode - RISK-ON, RISK-OFF or MIXED - from equity, yield, and USD behaviour."],
-  ["VALIDITY","Window during which the current thesis is assumed to hold absent an invalidation trigger."],
-  ["ENTRY","Price at which the execution plan engages. Computed from mid of latest candle plus an ATR buffer."],
-  ["STOP","Risk invalidation level. Derived from an ATR multiple beyond the structural pivot."],
-  ["TARGET","Primary profit objective. 2R baseline, extended on regime alignment."],
-  ["R-MULTIPLE","Ratio of profit to initial risk. 1R = distance from entry to stop."],
-  ["ATR","Average True Range. Volatility measure used for stop and target sizing."],
-  ["Z-SCORE","Number of standard deviations the current move is from its mean. Above 2 = regime-breaking."],
-  ["PERCENTILE","Rank of the current move within the recent distribution of moves."],
-  ["CARRY","Return from holding a higher-yielding currency funded by a lower-yielding one."],
-  ["YIELD DIFFERENTIAL","Spread between two sovereign yields. Primary driver of FX pairs like USDJPY."],
-  ["RISK-ON","Regime favouring growth and credit exposure - equities up, USD/JPY bid, defensives lag."],
-  ["RISK-OFF","Regime favouring safe-haven flows - USD, CHF, JPY bid, equities lower."],
-  ["POI","Point of Interest. A price level the plan is targeting or defending - entry, stop, or target zone."]
+  ["DXY","US Dollar Strength Index","A single number that tracks how strong the US Dollar is against six major currencies. When DXY rises, the dollar is winning across the board; when it falls, the dollar is losing."],
+  ["US10Y","US 10-Year Interest Rate","The return paid on a 10-year US government bond. Higher yields make holding dollars more rewarding; lower yields make dollars less attractive."],
+  ["EQUITIES","Market Risk Appetite","The S&P 500 (the main US stock market). Rising stocks usually mean investors are willing to take risk; falling stocks mean investors want safety."],
+  ["USDJPY","Global Money Flow","The dollar against the Japanese yen. The cleanest live read on whether money is flowing into or out of the dollar in size."],
+  ["CPI","Consumer Price Index (Inflation)","The official measure of how fast prices are rising. A high inflation print usually pushes interest rates higher and the dollar with them."],
+  ["NFP","Non-Farm Payrolls (US Jobs Report)","Monthly snapshot of how many people the US economy hired. A strong number usually lifts interest rates and the dollar; a weak number does the opposite."],
+  ["FOMC","Federal Reserve Rate Decision","The committee that sets the official US interest rate. Their statement and press conference can move the dollar sharply within minutes."],
+  ["GDP","Gross Domestic Product (Growth)","The total value of everything an economy produces. Stronger growth usually supports the local currency."],
+  ["PMI","Purchasing Managers Index","A monthly survey of business activity. Above 50 means the economy is growing; below 50 means it is shrinking."],
+  ["CB SPEAKERS","Central Bank Officials Speaking","Senior central bankers talking in public. Their words often hint at coming policy changes before official meetings."],
+  ["BIAS","Overall Direction","The net direction the system thinks the dollar is moving, built from the four macro drivers."],
+  ["CONVICTION","How Much the Drivers Agree","A measure of how many of the four macro drivers point the same way. High conviction means a strong, consistent signal."],
+  ["FLOW","Direction of Money Movement","Whether money is flowing into or out of the US Dollar overall, judged from the dollar index and USDJPY together."],
+  ["REGIME","Market Mood","Whether markets are in a risk-on mood (buying growth) or a risk-off mood (seeking safety)."],
+  ["VALIDITY","How Long the Analysis Stays Current","Roughly how many hours the current view should be trusted before the macro picture has likely changed."],
+  ["ENTRY","Where the Trade Starts","The price at which the trade is designed to begin. Wait for price to come to this level rather than chasing it elsewhere."],
+  ["STOP LOSS","Where the Trade is Wrong","The price level that proves the trade idea is no longer valid. Closing the trade here protects the account."],
+  ["EXIT","Where the Trade Ends","The price at which the trade is designed to take profit, based on the macro picture."],
+  ["ATR","Average True Range (Typical Daily Move)","A measure of how much a market typically moves in a session. Used to set tight, sensible stops and targets."],
+  ["RISK-ON","Investors Buying Growth","A market mood where stocks are bid, the dollar is offered, and investors prefer higher-return assets."],
+  ["RISK-OFF","Investors Seeking Safety","A market mood where stocks are sold, the dollar is bid, and investors prefer safer assets."],
+  ["FAVOURABLE","Conditions Support the Trade","The system rates the current setup as favourable - the macro picture lines up with the trade direction."],
+  ["CAUTION","Mixed Conditions","Some signals support the trade, some oppose it. Reduce position size or wait for more alignment."],
+  ["UNFAVOURABLE","Conditions Are Against the Trade","The macro picture is working against the proposed trade direction. Standing aside is more favourable than entering."],
+  ["SIGNAL STRENGTH","Quality of the Signal Out of 10","A 0-10 score combining all macro drivers. Higher is better; below 4 is unfavourable."]
 ];
 
 A.Jane = {
@@ -187,7 +188,13 @@ A.Jane = {
   renderTerms: function(){
     var host = document.getElementById("terms-list"); if(!host) return;
     host.innerHTML = TERMS.map(function(r){
-      return '<div class="term"><div class="tt">'+r[0]+'</div><div class="td">'+r[1]+'</div></div>';
+      var code = r[0], plain = r[1], def = r[2];
+      return '<div class="term">'+
+        '<details>'+
+          '<summary>'+code+'<span class="plain">'+plain+'</span></summary>'+
+          '<div class="body">'+def+'</div>'+
+        '</details>'+
+      '</div>';
     }).join("");
   }
 };

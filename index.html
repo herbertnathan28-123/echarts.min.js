@@ -329,6 +329,38 @@ html,body{font-size:14px;line-height:1.55}
 .term .td{font-size:12.5px;line-height:1.65;margin-top:4px}
 /* Footer */
 #footer{padding:12px 14px;font-size:11px;gap:14px}
+
+/* MATRIX QUOTE PANEL (per spec rule 10) - SELL and BUY are the dominant
+   visual on every chart panel header; SPREAD is secondary and smaller.
+   Bull #07f911 and bear #ff0015 are NOT changed - they are reused on the
+   value digits to make the action immediately legible. */
+.panel-hdr{padding:6px 10px;font-size:13px;gap:10px}
+.panel-hdr .sym{font-size:14px;letter-spacing:1.2px}
+.panel-hdr .tf{font-size:11px}
+.panel-hdr .last{font-size:14px}
+.panel-hdr .chg{font-size:11px}
+.panel-hdr .quotes{gap:2px}
+.panel-hdr .quotes .q{padding:5px 12px}
+.panel-hdr .quotes .q.sell .l,.panel-hdr .quotes .q.buy .l{font-size:10px;letter-spacing:1.5px;font-weight:700}
+.panel-hdr .quotes .q.sell .v,.panel-hdr .quotes .q.buy .v{font-size:18px;font-weight:900;letter-spacing:.5px;line-height:1.15}
+.panel-hdr .quotes .q.sell .v{color:#ff0015}
+.panel-hdr .quotes .q.buy  .v{color:#07f911}
+.panel-hdr .quotes .q.spread{padding:4px 8px;background:#000;opacity:.85}
+.panel-hdr .quotes .q.spread .l{font-size:8px;color:#4a525c}
+.panel-hdr .quotes .q.spread .v{font-size:11px;color:#6c7a89;font-weight:600;line-height:1.15}
+
+/* GLOSSARY (per spec rule 11) - beginner-readable expandable items, one per
+   row so each definition has room to breathe. Controlled by the Glossary tab. */
+#terms-list{display:flex;flex-direction:column;gap:1px;background:#1a1a1a}
+.term{padding:0;background:#000}
+.term details{padding:0}
+.term details summary{cursor:pointer;padding:14px 18px;list-style:none;outline:none;display:flex;align-items:center;gap:12px;font-size:14px;font-weight:700;letter-spacing:1px;color:#FFD600;transition:background .12s,color .12s}
+.term details summary::-webkit-details-marker{display:none}
+.term details summary::before{content:'+';display:inline-block;width:18px;height:18px;text-align:center;line-height:16px;border:1px solid #1a1a1a;color:#FFD600;font-weight:900;font-size:14px;flex:0 0 18px}
+.term details[open] summary::before{content:'-';background:#FFD600;color:#000;border-color:#FFD600}
+.term details summary:hover{background:#0a1420}
+.term details summary .plain{margin-left:auto;color:#6c7a89;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:none}
+.term details .body{padding:8px 18px 18px 48px;font-size:13px;line-height:1.7;color:#d7dde3;background:#000}
 </style>
 </head>
 <body>
