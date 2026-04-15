@@ -194,6 +194,12 @@ a{color:#00B0FF;text-decoration:none}a:hover{text-decoration:underline}
 #term-nav .tab.active{background:#FFD600;color:#000;border-color:#FFD600;box-shadow:0 0 0 1px #FFD600 inset}
 #term-nav .src{margin-left:auto;color:#6c7a89;font-size:11px}
 
+/* HTF / LTF SECTION CONTAINMENT - panels are scoped strictly to their
+   parent matrix-wrap; HTF holds 1W/1D/4H/1H, LTF holds 30M/15M/5M/1M.
+   Each tab opens only its own section and never mixes the two grids. */
+#sec-htf .matrix-grid,#sec-ltf .matrix-grid{contain:layout paint;overflow:hidden}
+#sec-htf,#sec-ltf{isolation:isolate}
+
 /* TYPOGRAPHY UPGRADE - readable at a glance on desktop, no micro fonts */
 html,body{font-size:14px;line-height:1.55}
 .sec-hd{padding:14px 16px}
@@ -283,7 +289,7 @@ html,body{font-size:14px;line-height:1.55}
 
 <!-- 1. HTF CHART MATRIX -->
 <section class="matrix-wrap" id="sec-htf">
-<div class="matrix-hd"><h3>HTF CHART MATRIX</h3><span class="sub">1W . 1D . 4H . 1H -</span><span class="sym-label">EURUSD</span></div>
+<div class="matrix-hd"><h3>HTF &mdash; HIGHER TIMEFRAMES</h3><span class="sub">Weekly &middot; Daily &middot; 4-Hour &middot; 1-Hour</span><span class="sym-label">EURUSD</span></div>
 <div class="matrix-grid">
 <div class="chart-panel"><div class="panel-hdr"><span class="sym">-</span><span class="tf">1W</span><span class="last">-</span><span class="chg">-</span><div class="quotes"><span class="q sell"><span class="l">SELL</span><span class="v">-</span></span><span class="q spread"><span class="l">SPR</span><span class="v">-</span></span><span class="q buy"><span class="l">BUY</span><span class="v">-</span></span></div></div><div class="chart" id="ch-htf-1W"></div></div>
 <div class="chart-panel"><div class="panel-hdr"><span class="sym">-</span><span class="tf">1D</span><span class="last">-</span><span class="chg">-</span><div class="quotes"><span class="q sell"><span class="l">SELL</span><span class="v">-</span></span><span class="q spread"><span class="l">SPR</span><span class="v">-</span></span><span class="q buy"><span class="l">BUY</span><span class="v">-</span></span></div></div><div class="chart" id="ch-htf-1D"></div></div>
@@ -294,7 +300,7 @@ html,body{font-size:14px;line-height:1.55}
 
 <!-- 2. LTF CHART MATRIX -->
 <section class="matrix-wrap hidden" id="sec-ltf">
-<div class="matrix-hd"><h3>LTF CHART MATRIX</h3><span class="sub">30M . 15M . 5M . 1M -</span><span class="sym-label">EURUSD</span></div>
+<div class="matrix-hd"><h3>LTF &mdash; LOWER TIMEFRAMES</h3><span class="sub">30-Minute &middot; 15-Minute &middot; 5-Minute &middot; 1-Minute</span><span class="sym-label">EURUSD</span></div>
 <div class="matrix-grid">
 <div class="chart-panel"><div class="panel-hdr"><span class="sym">-</span><span class="tf">30M</span><span class="last">-</span><span class="chg">-</span><div class="quotes"><span class="q sell"><span class="l">SELL</span><span class="v">-</span></span><span class="q spread"><span class="l">SPR</span><span class="v">-</span></span><span class="q buy"><span class="l">BUY</span><span class="v">-</span></span></div></div><div class="chart" id="ch-ltf-30M"></div></div>
 <div class="chart-panel"><div class="panel-hdr"><span class="sym">-</span><span class="tf">15M</span><span class="last">-</span><span class="chg">-</span><div class="quotes"><span class="q sell"><span class="l">SELL</span><span class="v">-</span></span><span class="q spread"><span class="l">SPR</span><span class="v">-</span></span><span class="q buy"><span class="l">BUY</span><span class="v">-</span></span></div></div><div class="chart" id="ch-ltf-15M"></div></div>
