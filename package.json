@@ -1,0 +1,16 @@
+{
+  "name": "atlas-fx-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ATLAS FX macro dashboard - static UI + Node bridge serving the dashboard on :3000, /load SSE trigger, /twelvedata TwelveData REST proxy (TWELVE_DATA_API_KEY), and an optional Discord symbol-watcher bot.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "discord.js": "^14.16.3"
+  }
+}
