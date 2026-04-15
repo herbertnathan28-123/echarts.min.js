@@ -200,6 +200,46 @@ a{color:#00B0FF;text-decoration:none}a:hover{text-decoration:underline}
 #sec-htf .matrix-grid,#sec-ltf .matrix-grid{contain:layout paint;overflow:hidden}
 #sec-htf,#sec-ltf{isolation:isolate}
 
+/* STATUS SECTION - plain-english summary, condition, signal strength,
+   per-category dot system, expandable colour key, validity card. */
+#status-root{display:flex;flex-direction:column;gap:18px}
+.sx-summary{padding:18px 22px;background:#050a10;border:1px solid #1a1a1a;border-left:4px solid #FFD600;font-size:16px;line-height:1.75;color:#fff}
+.sx-summary b{color:#FFD600}
+.sx-condrow{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.sx-cond{padding:16px 20px;background:#050a10;border:1px solid #1a1a1a;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.sx-cond .lbl{font-size:11px;letter-spacing:2px;color:#6c7a89;font-weight:700}
+.sx-cond .val{font-size:22px;font-weight:900;letter-spacing:1.5px;color:#fff}
+.sx-cond.fav .val{color:#07f911}
+.sx-cond.cau .val{color:#FFD600}
+.sx-cond.unf .val{color:#ff0015}
+.sx-strength .meter{flex:1 1 160px;height:14px;background:#000;border:1px solid #1a1a1a;position:relative;min-width:160px}
+.sx-strength .meter .fill{position:absolute;left:0;top:0;bottom:0;background:#07f911;transition:width .25s ease}
+.sx-cats{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.sx-cat{padding:16px 20px;background:#050a10;border:1px solid #1a1a1a}
+.sx-cat .ck{font-size:11px;letter-spacing:2px;color:#6c7a89;font-weight:700;margin-bottom:6px}
+.sx-cat .cv{font-size:15px;font-weight:700;color:#fff;margin-bottom:10px;letter-spacing:1px}
+.sx-cat .dots{display:flex;gap:8px;margin-bottom:10px}
+.sx-cat .dot{width:14px;height:14px;border-radius:50%;background:#000;border:1.5px solid #2a2f36}
+.sx-cat .dot.gn{background:#07f911;border-color:#07f911;box-shadow:0 0 6px rgba(7,249,17,0.5)}
+.sx-cat .dot.dn{background:#ff0015;border-color:#ff0015;box-shadow:0 0 6px rgba(255,0,21,0.5)}
+.sx-cat .dot.wh{background:#ffffff;border-color:#ffffff;box-shadow:0 0 6px rgba(255,255,255,0.4)}
+.sx-cat .cx{font-size:13px;line-height:1.7;color:#d7dde3}
+.sx-key{padding:14px 20px;background:#050a10;border:1px solid #1a1a1a}
+.sx-key summary{cursor:pointer;font-size:13px;font-weight:700;letter-spacing:1.8px;color:#FFD600;outline:none;text-transform:uppercase}
+.sx-key summary::-webkit-details-marker{color:#FFD600}
+.sx-key .key-body{margin-top:12px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.7;color:#d7dde3}
+.sx-key .key-body .row{display:flex;gap:12px;align-items:flex-start}
+.sx-key .swatch{display:inline-block;width:14px;height:14px;border-radius:50%;flex:0 0 14px;margin-top:4px}
+.sx-key .swatch.gn{background:#07f911}
+.sx-key .swatch.dn{background:#ff0015}
+.sx-key .swatch.wh{background:#ffffff}
+.sx-key .swatch.empty{background:#000;border:1.5px solid #2a2f36;width:11px;height:11px;flex:0 0 11px}
+.sx-key b{color:#fff;letter-spacing:.5px}
+.sx-validity{padding:16px 20px;background:#050a10;border:1px solid #1a1a1a;border-left:4px solid #07f911;font-size:14px;line-height:1.75;color:#d7dde3}
+.sx-validity .vk{font-size:11px;letter-spacing:2px;color:#FFD600;font-weight:700;display:block;margin-bottom:6px}
+.sx-validity b{color:#fff}
+@media(max-width:900px){.sx-condrow,.sx-cats{grid-template-columns:1fr}}
+
 /* TYPOGRAPHY UPGRADE - readable at a glance on desktop, no micro fonts */
 html,body{font-size:14px;line-height:1.55}
 .sec-hd{padding:14px 16px}
@@ -319,16 +359,10 @@ html,body{font-size:14px;line-height:1.55}
 <div id="exec-explainer"></div>
 </section>
 
-<!-- 4. TRADE STATUS -->
+<!-- 4. STATUS -->
 <section class="sec" id="sec-trade">
-<div class="sec-hd"><h3>BIAS . CONVICTION . FLOW . REGIME . VALIDITY</h3><span class="sub">session snapshot</span></div>
-<div id="trade-status">
-<div class="cell"><div class="k">BIAS</div><div class="v" id="ts-bias">-</div></div>
-<div class="cell"><div class="k">CONVICTION</div><div class="v" id="ts-conv">-</div></div>
-<div class="cell"><div class="k">FLOW</div><div class="v" id="ts-flow">-</div></div>
-<div class="cell"><div class="k">REGIME</div><div class="v" id="ts-regime">-</div></div>
-<div class="cell"><div class="k">VALIDITY</div><div class="v" id="ts-validity">-</div></div>
-</div>
+<div class="sec-hd"><h3>STATUS</h3><span class="sub">plain-english system health, signal strength, validity</span></div>
+<div class="sec-body"><div id="status-root">Loading status&hellip;</div></div>
 </section>
 
 <!-- 5. HISTORICAL CONTEXT -->
