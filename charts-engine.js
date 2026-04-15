@@ -52,6 +52,7 @@ function findEl(ids){
   return null;
 }
 function buildOrGet(domId){
+  if(typeof echarts==='undefined'){console.error('[atlas] echarts not loaded');return;}
   if(A.charts[domId]) return A.charts[domId];
   var el = document.getElementById(domId); if(!el) return null;
   var ch = echarts.init(el, null, {renderer:"canvas"});

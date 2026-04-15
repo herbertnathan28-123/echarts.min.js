@@ -139,6 +139,25 @@ const server = http.createServer((req, res) => {
     return res.end();
   }
 
+  if(req.method==='POST'&&u.pathname==='/astra-handoff'){
+    let body='';req.on('data',c=>body+=c);
+    req.on('end',async()=>{
+      try{
+        const ctx=JSON.parse(body);
+        const hooks={'AT':process.env.ASTRA_WEBHOOK_AT,'SK':process.env.SK_COMBINED_WEBHOOK,'NM':process.env.NM_COMBINED_WEBHOOK,'BR':process.env.ASTRA_WEBHOOK_BR};
+        const url=hooks[ctx.user]||hooks['AT'];
+        if(!url){res.writeHead(400);res.end('{"ok":false}');return;}
+        const msg=['**📊 ATLAS CONTEXT — '+ctx.symbol+'**','Timestamp: '+ctx.timestamp,'','Status: '+ctx.tradeCondition+' · Signal '+ctx.signalStrength,'Bias: '+ctx.bias+' · Conviction: '+ctx.conviction+' · Regime: '+ctx.regime,'','Levels: Entry '+ctx.entry+' · Stop '+ctx.stop+' · Target '+ctx.target,'','Summary: '+ctx.summary,'','_'+ctx.note+'_','_User is now in channel. Context loaded._'].join('\n');
+        const payload=JSON.stringify({content:msg});
+        const u=new URL(url);
+        const r=require('https').request({hostname:u.hostname,path:u.pathname,method:'POST',headers:{'Content-Type':'application/json','Content-Length':Buffer.byteLength(payload)}},r2=>{r2.resume();});
+        r.on('error',()=>{});r.write(payload);r.end();
+        res.writeHead(200);res.end('{"ok":true}');
+      }catch(e){res.writeHead(500);res.end('{"ok":false}');}
+    });
+    return;
+  }
+
   /* static */
   let p = decodeURIComponent(u.pathname);
   if(p === "/") p = "/index.html";
