@@ -184,22 +184,31 @@ a{color:#00B0FF;text-decoration:none}a:hover{text-decoration:underline}
 #hist-grid,#scen-grid{grid-template-columns:1fr}
 .exec-gh-lbl{flex:0 0 160px}
 }
+
+/* TAB SYSTEM */
+.hidden{display:none!important}
+#term-nav{padding:12px 14px;gap:8px;font-size:12px}
+#term-nav .brand{color:#FFD600;font-weight:900;font-size:17px;letter-spacing:2px;margin-right:14px}
+#term-nav .tab{background:#000;color:#ffffff;border:1px solid #1a1a1a;padding:10px 16px;font-family:inherit;font-size:13px;font-weight:700;letter-spacing:1.5px;cursor:pointer;text-transform:uppercase;transition:background .15s,color .15s,border-color .15s,box-shadow .15s}
+#term-nav .tab:hover{background:#0a1420;border-color:#FFD600;color:#FFD600}
+#term-nav .tab.active{background:#FFD600;color:#000;border-color:#FFD600;box-shadow:0 0 0 1px #FFD600 inset}
+#term-nav .src{margin-left:auto;color:#6c7a89;font-size:11px}
 </style>
 </head>
 <body>
 
 <nav id="term-nav">
 <span class="brand">ATLAS FX</span>
-<a href="#sec-htf">HTF</a><span class="sep">.</span>
-<a href="#sec-ltf">LTF</a><span class="sep">.</span>
-<a href="#sec-exec">Execution</a><span class="sep">.</span>
-<a href="#sec-trade">Status</a><span class="sep">.</span>
-<a href="#sec-hist">Historical</a><span class="sep">.</span>
-<a href="#sec-mech">Mechanism</a><span class="sep">.</span>
-<a href="#sec-scen">Scenario</a><span class="sep">.</span>
-<a href="#sec-events">Events</a><span class="sep">.</span>
-<a href="#sec-matrix">Matrix</a><span class="sep">.</span>
-<a href="#sec-terms">Glossary</a>
+<button type="button" class="tab active" data-target="sec-htf">HTF</button>
+<button type="button" class="tab" data-target="sec-ltf">LTF</button>
+<button type="button" class="tab active" data-target="sec-exec">EXECUTION</button>
+<button type="button" class="tab active" data-target="sec-trade">STATUS</button>
+<button type="button" class="tab" data-target="sec-hist">HISTORICAL</button>
+<button type="button" class="tab" data-target="sec-mech">MECHANISM</button>
+<button type="button" class="tab" data-target="sec-scen">SCENARIO</button>
+<button type="button" class="tab" data-target="sec-events">EVENTS</button>
+<button type="button" class="tab" data-target="sec-matrix">MATRIX</button>
+<button type="button" class="tab" data-target="sec-terms">GLOSSARY</button>
 <span class="src"><span class="st-dot" id="st-dot"></span><span id="st-txt">INIT</span> . <b id="src-name">-</b> . <span id="src-time">-</span></span>
 </nav>
 
@@ -215,7 +224,7 @@ a{color:#00B0FF;text-decoration:none}a:hover{text-decoration:underline}
 </section>
 
 <!-- 2. LTF CHART MATRIX -->
-<section class="matrix-wrap" id="sec-ltf">
+<section class="matrix-wrap hidden" id="sec-ltf">
 <div class="matrix-hd"><h3>LTF CHART MATRIX</h3><span class="sub">30M . 15M . 5M . 1M -</span><span class="sym-label">EURUSD</span></div>
 <div class="matrix-grid">
 <div class="chart-panel"><div class="panel-hdr"><span class="sym">-</span><span class="tf">30M</span><span class="last">-</span><span class="chg">-</span><div class="quotes"><span class="q sell"><span class="l">SELL</span><span class="v">-</span></span><span class="q spread"><span class="l">SPR</span><span class="v">-</span></span><span class="q buy"><span class="l">BUY</span><span class="v">-</span></span></div></div><div class="chart" id="ch-ltf-30M"></div></div>
@@ -248,7 +257,7 @@ a{color:#00B0FF;text-decoration:none}a:hover{text-decoration:underline}
 </section>
 
 <!-- 5. HISTORICAL CONTEXT -->
-<section class="sec" id="sec-hist">
+<section class="sec hidden" id="sec-hist">
 <div class="sec-hd"><h3>HISTORICAL CONTEXT ENGINE</h3><span class="sub">four drivers . move . volatility . meaning . conclusion</span></div>
 <div id="hist-grid"></div>
 <div id="hist-narrative"></div>
@@ -256,25 +265,25 @@ a{color:#00B0FF;text-decoration:none}a:hover{text-decoration:underline}
 </section>
 
 <!-- 6. MECHANISM CHAIN -->
-<section class="sec" id="sec-mech">
+<section class="sec hidden" id="sec-mech">
 <div class="sec-hd"><h3>MECHANISM CHAIN</h3><span class="sub">catalyst -> transmission -> risk response -> fx terminal -> outcome</span></div>
 <div id="mech-chain"></div>
 </section>
 
 <!-- 7. SCENARIO -->
-<section class="sec" id="sec-scen">
+<section class="sec hidden" id="sec-scen">
 <div class="sec-hd"><h3>SCENARIO ENGINE</h3><span class="sub">primary . alternative . invalidation</span></div>
 <div id="scen-grid"></div>
 </section>
 
 <!-- 8. EVENTS -->
-<section class="sec" id="sec-events">
+<section class="sec hidden" id="sec-events">
 <div class="sec-hd"><h3>EVENT INTELLIGENCE</h3><span class="sub">CPI . NFP . CB SPEAKERS . RATES . GDP . PMI</span></div>
 <div class="sec-body"><div id="ev-list"></div></div>
 </section>
 
 <!-- 9. PRICE MATRIX -->
-<section class="sec" id="sec-matrix">
+<section class="sec hidden" id="sec-matrix">
 <div class="sec-hd"><h3>PRICE MATRIX</h3><span class="sub">last 5 searches . click row to reload</span></div>
 <div id="price-matrix">
 <form id="pm-search" onsubmit="event.preventDefault();var v=document.getElementById('pm-in').value;if(v){window.reloadSymbol(v);document.getElementById('pm-in').value='';}">
@@ -287,7 +296,7 @@ a{color:#00B0FF;text-decoration:none}a:hover{text-decoration:underline}
 </section>
 
 <!-- 10. TERMINOLOGY -->
-<section class="sec" id="sec-terms">
+<section class="sec hidden" id="sec-terms">
 <div class="sec-hd"><h3>TERMINOLOGY INDEX</h3><span class="sub">glossary</span></div>
 <div class="sec-body"><div id="terms-list"></div></div>
 </section>
@@ -374,6 +383,45 @@ window.addEventListener("DOMContentLoaded", async function(){
     } catch(e){}
   }, 45000);
 });
+
+/* TAB TOGGLE - dropdown-style section reveal.
+   Click a tab: toggle hidden class on its target section, mirror state on
+   the tab's .active class, smooth-scroll into view on open, and trigger an
+   ECharts resize so panels paint correctly when their container becomes
+   visible for the first time. Multiple sections can be open simultaneously. */
+(function(){
+  function bindTabs(){
+    var tabs = document.querySelectorAll('#term-nav .tab');
+    Array.prototype.forEach.call(tabs, function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.getAttribute('data-target');
+        var sec = document.getElementById(id);
+        if(!sec) return;
+        var willOpen = sec.classList.contains('hidden');
+        if(willOpen){
+          sec.classList.remove('hidden');
+          btn.classList.add('active');
+          setTimeout(function(){
+            try { sec.scrollIntoView({behavior:'smooth', block:'start'}); }
+            catch(e){ try { sec.scrollIntoView(); } catch(_){} }
+          }, 60);
+          setTimeout(function(){
+            try { window.ATLAS && window.ATLAS.Charts && window.ATLAS.Charts.resizeAll && window.ATLAS.Charts.resizeAll(); } catch(e){}
+            try { window.dispatchEvent(new Event('resize')); } catch(e){}
+          }, 140);
+        } else {
+          sec.classList.add('hidden');
+          btn.classList.remove('active');
+        }
+      });
+    });
+  }
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', bindTabs);
+  } else {
+    bindTabs();
+  }
+})();
 </script>
 </body>
 </html>
