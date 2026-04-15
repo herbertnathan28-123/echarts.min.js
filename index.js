@@ -13,13 +13,16 @@
 
    Run:   DISCORD_TOKEN=<token> node index.js   */
 
-const http = require("http");
-const fs   = require("fs");
-const path = require("path");
-const url  = require("url");
+const http  = require("http");
+const https = require("https");
+const fs    = require("fs");
+const path  = require("path");
+const url   = require("url");
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT,10) : 3000;
 const ROOT = __dirname;
+const TWELVE_DATA_API_KEY = process.env.TWELVE_DATA_API_KEY || "";
+const TD_INTERVALS = new Set(["1min","5min","15min","30min","45min","1h","2h","4h","1day","1week","1month"]);
 
 const MIME = {
   ".html":"text/html; charset=utf-8",
@@ -88,6 +91,47 @@ const server = http.createServer((req, res) => {
     return res.end(JSON.stringify({symbol:latestSymbol}));
   }
 
+  if(u.pathname === "/twelvedata"){
+    const symbol     = (u.query.symbol||"").toString().trim();
+    const interval   = (u.query.interval||"").toString().trim();
+    const outputsize = Math.max(1, Math.min(5000, parseInt(u.query.outputsize,10) || 200));
+    res.setHeader("Content-Type","application/json");
+    if(!symbol || !interval){
+      res.statusCode = 400;
+      return res.end(JSON.stringify({status:"error", code:400, message:"missing symbol or interval"}));
+    }
+    if(!TD_INTERVALS.has(interval)){
+      res.statusCode = 400;
+      return res.end(JSON.stringify({status:"error", code:400, message:"unsupported interval: "+interval}));
+    }
+    if(!TWELVE_DATA_API_KEY){
+      res.statusCode = 500;
+      return res.end(JSON.stringify({status:"error", code:500, message:"TWELVE_DATA_API_KEY is not set on the server"}));
+    }
+    const qs =
+      "symbol=" + encodeURIComponent(symbol) +
+      "&interval=" + encodeURIComponent(interval) +
+      "&outputsize=" + outputsize +
+      "&timezone=UTC" +
+      "&format=JSON" +
+      "&apikey=" + encodeURIComponent(TWELVE_DATA_API_KEY);
+    const tdReq = https.get("https://api.twelvedata.com/time_series?" + qs, { timeout: 8000 }, (tdRes) => {
+      let body = "";
+      tdRes.setEncoding("utf8");
+      tdRes.on("data", (chunk) => { body += chunk; });
+      tdRes.on("end", () => {
+        res.statusCode = tdRes.statusCode || 502;
+        res.end(body);
+      });
+    });
+    tdReq.on("timeout", () => { try { tdReq.destroy(new Error("timeout")); } catch(_){} });
+    tdReq.on("error", (e) => {
+      res.statusCode = 502;
+      res.end(JSON.stringify({status:"error", code:502, message:"twelvedata fetch failed: "+(e && e.message || e)}));
+    });
+    return;
+  }
+
   /* static */
   let p = decodeURIComponent(u.pathname);
   if(p === "/") p = "/index.html";
@@ -101,9 +145,10 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`[atlas] dashboard -> http://localhost:${PORT}`);
+  console.log(`[atlas] dashboard  -> http://localhost:${PORT}`);
   console.log(`[atlas] trigger    -> http://localhost:${PORT}/load?symbol=XYZ`);
   console.log(`[atlas] events     -> http://localhost:${PORT}/events (SSE)`);
+  console.log(`[atlas] twelvedata -> http://localhost:${PORT}/twelvedata?symbol=EUR/USD&interval=1h  (key ${TWELVE_DATA_API_KEY ? "loaded" : "MISSING"})`);
 });
 
 /* ----------------------- DISCORD BOT ----------------------- */

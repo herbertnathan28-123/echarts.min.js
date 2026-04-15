@@ -1,10 +1,10 @@
 /* ATLAS FX - charts-engine.js
-   FINAL CHART ENGINE FIX.
-   DOM targets: htf-1, htf-2, htf-3, htf-4, ltf-1, ltf-2, ltf-3, ltf-4.
-   Legacy DOM fallback: ch-htf-1W/1D/4H/1H, ch-ltf-30M/15M/5M/1M.
+   LIVE OHLC CHART ENGINE. Candlestick data comes exclusively from TwelveData
+   (via the /twelvedata server proxy using TWELVE_DATA_API_KEY). No mock data.
+   DOM targets: ch-htf-1W/1D/4H/1H, ch-ltf-30M/15M/5M/1M (plus legacy htf-1..4/ltf-1..4).
    Cache keys: ch-htf-1W, ch-htf-1D, ch-htf-4H, ch-htf-1H, ch-ltf-30M, ch-ltf-15M, ch-ltf-5M, ch-ltf-1M.
    Macro keys silent-loaded for macro engine: ch-macro-DXY, ch-macro-US10Y, ch-macro-EQUITIES, ch-macro-USDJPY.
-   chart.setOption called for every panel. Mock OHLC fallback on any failure. Zero blank charts. */
+   chart.setOption is called for every panel as soon as its bars arrive (under 1s typical). */
 (function(){
 var A = window.ATLAS = window.ATLAS || {};
 A.chartData = A.chartData || {};
@@ -28,10 +28,6 @@ var MACRO = [
   { key:"ch-macro-EQUITIES", sym:"EQUITIES", tf:"1H" },
   { key:"ch-macro-USDJPY",   sym:"USDJPY",   tf:"1H" }
 ];
-var TF_MS = { "1M":60000, "5M":300000, "15M":900000, "30M":1800000, "1H":3600000, "4H":14400000, "1D":86400000, "1W":604800000 };
-var SEED  = { DXY:103.2, US10Y:4.25, EQUITIES:5200, USDJPY:151.5, EURUSD:1.085, GBPUSD:1.265,
-              AUDJPY:97.5, USDCAD:1.37, USDCHF:0.91, AUDUSD:0.655, NZDUSD:0.59, EURJPY:164.5, GBPJPY:191.5 };
-
 function digitsFor(sym){
   if(A.FX && A.FX[sym]) return A.FX[sym].digits;
   if(A.SYMBOLS && A.SYMBOLS[sym]) return A.SYMBOLS[sym].digits;
@@ -47,25 +43,6 @@ function spreadPx(sym, close){
   if(dg>=5) return Math.max(close*0.000008, 0.00005);
   if(dg===3) return Math.max(close*0.00007, 0.007);
   return close*0.00012;
-}
-function mockBars(sym, tf, n){
-  n = n || 200;
-  var base = SEED[sym] != null ? SEED[sym] : 100;
-  var step = TF_MS[tf] || 3600000;
-  var now = Date.now();
-  var bars = [];
-  var p = base;
-  for(var i=n-1;i>=0;i--){
-    var o = p;
-    var drift = (Math.sin(i*0.11)+Math.cos(i*0.23))*base*0.0008;
-    var noise = (Math.random()-0.5)*base*0.0015;
-    var c = o + drift + noise;
-    var h = Math.max(o,c) + Math.abs(noise)*1.2;
-    var l = Math.min(o,c) - Math.abs(noise)*1.2;
-    bars.push([now - i*step, o, h, l, c]);
-    p = c;
-  }
-  return bars;
 }
 function findEl(ids){
   for(var i=0;i<ids.length;i++){
@@ -218,55 +195,42 @@ function updatePanelHdr(wrap, sym, tf, bars){
     spd.textContent = v;
   }
 }
-function fetchWithFallback(sym, tf){
-  var p;
-  try {
-    if(A.Feed && typeof A.Feed.fetchSymbol === "function"){
-      p = A.Feed.fetchSymbol(sym, tf);
-    } else {
-      p = Promise.reject(new Error("no feed"));
-    }
-  } catch(e){ p = Promise.reject(e); }
-  return p.then(function(r){
-    if(!r || !r.bars || !r.bars.length) throw new Error("empty");
+function fetchLive(sym, tf){
+  if(!A.Feed || typeof A.Feed.fetchSymbol !== "function"){
+    return Promise.reject(new Error("DataFeed not initialised"));
+  }
+  return A.Feed.fetchSymbol(sym, tf).then(function(r){
+    if(!r || !r.bars || !r.bars.length) throw new Error("twelvedata: empty bars for "+sym+"/"+tf);
     return r;
-  }).catch(function(){
-    return { provider:"MOCK", bars: mockBars(sym, tf, 200) };
   });
 }
 function loadPanel(p, sym){
   A.chartMeta[p.key] = { sym:sym, tf:p.tf, group:p.group };
   var found = findEl(p.domIds);
-  return fetchWithFallback(sym, p.tf).then(function(r){
+  return fetchLive(sym, p.tf).then(function(r){
     A.chartData[p.key] = r;
     if(found){
       var ch = buildOrGet(found.id);
       if(ch){
-        try { ch.setOption(chartOption(sym, p.tf, r.bars), true); } catch(e){}
+        try { ch.setOption(chartOption(sym, p.tf, r.bars), true); } catch(e){ console.error("[atlas] setOption fail", p.key, e); }
         var wrap = found.el.closest && found.el.closest(".chart-panel");
         if(wrap) updatePanelHdr(wrap, sym, p.tf, r.bars);
         setTimeout(function(){ renderLadder(ch, sym, r.bars); }, 16);
       }
     }
     return r;
-  }).catch(function(){
-    var fb = { provider:"MOCK", bars: mockBars(sym, p.tf, 200) };
-    A.chartData[p.key] = fb;
-    if(found){
-      var ch = buildOrGet(found.id);
-      if(ch){ try { ch.setOption(chartOption(sym, p.tf, fb.bars), true); } catch(e){} }
-    }
-    return fb;
+  }).catch(function(e){
+    console.error("[atlas] panel load failed", p.key, sym, p.tf, e && (e.message || e));
+    return null;
   });
 }
 function loadMacroSilent(){
   return Promise.allSettled(MACRO.map(function(m){
-    return fetchWithFallback(m.sym, m.tf).then(function(r){
+    return fetchLive(m.sym, m.tf).then(function(r){
       A.chartData[m.key] = r;
       A.chartMeta[m.key] = { sym:m.sym, tf:m.tf };
-    }).catch(function(){
-      A.chartData[m.key] = { provider:"MOCK", bars: mockBars(m.sym, m.tf, 200) };
-      A.chartMeta[m.key] = { sym:m.sym, tf:m.tf };
+    }).catch(function(e){
+      console.error("[atlas] macro load failed", m.key, e && (e.message || e));
     });
   }));
 }
@@ -303,7 +267,11 @@ A.Charts = {
     tasks.push(loadMacroSilent());
     return Promise.all(tasks).then(function(r){
       groupConnect();
-      if(A.status) A.status("ok", (A.src && A.src.provider) || "MOCK", "LIVE");
+      if(A.status){
+        var prov = (A.src && A.src.provider) || null;
+        if(prov) A.status("ok", prov, "LIVE");
+        else     A.status("err", "-", "NO DATA");
+      }
       return r;
     });
   },
