@@ -1,29 +1,34 @@
 /* ATLAS FX - spidey-engine.js
-   SPIDEY: Historical Context Engine + Scenario Engine.
-     Historical: four columns (DXY / US10Y / EQUITIES / USDJPY) - move %, volatility,
-     readable meaning per driver, conclusion, collective takeaway, and a "why these four"
-     explainer so a beginner understands the selection.
-     Scenario: primary / alternative / invalidation - plain English, actionable. */
+   "WHY THIS TRADE IS MOVING" + SCENARIO ENGINE.
+
+   Historical (renamed): four driver cards in a 2x2 grid. Each card carries
+   a relabelled, plain-english title and three sub-blocks per the spec:
+     1. What is happening
+     2. Why it matters
+     3. What it means for this trade
+   Driver labels:
+     DXY        - "DXY (US Dollar Strength)"
+     US10Y      - "US10Y (US Interest Rates)"
+     EQUITIES   - "Equities (Market Risk Appetite)"
+     USDJPY     - "USDJPY (Global Money Flow)"
+
+   Scenario: three plain-english outlooks - PRIMARY / ALTERNATIVE /
+   INVALIDATION. Each explains:
+     1. What would need to happen
+     2. What that would mean
+     3. What trade direction becomes more favourable
+   No abbreviations, no jargon. */
 (function(){
 var A = window.ATLAS;
-function pct(a,b){ return b? ((a-b)/b*100) : 0; }
-function stdev(arr){
-  if(!arr || arr.length<2) return 0;
-  var m = arr.reduce(function(s,v){return s+v;},0)/arr.length;
-  return Math.sqrt(arr.reduce(function(s,x){return s+(x-m)*(x-m);},0)/(arr.length-1));
-}
-function absPercentile(arr, v){
-  var n = arr.length; if(!n) return 0;
-  var a = Math.abs(v), k = 0;
-  for(var i=0;i<n;i++){ if(Math.abs(arr[i])<=a) k++; }
-  return k/n*100;
-}
+
+function pct(a,b){ return b ? ((a-b)/b*100) : 0; }
 function returns(bars){
-  var r=[]; for(var i=1;i<bars.length;i++){ r.push((bars[i][4]-bars[i-1][4])/bars[i-1][4]); } return r;
+  var r = []; for(var i=1;i<bars.length;i++){ r.push((bars[i][4]-bars[i-1][4])/bars[i-1][4]); } return r;
 }
 function atr(bars, n){
-  n = n||14; if(!bars || bars.length<2) return 0;
-  var trs=[];
+  n = n || 14;
+  if(!bars || bars.length<2) return 0;
+  var trs = [];
   for(var i=1;i<bars.length;i++){
     var h=bars[i][2], l=bars[i][3], pc=bars[i-1][4];
     trs.push(Math.max(h-l, Math.abs(h-pc), Math.abs(l-pc)));
@@ -31,176 +36,239 @@ function atr(bars, n){
   var slice = trs.slice(-n);
   return slice.reduce(function(s,v){return s+v;},0)/slice.length;
 }
-var EXPLAIN = {
+function favouredSymDir(sym, usdDir){
+  if(!usdDir) return 0;
+  if(/^USD/.test(sym)) return usdDir;
+  if(/USD$/.test(sym)) return -usdDir;
+  return 0;
+}
+
+/* Per-driver plain-english copy. Each function returns { what, why, means }
+   strings, where "means" is direction-aware so it speaks to the trade. */
+var DRIVERS = {
   DXY: {
-    title: "DXY - US DOLLAR INDEX",
-    role: "The broad strength of the US dollar against six major trading partners. If DXY rises, the dollar is winning against the world.",
-    up: "Dollar is bid - capital is flowing into US assets. Risk assets in non-USD terms get pressured.",
-    dn: "Dollar is offered - capital is leaving US assets. Relief for commodities, EM, and non-USD risk.",
-    flat: "Dollar indecisive - no dominant flow this window."
+    title: 'DXY (US Dollar Strength)',
+    role:  'A single number that tracks how strong the US Dollar is against six major currencies. When this index rises the dollar is winning across the board; when it falls the dollar is losing.',
+    what: function(m){
+      var d = m.dxy.dir, p = A.pct(m.dxy.pc);
+      if(d>0) return 'The US Dollar Index is moving higher. It has gained '+p+' across the recent window, which means the dollar is being bought against the major currencies.';
+      if(d<0) return 'The US Dollar Index is moving lower. It has lost '+p+' across the recent window, which means the dollar is being sold against the major currencies.';
+      return 'The US Dollar Index is broadly flat at '+p+' across the recent window. There is no clear direction in the dollar.';
+    },
+    why:  'The dollar is on one side of every currency pair, so when the dollar moves, every major pair moves with it. This index gives the cleanest picture of dollar direction in one number.',
+    means: function(sym, m){
+      var fav = favouredSymDir(sym, m.dxy.dir>0?1:m.dxy.dir<0?-1:0);
+      if(fav>0) return { txt:'A stronger dollar is supportive for this trade direction. Buying '+sym+' is more favourable while this index keeps rising.', cls:'gn' };
+      if(fav<0) return { txt:'A stronger dollar is against this trade direction. Buying '+sym+' will struggle while this index keeps rising.', cls:'dn' };
+      return { txt:'No clear dollar direction means this driver is currently neutral for the trade.', cls:'wh' };
+    }
   },
   US10Y: {
-    title: "US10Y - 10-YEAR TREASURY YIELD",
-    role: "The price of long-duration US debt. It reflects growth expectations, inflation, and Fed policy - the backbone discount rate for everything.",
-    up: "Yields rising - markets pricing stronger growth, stickier inflation, or tighter Fed. Discount rate pressure on long-duration assets.",
-    dn: "Yields falling - markets pricing slower growth, cooling inflation, or a more dovish Fed. Tailwind for duration-sensitive assets.",
-    flat: "Yields anchored - no repricing of the rate path this window."
+    title: 'US10Y (US Interest Rates)',
+    role:  'The yield (return) on a 10-year US government bond. Higher yields make holding dollars more rewarding; lower yields make dollars less attractive.',
+    what: function(m){
+      var d = m.y10.dir, p = A.pct(m.y10.pc);
+      if(d>0) return 'US 10-year interest rates are moving higher. Yields have risen '+p+' across the recent window, which usually attracts more money into the dollar.';
+      if(d<0) return 'US 10-year interest rates are moving lower. Yields have fallen '+p+' across the recent window, which usually pushes money out of the dollar.';
+      return 'US 10-year interest rates are broadly flat at '+p+'. There is no fresh repricing of the rate path in this window.';
+    },
+    why:  'Higher US interest rates pay more for holding dollars, so capital tends to flow into the dollar when rates rise. Falling rates have the opposite effect.',
+    means: function(sym, m){
+      var dir = m.y10.dir>0 ? 1 : m.y10.dir<0 ? -1 : 0;
+      var fav = favouredSymDir(sym, dir);
+      if(fav>0) return { txt:'Rates moving in this direction support the trade. The interest-rate signal lines up with what is favoured for '+sym+'.', cls:'gn' };
+      if(fav<0) return { txt:'Rates moving in this direction work against the trade. The interest-rate signal opposes what is favoured for '+sym+'.', cls:'dn' };
+      return { txt:'Flat rates leave this driver neutral for the trade.', cls:'wh' };
+    }
   },
   EQUITIES: {
-    title: "EQUITIES - S&P 500 FUTURES",
-    role: "Primary risk proxy. When stocks rise, the market is willing to take risk; when they fall, risk appetite is retreating.",
-    up: "Risk-on - capital chasing growth exposure. Expect commodity FX bid, JPY/CHF offered.",
-    dn: "Risk-off - capital exiting growth. Expect safe-haven FX bid, commodity FX pressured.",
-    flat: "Risk appetite neutral - no dominant tone this window."
+    title: 'Equities (Market Risk Appetite)',
+    role:  'The S&P 500 (the main US stock market). Rising stocks usually mean investors are willing to take risk; falling stocks mean investors want safety.',
+    what: function(m){
+      var d = m.eq.dir, p = A.pct(m.eq.pc);
+      if(d>0) return 'The US stock market is moving higher. It has gained '+p+' across the recent window, which signals investors are happy to take risk.';
+      if(d<0) return 'The US stock market is moving lower. It has lost '+p+' across the recent window, which signals investors are seeking safety.';
+      return 'The US stock market is broadly flat at '+p+'. Risk appetite is undecided in this window.';
+    },
+    why:  'When investors want risk, money tends to leave the dollar and chase higher returns abroad. When investors want safety, money tends to flow into the dollar.',
+    means: function(sym, m){
+      /* Equities rise -> usually USD weakens -> invert sign for "USD direction"
+         contribution. */
+      var usdDir = m.eq.dir>0 ? -1 : m.eq.dir<0 ? 1 : 0;
+      var fav = favouredSymDir(sym, usdDir);
+      if(fav>0) return { txt:'Risk appetite is moving in a way that supports the trade. This regime favours buying '+sym+'.', cls:'gn' };
+      if(fav<0) return { txt:'Risk appetite is moving in a way that works against the trade. This regime makes buying '+sym+' harder.', cls:'dn' };
+      return { txt:'Mixed risk appetite leaves this driver neutral for the trade.', cls:'wh' };
+    }
   },
   USDJPY: {
-    title: "USDJPY - DOLLAR / JAPANESE YEN",
-    role: "The most rate-sensitive major pair in the world. Carries the global yield differential and funds the biggest carry trade in FX. Also a stress barometer.",
-    up: "USDJPY rising - yield differential widening and/or carry being funded. Often confirms a USD-strong, risk-on tape.",
-    dn: "USDJPY falling - differential compressing, carry unwinding, or risk-off flows into yen. Often confirms a USD-weak or stress tape.",
-    flat: "USDJPY stable - no impulse from the rate spread or from funding."
+    title: 'USDJPY (Global Money Flow)',
+    role:  'The dollar against the Japanese yen. This pair is the cleanest real-time read on global money flow because Japan is one of the largest sources of capital that funds positions in other currencies.',
+    what: function(m){
+      var d = m.jpy.dir, p = A.pct(m.jpy.pc);
+      if(d>0) return 'The dollar / yen pair is moving higher. It has gained '+p+' across the recent window, which usually means money is flowing into the dollar.';
+      if(d<0) return 'The dollar / yen pair is moving lower. It has lost '+p+' across the recent window, which usually means money is flowing out of the dollar.';
+      return 'The dollar / yen pair is broadly flat at '+p+'. There is no committed money-flow direction in this window.';
+    },
+    why:  'When this pair rises with rising US interest rates, money is being moved into the dollar in size. When it falls with falling US rates, money is being moved out of the dollar in size.',
+    means: function(sym, m){
+      var fav = favouredSymDir(sym, m.jpy.dir>0?1:m.jpy.dir<0?-1:0);
+      if(fav>0) return { txt:'Money flow is supportive for this trade. The flow signal lines up with what is favoured for '+sym+'.', cls:'gn' };
+      if(fav<0) return { txt:'Money flow is against this trade. The flow signal opposes what is favoured for '+sym+'.', cls:'dn' };
+      return { txt:'Mixed money flow leaves this driver neutral for the trade.', cls:'wh' };
+    }
   }
 };
-function columnCell(key, bars){
-  var E = EXPLAIN[key];
-  if(!bars || bars.length<5){
-    return '<div class="hist-col"><div class="hc-k">'+E.title+'</div><div class="hc-role">'+E.role+'</div><div class="mut">awaiting data...</div></div>';
+
+function blk(klass, label, text){
+  return '<div class="hc-block '+klass+'"><div class="blk-k">'+label+'</div><div class="blk-v">'+text+'</div></div>';
+}
+
+function driverCard(key, sym, m, hasBars){
+  var D = DRIVERS[key];
+  if(!hasBars){
+    return '<div class="hist-col">'+
+      '<div class="hc-k">'+D.title+'</div>'+
+      '<div class="hc-role">'+D.role+'</div>'+
+      '<div class="mut">awaiting data...</div>'+
+    '</div>';
   }
-  var rets = returns(bars);
-  var last = bars[bars.length-1][4];
-  var first = bars[0][4];
-  var chg = last-first, pc = pct(last, first);
-  var sd = stdev(rets)*100;
-  var perc = absPercentile(rets, rets[rets.length-1]);
-  var z = sd ? (rets[rets.length-1]*100)/sd : 0;
-  var cls = pc>0?"up":pc<0?"dn":"mut";
-  var intensity = perc>=90?"EXTREME":perc>=75?"ELEVATED":perc>=50?"NORMAL":"QUIET";
-  var intCls = perc>=90?"dn":perc>=75?"hi":perc>=50?"gn":"mut";
-  var dir = pc>0?"up":pc<0?"dn":"flat";
-  var meaning = E[dir];
-  var conclusion;
-  if(intensity==="EXTREME") conclusion = "Move is in the top 10% of recent activity - respect it, it's meaningful.";
-  else if(intensity==="ELEVATED") conclusion = "Move is larger than usual - trade with awareness, not complacency.";
-  else if(intensity==="NORMAL") conclusion = "Move is within typical range - standard playbook applies.";
-  else conclusion = "Move is compressed - breakout risk elevated, position smaller.";
+  var means = D.means(sym, m);
   return '<div class="hist-col">'+
-    '<div class="hc-k">'+E.title+'</div>'+
-    '<div class="hc-role">'+E.role+'</div>'+
-    '<div class="hc-stats">'+
-      '<div class="hc-row"><span class="hc-lbl">CHANGE</span><span class="'+cls+'">'+A.pct(pc)+'</span></div>'+
-      '<div class="hc-row"><span class="hc-lbl">VOLATILITY</span><span>sigma '+sd.toFixed(3)+'%</span></div>'+
-      '<div class="hc-row"><span class="hc-lbl">Z-SCORE</span><span>'+z.toFixed(2)+'sigma</span></div>'+
-      '<div class="hc-row"><span class="hc-lbl">INTENSITY</span><span class="'+intCls+'">'+intensity+' * p'+perc.toFixed(0)+'</span></div>'+
-    '</div>'+
-    '<div class="hc-mean"><b>MEANING.</b> '+meaning+'</div>'+
-    '<div class="hc-conc"><b>CONCLUSION.</b> '+conclusion+'</div>'+
+    '<div class="hc-k">'+D.title+'</div>'+
+    '<div class="hc-role">'+D.role+'</div>'+
+    blk('what',  'WHAT IS HAPPENING',           D.what(m)) +
+    blk('why',   'WHY IT MATTERS',              D.why) +
+    blk('means '+means.cls, 'WHAT IT MEANS FOR THIS TRADE', means.txt) +
   '</div>';
 }
-function collectiveTakeaway(st){
-  if(!st || !st.moves) return "";
-  var m = st.moves;
+
+function collectiveTakeaway(sym, st){
+  if(!st || !st.moves) return '';
   if(st.biasDir>=1){
-    return "All four drivers line up for a <b class='gn'>USD-LONG regime</b>. The dollar is strong, yields support carry, and risk flows favour US assets. The cleanest trades are with the dollar: long USDJPY, long USDCAD, short commodity FX, short EUR / GBP into strength. Size full, stops honoured.";
+    return 'All four drivers line up for a <b class="gn">stronger US Dollar</b>. The cleanest action is to follow the dollar: <b>'+
+      (favouredSymDir(sym, 1)>0 ? 'buying' : favouredSymDir(sym, 1)<0 ? 'selling' : 'standing aside on')+
+      ' '+sym+'</b> while this picture holds.';
   }
   if(st.biasDir<=-1){
-    return "All four drivers line up for a <b class='dn'>USD-SHORT regime</b>. The dollar is offered, yields are compressing, and risk flows favour non-US assets. The cleanest trades are against the dollar: long EURUSD on dips, long AUD/NZD, short DXY. Size full, stops honoured.";
+    return 'All four drivers line up for a <b class="dn">weaker US Dollar</b>. The cleanest action is to follow the move: <b>'+
+      (favouredSymDir(sym, -1)>0 ? 'buying' : favouredSymDir(sym, -1)<0 ? 'selling' : 'standing aside on')+
+      ' '+sym+'</b> while this picture holds.';
   }
-  return "The four drivers <b class='hi'>do not align</b>. Don't force a trend. Range-trade the majors, fade extremes, or stand aside until a catalyst resets the tape. Conviction trades today will pay poorly - scale down.";
+  return 'The four drivers <b class="wh">do not agree</b>. There is no clean direction in the dollar this session. <b>Standing aside on '+sym+'</b> preserves capital until the picture sharpens.';
 }
-var WHY_FOUR = "These four drivers form the minimum macro picture for trading FX. <b>DXY</b> tells you the dollar's direction in one number. <b>US10Y</b> tells you the world's benchmark cost of money. <b>Equities</b> tell you risk appetite. <b>USDJPY</b> is the cleanest real-time readout of carry and stress in global FX. Watch these four and you see everything else - ignore any of them and you're flying blind on at least one vector.";
+
+var WHY_FOUR = 'These four drivers form the smallest set that fully explains FX moves. ' +
+  '<b>The Dollar Index</b> tells you the dollar\'s direction in one number. ' +
+  '<b>US Interest Rates</b> tell you how rewarding it is to hold dollars. ' +
+  '<b>Equities</b> tell you how willing investors are to take risk. ' +
+  '<b>The Dollar / Yen pair</b> tells you which way money is actually flowing in size. ' +
+  'When all four agree, the trade has the strongest case. When they disagree, the trade has the weakest case.';
+
 A.Spidey = {
   state: {},
   update: function(){
     var cd = A.chartData || {};
-    var grid = document.getElementById("hist-grid");
+    var dxy = (cd['ch-macro-DXY']      || {}).bars;
+    var y10 = (cd['ch-macro-US10Y']    || {}).bars;
+    var eq  = (cd['ch-macro-EQUITIES'] || {}).bars;
+    var jpy = (cd['ch-macro-USDJPY']   || {}).bars;
+    var sym = A.activeSymbol || 'EURUSD';
+    var st  = A.Macro && A.Macro.state;
+
+    var grid = document.getElementById('hist-grid');
     if(grid){
+      var hasAll = !!(st && st.moves);
       grid.innerHTML =
-        columnCell("DXY",      (cd["ch-macro-DXY"]      || {}).bars) +
-        columnCell("US10Y",    (cd["ch-macro-US10Y"]    || {}).bars) +
-        columnCell("EQUITIES", (cd["ch-macro-EQUITIES"] || {}).bars) +
-        columnCell("USDJPY",   (cd["ch-macro-USDJPY"]   || {}).bars);
+        driverCard('DXY',      sym, st && st.moves, hasAll) +
+        driverCard('US10Y',    sym, st && st.moves, hasAll) +
+        driverCard('EQUITIES', sym, st && st.moves, hasAll) +
+        driverCard('USDJPY',   sym, st && st.moves, hasAll);
     }
-    var narr = document.getElementById("hist-narrative");
-    var why  = document.getElementById("hist-why");
-    var st = A.Macro && A.Macro.state;
-    if(narr) narr.innerHTML = '<div class="hist-take"><div class="hc-k">COLLECTIVE TAKEAWAY</div><div>'+collectiveTakeaway(st)+'</div></div>';
-    if(why)  why.innerHTML  = '<div class="hist-why"><div class="hc-k">WHY THESE FOUR DRIVERS</div><div>'+WHY_FOUR+'</div></div>';
-    /* SCENARIO ENGINE */
-    var jpy = (cd["ch-macro-USDJPY"] || {}).bars;
-    var dxy = (cd["ch-macro-DXY"]    || {}).bars;
+    var narr = document.getElementById('hist-narrative');
+    var why  = document.getElementById('hist-why');
+    if(narr) narr.innerHTML = '<div class="hist-take"><div class="hc-k">COLLECTIVE TAKEAWAY</div><div>'+collectiveTakeaway(sym, st)+'</div></div>';
+    if(why)  why.innerHTML  = '<div class="hist-why-wrap"><div class="hc-k">WHY THESE FOUR DRIVERS</div><div>'+WHY_FOUR+'</div></div>';
+
+    /* SCENARIO ENGINE - plain english, three blocks per scenario. */
     if(!jpy || !dxy || !st || !st.moves) return;
     var lastJ = jpy[jpy.length-1][4], atrJ = atr(jpy,14);
     var lastD = dxy[dxy.length-1][4], atrD = atr(dxy,14);
+
     var primary, alt, inv;
+    var favDir = favouredSymDir(sym, st.biasDir);
+
     if(st.biasDir>=1){
       primary = {
-        hd:"BUY USDJPY ON PULLBACK",
-        t:"Wait for USDJPY to dip toward "+A.fmt(lastJ-atrJ,3)+" (roughly one average day's range below current). Enter long there. Target "+A.fmt(lastJ+2*atrJ,3)+" - that's two ranges above current.",
-        g:"Translation: the dollar is strong. Don't chase - wait for a small pullback, then buy, and aim for a decent move higher.",
-        c:"gn"
+        c:'gn', hd:(favDir>0?'BUY ':'SELL ')+sym+' ON A SMALL MOVE TO THE LEVEL',
+        what:'The dollar continues to be bought, the dollar / yen pair pulls back briefly to '+A.fmt(lastJ-atrJ,3)+', and price comes back to the entry zone for '+sym+'.',
+        means:'A continuation of the current dollar strength means '+sym+' should '+(favDir>0?'move higher':'move lower')+' from the entry zone.',
+        fav:'<b>'+(favDir>0?'Buying':'Selling')+' '+sym+'</b> becomes more favourable. Aim for the exit zone roughly two average ranges in the trade direction.'
       };
       alt = {
-        hd:"ROTATE TO LONG AUDJPY / SHORT EURUSD",
-        t:"If DXY fades below "+A.fmt(lastD-atrD,2)+" WITH equities still bid, the dollar thesis is softening but risk is on. Rotate from USDJPY into long AUDJPY (carry + risk-on) or short EURUSD reversal setups.",
-        g:"Translation: if the dollar stops rising but stocks keep going up, switch to trades that win when risk is on but the euro is weak.",
-        c:"hi"
+        c:'wh', hd:'ROTATE INTO A RELATED RISK-ON TRADE',
+        what:'The dollar index pauses below '+A.fmt(lastD-atrD,2)+' but the stock market keeps rising. The dollar story softens while risk appetite stays strong.',
+        means:'Money is still flowing, but it is moving into risk assets rather than into the dollar. The original trade case weakens but a related theme stays alive.',
+        fav:'A short trade on the euro / dollar reversal, or a long trade on the Australian dollar / yen pair, becomes more favourable than the original trade.'
       };
       inv = {
-        hd:"STOP TRADING LONG-USD IF...",
-        t:"Invalidate the USD-long thesis if DXY closes below "+A.fmt(lastD-1.5*atrD,2)+" OR US10Y reverses more than 1.5 ATR against the current direction. Either event means the macro picture has flipped.",
-        g:"Translation: if the dollar index falls below that level, or yields collapse, tear up the plan - the edge is gone.",
-        c:"dn"
+        c:'dn', hd:'STOP TRADING IN THIS DIRECTION',
+        what:'The dollar index closes below '+A.fmt(lastD-1.5*atrD,2)+', or US interest rates reverse by more than 1.5 average ranges against the current direction.',
+        means:'The macro picture has flipped. The original case for a stronger dollar is no longer valid.',
+        fav:'<b>No new trade</b> in the original direction. The thesis is finished - close any open positions and wait for a new picture.'
       };
     } else if(st.biasDir<=-1){
       primary = {
-        hd:"SELL USDJPY ON BOUNCE",
-        t:"Wait for USDJPY to bounce toward "+A.fmt(lastJ+atrJ,3)+". Enter short there. Target "+A.fmt(lastJ-2*atrJ,3)+" - two ranges lower.",
-        g:"Translation: the dollar is weak. Don't short blindly - wait for a bounce, then sell, and aim for a meaningful drop.",
-        c:"dn"
+        c:'gn', hd:(favDir>0?'BUY ':'SELL ')+sym+' ON A SMALL MOVE TO THE LEVEL',
+        what:'The dollar continues to be sold, the dollar / yen pair bounces briefly to '+A.fmt(lastJ+atrJ,3)+', and price comes back to the entry zone for '+sym+'.',
+        means:'A continuation of the current dollar weakness means '+sym+' should '+(favDir>0?'move higher':'move lower')+' from the entry zone.',
+        fav:'<b>'+(favDir>0?'Buying':'Selling')+' '+sym+'</b> becomes more favourable. Aim for the exit zone roughly two average ranges in the trade direction.'
       };
       alt = {
-        hd:"FLIP TO LONG USDJPY / SHORT EURUSD",
-        t:"If DXY reclaims "+A.fmt(lastD+atrD,2)+" WITH yields bid, the regime is flipping back. Flip to long USDJPY on the retest and short EURUSD reversal.",
-        g:"Translation: if the dollar suddenly turns up with rising yields, flip your view - go with the new move.",
-        c:"hi"
+        c:'wh', hd:'FLIP TO THE OTHER SIDE OF THE TRADE',
+        what:'The dollar index reclaims '+A.fmt(lastD+atrD,2)+' while interest rates rise. The dollar story has flipped back to strong.',
+        means:'The macro regime has rotated back to a stronger dollar. The original direction is no longer the most favourable.',
+        fav:'<b>'+(favDir>0?'Selling':'Buying')+' '+sym+'</b> becomes more favourable. Take the new direction with smaller size until the move confirms.'
       };
       inv = {
-        hd:"STOP TRADING SHORT-USD IF...",
-        t:"Invalidate the USD-short thesis if DXY closes above "+A.fmt(lastD+1.5*atrD,2)+" OR equities break down sharply. Either signals a regime reversal.",
-        g:"Translation: if the dollar breaks through that level or stocks crash, the short-dollar trade is dead - step aside.",
-        c:"up"
+        c:'dn', hd:'STOP TRADING IN THIS DIRECTION',
+        what:'The dollar index closes above '+A.fmt(lastD+1.5*atrD,2)+', or the stock market breaks down sharply.',
+        means:'The macro picture has flipped. The original case for a weaker dollar is no longer valid.',
+        fav:'<b>No new trade</b> in the original direction. The thesis is finished - close any open positions and wait for a new picture.'
       };
     } else {
       primary = {
-        hd:"RANGE-TRADE USDJPY",
-        t:"Fade the extremes between "+A.fmt(lastJ-atrJ,3)+" and "+A.fmt(lastJ+atrJ,3)+". Short the top, buy the bottom, small size.",
-        g:"Translation: no clear trend. Sell the high end of the range, buy the low end, keep sizes small.",
-        c:"hi"
+        c:'wh', hd:'TRADE THE EDGES OF THE RANGE WITH SMALL SIZE',
+        what:'No clear macro direction. '+sym+' rotates between '+A.fmt(lastJ-atrJ,3)+' and '+A.fmt(lastJ+atrJ,3)+'.',
+        means:'The session is range-bound. Neither buyers nor sellers have control of the tape.',
+        fav:'A small short near the upper edge or a small long near the lower edge can be considered, with very small position size only.'
       };
       alt = {
-        hd:"WAIT FOR BREAKOUT",
-        t:"A decisive DXY close outside +/-"+A.fmt(atrD,2)+" triggers a directional trade - follow the breakout with stops just inside the range.",
-        g:"Translation: if the dollar index breaks out of its recent range, jump on that move in the breakout direction.",
-        c:"hi"
+        c:'wh', hd:'WAIT FOR A CLEAN BREAK OF THE RANGE',
+        what:'The dollar index breaks decisively outside +/- '+A.fmt(atrD,2)+', triggering a directional move.',
+        means:'A clean break would mark the start of a new trend. The range view is replaced by a directional view.',
+        fav:'A trade in the breakout direction becomes more favourable, with stops placed just inside the broken range.'
       };
       inv = {
-        hd:"ABANDON RANGE IF...",
-        t:"Invalidate the range-fade on a two-candle breakout expansion greater than 1.5 ATR on DXY or US10Y. That is the range failing.",
-        g:"Translation: if the market decisively breaks out with strong candles, stop fading - the range is done.",
-        c:"dn"
+        c:'dn', hd:'STOP FADING THE RANGE IF...',
+        what:'Two consecutive bars expand by more than 1.5 average ranges on either the dollar index or US interest rates.',
+        means:'The range has failed. The market has chosen a side and committed.',
+        fav:'<b>No more range trades.</b> Switch to following the breakout in its new direction.'
       };
     }
-    var sg = document.getElementById("scen-grid");
+
+    var sg = document.getElementById('scen-grid');
     if(sg){
-      var render = function(col, s){
+      function renderScen(col, s){
         return '<div class="scen-col '+col+'">'+
           '<div class="sc-k">'+col.toUpperCase()+'</div>'+
           '<div class="sc-hd '+s.c+'">'+s.hd+'</div>'+
-          '<div class="sc-t">'+s.t+'</div>'+
-          '<div class="sc-gh"><b>IN PLAIN ENGLISH.</b> '+s.g+'</div>'+
+          '<div class="hc-block what"><div class="blk-k">WHAT WOULD NEED TO HAPPEN</div><div class="blk-v">'+s.what+'</div></div>'+
+          '<div class="hc-block why"><div class="blk-k">WHAT THAT WOULD MEAN</div><div class="blk-v">'+s.means+'</div></div>'+
+          '<div class="hc-block means '+s.c+'"><div class="blk-k">WHAT BECOMES MORE FAVOURABLE</div><div class="blk-v">'+s.fav+'</div></div>'+
         '</div>';
-      };
-      sg.innerHTML = render("primary",primary)+render("alternative",alt)+render("invalidation",inv);
+      }
+      sg.innerHTML = renderScen('primary', primary) + renderScen('alternative', alt) + renderScen('invalidation', inv);
     }
     A.Spidey.state = { primary:primary, alt:alt, inv:inv, atrJ:atrJ, atrD:atrD };
   }

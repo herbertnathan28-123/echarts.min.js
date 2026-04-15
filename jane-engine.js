@@ -97,14 +97,14 @@ function includeEvent(title){
 
 var EV_FALLBACK =
   '<div class="ev-fallback">'+
-    '<div class="evf-hd">No major high-impact events currently scheduled.</div>'+
-    '<div class="evf-sub">Market is reacting to:</div>'+
+    '<div class="evf-hd">No scheduled news is moving the trade right now.</div>'+
+    '<div class="evf-sub">Price is being driven by macro flow rather than headlines:</div>'+
     '<ul class="evf-list">'+
-      '<li>DXY movement</li>'+
-      '<li>US10Y yield movement</li>'+
-      '<li>Equity risk flow</li>'+
+      '<li>The strength or weakness of the US Dollar</li>'+
+      '<li>Movement in US interest rates</li>'+
+      '<li>The direction of risk in the stock market</li>'+
     '</ul>'+
-    '<div class="evf-interp"><b>Interpretation:</b> Current conditions are flow-driven, not news-driven.</div>'+
+    '<div class="evf-interp"><b>What this means for the trade:</b> Without an active news catalyst, the trade should be based on the macro picture in the Status and Mechanism sections. A surprise headline can change the picture quickly - keep position size sensible.</div>'+
   '</div>';
 
 var TERMS = [
@@ -149,25 +149,35 @@ A.Jane = {
     var list = document.getElementById("ev-list"); if(!list) return;
     return A.Feed.fetchEvents().then(function(evts){
       var now = Date.now();
+      /* Only show high-impact items that are landing inside the next ~24 hours
+         or that landed in the last 4 hours (those that may still be moving the
+         tape). Anything else is noise for an FX trader. */
       var filtered = (evts||[]).filter(function(e){
         if(!e || !e.title) return false;
         if(!includeEvent(e.title)) return false;
+        if(!/high/i.test(e.impact||"")) return false;
         var t = new Date(e.date).getTime();
-        return t >= now - 6*3600*1000 && t <= now + 7*24*3600*1000;
-      }).sort(function(a,b){ return new Date(a.date) - new Date(b.date); }).slice(0,24);
+        return t >= now - 4*3600*1000 && t <= now + 24*3600*1000;
+      }).sort(function(a,b){ return new Date(a.date) - new Date(b.date); }).slice(0,12);
       if(!filtered.length){ list.innerHTML = EV_FALLBACK; return; }
       list.innerHTML = filtered.map(function(e){
         var dt = new Date(e.date);
         var cls = evClass(e.impact);
         var ty = evType(e.title);
         var when = dt.toISOString().substr(5,11).replace("T"," ") + "Z";
-        var ccy = e.country||"";
-        var fc = (e.forecast!=null&&e.forecast!=="")?("F "+e.forecast):"";
-        var pv = (e.previous!=null&&e.previous!=="")?(" . P "+e.previous):"";
+        var ccy = e.country || "";
+        var landed = dt.getTime() < now;
+        var fc = (e.forecast!=null && e.forecast!=="") ? ("Forecast " + e.forecast) : "";
+        var pv = (e.previous!=null && e.previous!=="") ? (" . Previous " + e.previous) : "";
+        var plain = landed
+          ? 'This event has already landed and may still be moving the trade. Compare the actual print to the forecast - a surprise in either direction will keep the move running.'
+          : 'This event is scheduled. The market will likely tighten ranges before it lands and move sharply when it prints. Plan position size accordingly.';
         return '<div class="ev '+cls+'">'+
           '<div class="ev-top"><span>'+ccy+' . '+ty+'</span><span>'+when+'</span></div>'+
           '<div class="ev-tt">'+e.title+'</div>'+
-          '<div class="ev-ft">'+fc+pv+'</div></div>';
+          '<div class="ev-ft">'+fc+pv+'</div>'+
+          '<div class="ev-plain">'+plain+'</div>'+
+        '</div>';
       }).join("");
     }).catch(function(){
       list.innerHTML = EV_FALLBACK;

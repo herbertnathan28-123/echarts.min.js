@@ -1,127 +1,158 @@
 /* ATLAS FX - corey-engine.js
-   COREY: Mechanism Chain - five boxes explaining cause -> effect propagation.
-     Catalyst -> Transmission -> Risk Response -> FX Terminal -> Outcome
-   Each box contains full readable text derived from live macro state - no jargon without
-   a plain-English translation underneath, so a greenhorn can follow the logic. */
+   MECHANISM ENGINE - four blocks, plain English, no jargon.
+     1. CAUSE          - what triggered the move
+     2. MARKET REACTION - how rates / equities responded
+     3. FX IMPACT      - how that fed through to the dollar and FX
+     4. TRADE OUTCOME  - what direction is more favourable now
+
+   Every block answers, in this order:
+     - What happened
+     - Why it matters
+     - What it means for this trade
+
+   Forbidden vocabulary removed: transmission, terminal, carry trade,
+   yield differential. */
 (function(){
 var A = window.ATLAS;
-function fmtMove(m){ return (m.pc>=0?"+":"")+(+m.pc).toFixed(2)+"%"; }
-function word(dir, up, dn, flat){ return dir>0?up : dir<0?dn : flat; }
-function box(step, label, text, greenhorn, cls){
-  return '<div class="chain-box '+(cls||"")+'">'+
+
+function favouredSymDir(sym, usdDir){
+  if(!usdDir) return 0;
+  if(/^USD/.test(sym)) return usdDir;
+  if(/USD$/.test(sym)) return -usdDir;
+  return 0;
+}
+
+function blk(klass, label, text){
+  return '<div class="hc-block '+klass+'"><div class="blk-k">'+label+'</div><div class="blk-v">'+text+'</div></div>';
+}
+
+function box(step, label, cls, what, why, means){
+  return '<div class="chain-box '+(cls||'')+'">'+
     '<div class="cb-step">STEP '+step+'</div>'+
     '<div class="cb-lbl">'+label+'</div>'+
-    '<div class="cb-body">'+text+'</div>'+
-    '<div class="cb-gh">'+greenhorn+'</div>'+
+    blk('what',  'WHAT HAPPENED',                  what) +
+    blk('why',   'WHY IT MATTERS',                 why) +
+    blk('means '+(cls||''), 'WHAT IT MEANS FOR THIS TRADE', means) +
   '</div>';
 }
+
 A.Corey = {
   update: function(){
     var st = A.Macro && A.Macro.state;
-    var root = document.getElementById("mech-chain"); if(!root) return;
-    if(!st || !st.moves){ root.innerHTML = '<div class="mut">awaiting macro data...</div>'; return; }
+    var root = document.getElementById('mech-chain');
+    if(!root) return;
+    if(!st || !st.moves){
+      root.innerHTML = '<div class="mut" style="padding:14px 16px">awaiting macro data...</div>';
+      return;
+    }
+    var sym = (A.activeSymbol || 'EURUSD');
     var m = st.moves;
-    /* STEP 1 CATALYST */
-    var catalyst, cgh, cCls;
+    var favDir = favouredSymDir(sym, st.biasDir);
+
+    /* STEP 1 - CAUSE */
+    var causeWhat, causeWhy, causeMeans, causeCls;
     if(Math.abs(m.y10.pc) > Math.abs(m.dxy.pc)){
-      catalyst = "US 10-year Treasury yield is "+word(m.y10.dir,"rising","falling","flat")+" "+fmtMove(m.y10)+". Bond pricing leads the cycle today - the rates market is repricing expectations of Fed policy or growth before FX does.";
-      cgh = "Translation: the bond market moved first. When US yields rise, holding dollars pays more; when they fall, the dollar becomes less attractive. Everything else reacts to this.";
-      cCls = m.y10.dir>0?"up":m.y10.dir<0?"dn":"mut";
+      causeWhat = 'US interest rates moved first this session, '+(m.y10.dir>0?'rising':m.y10.dir<0?'falling':'flat at')+' '+A.pct(m.y10.pc)+'. The bond market repriced before the currency market.';
+      causeWhy  = 'Interest rates are the foundation for currency pricing. When US rates change, the value of holding dollars changes, and FX adjusts to follow.';
+      causeMeans = (favDir>0)
+        ? 'The cause supports a higher move in '+sym+'.'
+        : (favDir<0)
+        ? 'The cause supports a lower move in '+sym+'.'
+        : 'The cause has no clean read for '+sym+' yet.';
+      causeCls = m.y10.dir>0 ? 'up' : m.y10.dir<0 ? 'dn' : 'wh';
     } else {
-      catalyst = "The Dollar Index (DXY) is "+word(m.dxy.dir,"bid","offered","flat")+" "+fmtMove(m.dxy)+". The USD itself is leading - likely reserve flow, risk-off funding demand, or intervention - rather than yields.";
-      cgh = "Translation: dollars are being bought or sold directly. That usually means big institutions are moving money in or out of US assets for reasons beyond just interest rates.";
-      cCls = m.dxy.dir>0?"up":m.dxy.dir<0?"dn":"mut";
+      causeWhat = 'The dollar moved first this session, '+(m.dxy.dir>0?'being bought':m.dxy.dir<0?'being sold':'staying flat')+' for '+A.pct(m.dxy.pc)+'. The currency market repriced before the bond market.';
+      causeWhy  = 'When the dollar moves on its own without rates leading, big institutions are usually moving capital in or out of US assets directly.';
+      causeMeans = (favDir>0)
+        ? 'The cause supports a higher move in '+sym+'.'
+        : (favDir<0)
+        ? 'The cause supports a lower move in '+sym+'.'
+        : 'The cause has no clean read for '+sym+' yet.';
+      causeCls = m.dxy.dir>0 ? 'up' : m.dxy.dir<0 ? 'dn' : 'wh';
     }
-    /* STEP 2 TRANSMISSION */
-    var trans, tgh, tCls;
-    if(m.y10.dir>0 && m.dxy.dir>0){
-      trans = "Rising yields AND a stronger dollar confirm each other. Global capital is rotating into USD assets because real returns there look better than alternatives. This is the cleanest USD-long signal.";
-      tgh = "Translation: bonds and dollars are both attractive. When they both go up together, the rest of the world is sending money to America.";
-      tCls = "up";
-    } else if(m.y10.dir<0 && m.dxy.dir<0){
-      trans = "Falling yields AND a weaker dollar. The reserve edge is compressing. Funds are leaving USD paper for higher-yielding currencies or for riskier assets abroad.";
-      tgh = "Translation: people don't want the dollar as much. They're moving money out of the US and into other countries or assets.";
-      tCls = "dn";
-    } else if(m.y10.dir>0){
-      trans = "Yields up but DXY not confirming. Growth/risk channel is dominating the rates channel - higher rates are being offset by risk-on flows into non-USD risk.";
-      tgh = "Translation: yields are rising but the dollar isn't - the market is treating rising rates as a growth story, not a defensive one, so money flows to riskier assets elsewhere.";
-      tCls = "hi";
-    } else if(m.y10.dir<0){
-      trans = "Yields down but DXY bid. Safe-haven or funding-stress channel is dominating. When US rates fall and the dollar still rises, something is breaking somewhere.";
-      tgh = "Translation: yields are dropping but the dollar is still strong - that's unusual, and usually means traders are nervous and parking cash in dollars for safety.";
-      tCls = "hi";
-    } else {
-      trans = "Cross-asset signals are unclear. Yield and USD are not aligned - the transmission channel is undecided.";
-      tgh = "Translation: the bond market and the dollar disagree. Wait for clearer signals before taking positions.";
-      tCls = "mut";
-    }
-    /* STEP 3 RISK RESPONSE */
-    var risk, rgh, rCls;
+
+    /* STEP 2 - MARKET REACTION */
+    var rxWhat, rxWhy, rxMeans, rxCls;
     if(m.eq.dir>0 && m.dxy.dir<0){
-      risk = "Equities bid while USD is offered - textbook reflation tape. Investors prefer stocks over bonds/cash; risk appetite is high.";
-      rgh = "Translation: stocks up, dollar down = risk-on. People are feeling confident and buying growth assets.";
-      rCls = "up";
+      rxWhat = 'The stock market moved higher while the dollar moved lower. Investors are buying risk and selling safety.';
+      rxWhy  = 'Money tends to leave the dollar when risk appetite is strong. This combination is a classic risk-on tape.';
+      rxCls  = 'up';
     } else if(m.eq.dir<0 && m.dxy.dir>0){
-      risk = "Equities offered while USD is bid - classic risk-off rotation. Stocks are being sold and proceeds parked in dollars.";
-      rgh = "Translation: stocks down, dollar up = risk-off. Investors are scared and hiding in dollars.";
-      rCls = "dn";
+      rxWhat = 'The stock market moved lower while the dollar moved higher. Investors are selling risk and buying safety.';
+      rxWhy  = 'Money flows into the dollar when investors are nervous. This combination is a classic risk-off tape.';
+      rxCls  = 'dn';
     } else if(m.eq.dir>0 && m.dxy.dir>0){
-      risk = "Equities AND USD both bid - this is the US-exceptionalism / growth-surprise pattern. Foreign capital is chasing US assets specifically.";
-      rgh = "Translation: both stocks and the dollar are up - the world is betting on America outperforming everyone else.";
-      rCls = "up";
+      rxWhat = 'Both the stock market and the dollar moved higher together.';
+      rxWhy  = 'When risk and safety are both bid, foreign capital is chasing US assets specifically - a "US is winning" tape.';
+      rxCls  = 'up';
     } else if(m.eq.dir<0 && m.dxy.dir<0){
-      risk = "Equities AND USD both offered - de-risking with dollar funding unwinds. Leverage is being reduced across the board, including USD-financed positions.";
-      rgh = "Translation: stocks and the dollar are falling together - markets are deleveraging, and even the dollar isn't safe.";
-      rCls = "dn";
+      rxWhat = 'Both the stock market and the dollar moved lower together.';
+      rxWhy  = 'When risk and safety are both being sold, the market is reducing leverage across the board. Even the dollar is not a hiding place.';
+      rxCls  = 'dn';
     } else {
-      risk = "Risk assets are churning without clear direction. No dominant flow has emerged.";
-      rgh = "Translation: markets are indecisive. Wait for a catalyst.";
-      rCls = "mut";
+      rxWhat = 'The stock market and the dollar are not telling the same story this session. The reaction is mixed.';
+      rxWhy  = 'When risk assets and the dollar disagree, there is no dominant theme yet. The market is waiting for a clearer signal.';
+      rxCls  = 'wh';
     }
-    /* STEP 4 FX TERMINAL */
-    var fx, fgh, fCls;
-    if(m.jpy.dir>0 && m.y10.dir>0){
-      fx = "USDJPY is rising with yields - the US-Japan rate spread is widening in America's favour, and the yen carry trade is being re-funded.";
-      fgh = "Translation: traders borrow yen cheaply and buy dollars because dollars pay higher interest. More dollar demand lifts USDJPY.";
-      fCls = "up";
-    } else if(m.jpy.dir<0 && m.y10.dir<0){
-      fx = "USDJPY falling with yields - carry is unwinding. Japanese investors are repatriating, or the BoJ / risk-off is forcing yen strength.";
-      fgh = "Translation: the interest rate edge is shrinking. Traders are unwinding the borrow-yen-buy-dollar trade and sending the yen higher.";
-      fCls = "dn";
-    } else if(m.jpy.dir>0){
-      fx = "USDJPY rising against the yield signal - intervention risk or risk-off funding flows are driving the pair.";
-      fgh = "Translation: USDJPY is rising for reasons other than interest rates. Japan may intervene - be cautious here.";
-      fCls = "hi";
+    rxMeans = (favDir>0)
+      ? 'The market reaction supports the trade direction. Buying '+sym+' is more favourable while this picture holds.'
+      : (favDir<0)
+      ? 'The market reaction supports the trade direction. Selling '+sym+' is more favourable while this picture holds.'
+      : 'The market reaction does not yet point to a clear trade direction for '+sym+'.';
+
+    /* STEP 3 - FX IMPACT */
+    var fxWhat, fxWhy, fxMeans, fxCls;
+    if(m.jpy.dir>0){
+      fxWhat = 'The dollar / yen pair moved higher, '+A.pct(m.jpy.pc)+'. The dollar gained ground against the yen.';
+      fxWhy  = 'A rising dollar / yen pair usually means money is flowing into dollars in size. It is the cleanest live read on global money flow.';
+      fxCls  = 'up';
     } else if(m.jpy.dir<0){
-      fx = "USDJPY falling - yen strength via repatriation, safe-haven demand, or yield collapse.";
-      fgh = "Translation: the yen is strengthening against the dollar - the world wants yen for safety or Japanese investors are bringing money home.";
-      fCls = "dn";
+      fxWhat = 'The dollar / yen pair moved lower, '+A.pct(m.jpy.pc)+'. The dollar lost ground against the yen.';
+      fxWhy  = 'A falling dollar / yen pair usually means money is flowing out of dollars in size. The yen is being bought as a safer alternative.';
+      fxCls  = 'dn';
     } else {
-      fx = "USDJPY is flat - the rate differential is at equilibrium for now.";
-      fgh = "Translation: USDJPY isn't moving. Watch the rate spread - when that moves, USDJPY will follow.";
-      fCls = "mut";
+      fxWhat = 'The dollar / yen pair is broadly flat. There is no committed money-flow direction in the FX market right now.';
+      fxWhy  = 'When this pair stalls, the global money flow is undecided. FX direction needs a fresh push from rates or risk assets to commit.';
+      fxCls  = 'wh';
     }
-    /* STEP 5 OUTCOME */
-    var out, ogh, oCls;
+    fxMeans = (favDir>0)
+      ? 'The FX impact supports the trade. The flow signal lines up with what is favoured for '+sym+'.'
+      : (favDir<0)
+      ? 'The FX impact supports the trade. The flow signal lines up with what is favoured for '+sym+'.'
+      : 'The FX impact does not point cleanly for or against the trade yet.';
+
+    /* STEP 4 - TRADE OUTCOME */
+    var outWhat, outWhy, outMeans, outCls;
     if(st.biasDir>=1){
-      out = "Net USD-LONG regime. Preferred expressions: long USD crosses (USDJPY, USDCAD), short commodity FX (AUD, NZD), short EUR and GBP into strength.";
-      ogh = "Translation: bet with the dollar. Trade setups that benefit when the dollar keeps rising - these are higher-probability today.";
-      oCls = "gn";
+      outWhat = 'The full picture lines up for a stronger US Dollar.';
+      outWhy  = 'When the dollar is strong, currency pairs that have the dollar on the buying side go higher and pairs that have the dollar on the selling side go lower.';
+      outMeans = (favDir>0)
+        ? 'Buying '+sym+' becomes the more favourable direction. The trade lines up with the macro picture.'
+        : (favDir<0)
+        ? 'Selling '+sym+' becomes the more favourable direction. The trade lines up with the macro picture.'
+        : 'No US Dollar in '+sym+' - this signal does not directly map to a buy or sell.';
+      outCls = 'gn';
     } else if(st.biasDir<=-1){
-      out = "Net USD-SHORT regime. Preferred expressions: long commodity FX (AUD, NZD), short DXY, long EUR/USD into dips.";
-      ogh = "Translation: bet against the dollar. Trade setups that benefit when the dollar falls - those are higher-probability today.";
-      oCls = "dn";
+      outWhat = 'The full picture lines up for a weaker US Dollar.';
+      outWhy  = 'When the dollar is weak, currency pairs that have the dollar on the buying side go lower and pairs that have the dollar on the selling side go higher.';
+      outMeans = (favDir>0)
+        ? 'Buying '+sym+' becomes the more favourable direction. The trade lines up with the macro picture.'
+        : (favDir<0)
+        ? 'Selling '+sym+' becomes the more favourable direction. The trade lines up with the macro picture.'
+        : 'No US Dollar in '+sym+' - this signal does not directly map to a buy or sell.';
+      outCls = 'dn';
     } else {
-      out = "Balanced regime - no dominant trend. Range-trade majors, fade extremes, or stand aside until a catalyst forces direction.";
-      ogh = "Translation: the market is indecisive. Small trades at range edges or wait for news before committing size.";
-      oCls = "hi";
+      outWhat = 'The full picture is mixed. The drivers are not lining up in one direction.';
+      outWhy  = 'When the macro signals disagree, no trade direction has a clear edge. Forced trades in this regime tend to lose money.';
+      outMeans = 'Standing aside on '+sym+' is more favourable than buying or selling. Wait for the picture to sharpen before committing capital.';
+      outCls = 'wh';
     }
+
     root.innerHTML =
-      box(1,"CATALYST",      catalyst, cgh, cCls)+
-      box(2,"TRANSMISSION",  trans,    tgh, tCls)+
-      box(3,"RISK RESPONSE", risk,     rgh, rCls)+
-      box(4,"FX TERMINAL",   fx,       fgh, fCls)+
-      box(5,"OUTCOME",       out,      ogh, oCls);
+      box(1, 'CAUSE',           causeCls, causeWhat, causeWhy, causeMeans) +
+      box(2, 'MARKET REACTION', rxCls,    rxWhat,    rxWhy,    rxMeans) +
+      box(3, 'FX IMPACT',       fxCls,    fxWhat,    fxWhy,    fxMeans) +
+      box(4, 'TRADE OUTCOME',   outCls,   outWhat,   outWhy,   outMeans);
   }
 };
 })();
