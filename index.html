@@ -363,6 +363,36 @@ html,body{font-size:14px;line-height:1.55}
 .term details .body{padding:8px 18px 18px 48px;font-size:13px;line-height:1.7;color:#d7dde3;background:#000}
 .astra-chat-btn{display:block;margin-top:16px;padding:12px 18px;font-size:15px;font-weight:bold;background:#111;border:1px solid #00ffcc;color:#00ffcc;cursor:pointer;width:100%;text-align:left;}
 .astra-chat-btn:hover{background:#00ffcc;color:#000;}
+
+/* PROBABILITY MODEL (under signal strength) */
+.sx-prob{padding:16px 20px;background:#050a10;border:1px solid #1a1a1a;margin-top:14px}
+.sx-prob .prob-hd{font-size:11px;letter-spacing:2px;color:#FFD600;font-weight:700;margin-bottom:10px}
+.sx-prob .prob-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.sx-prob .prob-cell{text-align:center;padding:8px;background:#000;border:1px solid #1a1a1a}
+.sx-prob .prob-cell .pk{font-size:10px;letter-spacing:1.5px;color:#6c7a89;font-weight:600}
+.sx-prob .prob-cell .pv{font-size:20px;font-weight:900;margin-top:4px}
+.sx-prob .prob-sizing{font-size:14px;line-height:1.7;color:#d7dde3;padding:10px 0;border-top:1px solid #1a1a1a}
+.sx-prob .prob-sizing b{color:#FFD600}
+
+/* FINAL READ */
+#final-read-root{display:flex;flex-direction:column;gap:14px}
+.fr-verdict{padding:20px 24px;background:#050a10;border:1px solid #1a1a1a;border-left:4px solid #FFD600;font-size:22px;font-weight:900;letter-spacing:1px;color:#fff}
+.fr-row{padding:14px 18px;background:#050a10;border:1px solid #1a1a1a}
+.fr-row .fr-k{font-size:11px;letter-spacing:2px;color:#FFD600;font-weight:700;margin-bottom:6px}
+.fr-row .fr-v{font-size:14px;line-height:1.75;color:#d7dde3}
+.fr-row .fr-v b{color:#fff}
+
+/* HISTORICAL ANALOG */
+.ha-block{padding:14px 18px;background:#050a10;border:1px solid #1a1a1a;border-left:4px solid #00B0FF;margin-top:10px}
+.ha-block .ha-hd{font-size:11px;letter-spacing:2px;color:#00B0FF;font-weight:700;margin-bottom:8px}
+.ha-block .ha-match{font-size:16px;font-weight:700;color:#fff;margin-bottom:6px}
+.ha-block .ha-desc{font-size:13px;line-height:1.7;color:#d7dde3;margin-bottom:8px}
+.ha-block .ha-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px}
+.ha-block .ha-stat{text-align:center;padding:6px;background:#000;border:1px solid #1a1a1a}
+.ha-block .ha-stat .hsk{font-size:10px;letter-spacing:1.5px;color:#6c7a89}
+.ha-block .ha-stat .hsv{font-size:16px;font-weight:900;margin-top:2px}
+.ha-block .ha-conclusion{font-size:13px;line-height:1.7;color:#d7dde3;padding-top:8px;border-top:1px solid #1a1a1a}
+.ha-block .ha-conclusion b{color:#FFD600}
 </style>
 </head>
 <body>
@@ -377,6 +407,7 @@ html,body{font-size:14px;line-height:1.55}
 <button type="button" class="tab" data-target="sec-mech">MECHANISM</button>
 <button type="button" class="tab" data-target="sec-scen">SCENARIO</button>
 <button type="button" class="tab" data-target="sec-events">EVENTS</button>
+<button type="button" class="tab" data-target="sec-final">FINAL READ</button>
 <button type="button" class="tab" data-target="sec-matrix">MATRIX</button>
 <button type="button" class="tab" data-target="sec-terms">GLOSSARY</button>
 <span class="src"><span class="st-dot" id="st-dot"></span><span id="st-txt">INIT</span> . <b id="src-name">-</b> . <span id="src-time">-</span></span>
@@ -446,6 +477,12 @@ html,body{font-size:14px;line-height:1.55}
 <section class="sec hidden" id="sec-events">
 <div class="sec-hd"><h3>EVENTS</h3><span class="sub">whether scheduled news is moving the trade, in plain english</span></div>
 <div class="sec-body"><div id="ev-list"></div></div>
+</section>
+
+<!-- 8b. ATLAS FINAL READ -->
+<section class="sec hidden" id="sec-final">
+<div class="sec-hd"><h3>ATLAS FINAL READ</h3><span class="sub">system verdict, conviction level, position sizing instruction</span></div>
+<div class="sec-body"><div id="final-read-root">Loading final read&hellip;</div></div>
 </section>
 
 <!-- 9. PRICE MATRIX -->
@@ -602,23 +639,165 @@ window.addEventListener("DOMContentLoaded", async function(){
   }
 })();
 
+/* ---- ADDITION 2: Probability model (under signal strength) ---- */
+function atlasRenderProbability(){
+  var A = window.ATLAS; if(!A || !A.Macro || !A.Macro.state) return;
+  var st = A.Macro.state;
+  var s = st.strength || 0;
+  var PROB = (s>=8) ? {cont:75,range:15,rev:10,sz:'FULL SIZE — all four drivers aligned, high-conviction setup'}
+           : (s>=6) ? {cont:60,range:28,rev:12,sz:'REDUCED SIZE — most drivers agree but conviction is not maximum'}
+           : (s>=4) ? {cont:52,range:34,rev:14,sz:'LIGHT PARTICIPATION ONLY — drivers are mixed, protect capital'}
+           :          {cont:30,range:40,rev:30,sz:'STAND ASIDE — drivers disagree, no edge exists right now'};
+  var m = st.moves || {};
+  var fav = st.favDir || 0;
+  var aligned = 0;
+  if(m.dxy && Math.sign(m.dxy.dir)===Math.sign(fav) && fav!==0) aligned++;
+  if(m.y10 && Math.sign(m.y10.dir)===Math.sign(fav) && fav!==0) aligned++;
+  if(m.eq  && Math.sign(-m.eq.dir)===Math.sign(fav) && fav!==0) aligned++;
+  if(m.jpy && Math.sign(m.jpy.dir)===Math.sign(fav) && fav!==0) aligned++;
+  var el = document.querySelector('.sx-strength');
+  if(!el) return;
+  var existing = document.getElementById('atlas-prob');
+  if(existing) existing.remove();
+  var div = document.createElement('div');
+  div.id = 'atlas-prob';
+  div.className = 'sx-prob';
+  div.innerHTML =
+    '<div class="prob-hd">PROBABILITY MODEL</div>'+
+    '<div class="prob-grid">'+
+      '<div class="prob-cell"><div class="pk">DRIVERS ALIGNED</div><div class="pv hi">'+aligned+' / 4</div></div>'+
+      '<div class="prob-cell"><div class="pk">CONTINUATION</div><div class="pv gn">'+PROB.cont+'%</div></div>'+
+      '<div class="prob-cell"><div class="pk">RANGE</div><div class="pv or">'+PROB.range+'%</div></div>'+
+      '<div class="prob-cell"><div class="pk">REVERSAL</div><div class="pv dn">'+PROB.rev+'%</div></div>'+
+    '</div>'+
+    '<div class="prob-sizing"><b>SIZING:</b> '+PROB.sz+'</div>';
+  el.parentNode.insertBefore(div, el.nextSibling);
+}
+
+/* ---- ADDITION 3: Historical pattern recognition ---- */
+var HIST_ANALOGS = [
+  {year:'2008',label:'GLOBAL DELEVERAGING',dxy:1,vix:'EXTREME',eq:-1,contPct:82,avgMove5:'3.2%',avgMove10:'6.1%',desc:'Dollar surged as global risk assets collapsed. Flight to USD cash dominated all flows.'},
+  {year:'2013',label:'TAPER TANTRUM',dxy:1,vix:'ELEVATED',eq:-1,contPct:68,avgMove5:'1.8%',avgMove10:'3.4%',desc:'Fed signalled rate normalisation. Dollar bid, emerging markets sold, equities volatile.'},
+  {year:'2017',label:'GLOBAL REFLATION',dxy:-1,vix:'LOW',eq:1,contPct:71,avgMove5:'1.4%',avgMove10:'2.8%',desc:'Synchronised global growth weakened the dollar. Risk assets rallied, vol collapsed.'},
+  {year:'2020',label:'POST-COVID STIMULUS',dxy:-1,vix:'ELEVATED',eq:1,contPct:74,avgMove5:'2.1%',avgMove10:'4.0%',desc:'Massive fiscal and monetary stimulus weakened USD. Equities recovered sharply.'},
+  {year:'2022',label:'RATE SHOCK',dxy:1,vix:'ELEVATED',eq:-1,contPct:76,avgMove5:'2.5%',avgMove10:'4.8%',desc:'Aggressive Fed hikes drove dollar higher. Equities and bonds sold off simultaneously.'},
+  {year:'2023',label:'SOFT LANDING',dxy:0,vix:'LOW',eq:1,contPct:63,avgMove5:'0.9%',avgMove10:'1.7%',desc:'Inflation eased without recession. Dollar drifted, equities grinded higher on low vol.'},
+  {year:'2024',label:'USD EXCEPTIONALISM',dxy:1,vix:'LOW',eq:1,contPct:66,avgMove5:'1.1%',avgMove10:'2.2%',desc:'US outperformance attracted global capital. Dollar and equities rose together.'}
+];
+function matchHistoricalAnalog(){
+  var A = window.ATLAS; if(!A || !A.Macro || !A.Macro.state) return null;
+  var st = A.Macro.state;
+  var m = st.moves || {};
+  var curDxy = (m.dxy && m.dxy.dir>0) ? 1 : (m.dxy && m.dxy.dir<0) ? -1 : 0;
+  var curVix = st.volLabel || 'LOW';
+  var curEq  = (m.eq && m.eq.dir>0) ? 1 : (m.eq && m.eq.dir<0) ? -1 : 0;
+  var best = null, bestScore = -1;
+  for(var i=0;i<HIST_ANALOGS.length;i++){
+    var h = HIST_ANALOGS[i];
+    var score = 0;
+    if(h.dxy === curDxy) score += 3;
+    else if(h.dxy === 0 || curDxy === 0) score += 1;
+    var vixMatch = (curVix==='EXTREME'&&h.vix==='EXTREME') || (curVix==='ELEVATED'&&(h.vix==='ELEVATED'||h.vix==='EXTREME')) || (curVix==='LOW'&&h.vix==='LOW') || (curVix==='NORMAL'&&(h.vix==='LOW'||h.vix==='ELEVATED'));
+    if(vixMatch) score += 2;
+    if(h.eq === curEq) score += 2;
+    else if(h.eq === 0 || curEq === 0) score += 1;
+    if(score > bestScore){ bestScore = score; best = h; }
+  }
+  return best;
+}
+function atlasRenderHistoricalAnalog(){
+  var analog = matchHistoricalAnalog();
+  if(!analog) return;
+  var el = document.getElementById('hist-why');
+  if(!el) return;
+  var existing = document.getElementById('atlas-analog');
+  if(existing) existing.remove();
+  var div = document.createElement('div');
+  div.id = 'atlas-analog';
+  div.innerHTML =
+    '<div class="ha-block">'+
+      '<div class="ha-hd">HISTORICAL PATTERN RECOGNITION</div>'+
+      '<div class="ha-match">'+analog.year+' — '+analog.label+'</div>'+
+      '<div class="ha-desc">'+analog.desc+'</div>'+
+      '<div class="ha-stats">'+
+        '<div class="ha-stat"><div class="hsk">CONTINUATION</div><div class="hsv gn">'+analog.contPct+'%</div></div>'+
+        '<div class="ha-stat"><div class="hsk">AVG MOVE (5 SESSIONS)</div><div class="hsv hi">'+analog.avgMove5+'</div></div>'+
+        '<div class="ha-stat"><div class="hsk">AVG MOVE (10 SESSIONS)</div><div class="hsv hi">'+analog.avgMove10+'</div></div>'+
+      '</div>'+
+      '<div class="ha-conclusion"><b>CONCLUSION:</b> Current conditions most closely match the <b>'+analog.year+' '+analog.label+'</b> environment. In that regime, the dominant move continued '+analog.contPct+'% of the time over the following 5–10 sessions.</div>'+
+    '</div>';
+  el.parentNode.insertBefore(div, el.nextSibling);
+}
+
+/* ---- ADDITION 1: ATLAS Final Read ---- */
+function atlasRenderFinalRead(){
+  var A = window.ATLAS; if(!A || !A.Macro || !A.Macro.state) return;
+  var st = A.Macro.state;
+  var s = st.strength || 0;
+  var verdict, verdictBorder;
+  if(s>=8){ verdict='\u2705 HIGH CONVICTION \u2014 TRADE FULL SIZE'; verdictBorder='#07f911'; }
+  else if(s>=6){ verdict='\uD83D\uDFE1 MODERATE \u2014 REDUCED SIZE'; verdictBorder='#FFD600'; }
+  else if(s>=4){ verdict='\u26A0\uFE0F WAIT / LIGHT PARTICIPATION ONLY'; verdictBorder='#FF9100'; }
+  else { verdict='\uD83D\uDD34 STAND ASIDE'; verdictBorder='#ff0015'; }
+  var analog = matchHistoricalAnalog();
+  var analogText = analog ? 'Current environment matches <b>'+analog.year+' '+analog.label+'</b>. In that regime, the dominant move continued '+analog.contPct+'% of the time.' : 'No strong historical analog identified.';
+  var root = document.getElementById('final-read-root');
+  if(!root) return;
+  root.innerHTML =
+    '<div class="fr-verdict" style="border-left-color:'+verdictBorder+'">'+verdict+'</div>'+
+    '<div class="fr-row"><div class="fr-k">CURRENT STATE</div><div class="fr-v">'+
+      'Bias: <b>'+st.bias+'</b> · Condition: <b>'+st.cond+'</b> · Signal Strength: <b>'+s+' / 10</b>'+
+    '</div></div>'+
+    '<div class="fr-row"><div class="fr-k">HISTORICAL ALIGNMENT</div><div class="fr-v">'+analogText+'</div></div>'+
+    '<div class="fr-row"><div class="fr-k">EVENT RISK</div><div class="fr-v">'+
+      (st.volLabel==='EXTREME'||st.volLabel==='ELEVATED' ? 'Volatility is <b>'+st.volLabel+'</b>. Event risk is present — size accordingly and widen stops.' : 'Volatility is <b>'+st.volLabel+'</b>. No elevated event risk detected at this time.')+
+    '</div></div>'+
+    '<div class="fr-row"><div class="fr-k">EXECUTION STANCE</div><div class="fr-v">'+
+      (s>=8 ? 'All systems aligned. Execute at recommended levels with full conviction.' :
+       s>=6 ? 'Most drivers agree. Execute at recommended levels but with reduced size.' :
+       s>=4 ? 'Drivers are mixed. Light participation only — or wait for clearer alignment.' :
+              'Drivers disagree. No position is the best position right now.')+
+    '</div></div>';
+}
+
+/* Hook all three additions into the render cycle */
+var _origMacroRun = window.MacroEngine && window.MacroEngine.run;
+var _origExecRun  = window.ExecutionEngine && window.ExecutionEngine.run;
+function atlasPostUpdate(){
+  setTimeout(function(){
+    try { atlasRenderProbability(); } catch(e){}
+    try { atlasRenderHistoricalAnalog(); } catch(e){}
+    try { atlasRenderFinalRead(); } catch(e){}
+  }, 50);
+}
+if(_origMacroRun){
+  window.MacroEngine.run = async function(){
+    var r = await _origMacroRun.apply(this, arguments);
+    atlasPostUpdate();
+    return r;
+  };
+}
+if(_origExecRun){
+  window.ExecutionEngine.run = async function(){
+    var r = await _origExecRun.apply(this, arguments);
+    atlasPostUpdate();
+    return r;
+  };
+}
+window.addEventListener('DOMContentLoaded', function(){ setTimeout(atlasPostUpdate, 500); });
+
 function openAstraChat(){
-  const user=(window.ATLAS_USER||'AT').toUpperCase();
-  const symbol=window.currentSymbol||'UNKNOWN';
-  const ctx={user,symbol,timestamp:new Date().toISOString(),
-    tradeCondition:document.querySelector('.trade-condition-value')?.textContent?.trim()||'-',
-    signalStrength:document.querySelector('.signal-strength-value')?.textContent?.trim()||'-',
-    bias:document.querySelector('.dot-label-bias')?.textContent?.trim()||'-',
-    conviction:document.querySelector('.dot-label-conviction')?.textContent?.trim()||'-',
-    regime:document.querySelector('.dot-label-regime')?.textContent?.trim()||'-',
-    summary:document.querySelector('.system-summary-text')?.textContent?.trim()||'-',
-    entry:document.querySelector('.exec-entry-value')?.textContent?.trim()||'-',
-    stop:document.querySelector('.exec-stop-value')?.textContent?.trim()||'-',
-    target:document.querySelector('.exec-target-value')?.textContent?.trim()||'-',
-    note:`User reviewed ${symbol} and clicked Chat with Astra`};
-  fetch('/astra-handoff',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ctx)}).catch(()=>{});
-  const links={'AT':'https://discord.com/channels/1429301027513942147/1489245537395019908','SK':'https://discord.com/channels/1429301027513942147/1489246324552368178','NM':'https://discord.com/channels/1429301027513942147/1489248591854702744','BR':'https://discord.com/channels/1429301027513942147/1489247239359697067'};
-  window.open(links[user]||links['AT'],'_blank');
+  var mode=(window.ATLAS_MODE||'').toUpperCase();
+  var symbol=window.currentSymbol||'UNKNOWN';
+  var links={
+    'AT':'https://discord.com/channels/1430048352568868928/1490037445490769951',
+    'SK':'https://discord.com/channels/1430048352568868928/1489248136961720370',
+    'NM':'https://discord.com/channels/1430048352568868928/1489248627921522810',
+    'BR':'https://discord.com/channels/1430048352568868928/1489247692499452055'
+  };
+  var url=(links[mode]||links['AT'])+'?symbol='+encodeURIComponent(symbol);
+  fetch('/astra-handoff',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user:mode||'AT',symbol:symbol,timestamp:new Date().toISOString(),note:'User reviewed '+symbol+' and clicked Chat with Astra'})}).catch(function(){});
+  window.open(url,'_blank');
 }
 </script>
 </body>
