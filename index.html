@@ -509,6 +509,15 @@ html,body{font-size:14px;line-height:1.55}
   };
   A.status("warn","-","BOOT");
 })();
+(function(){
+  try {
+    var p = new URLSearchParams(window.location.search);
+    var s = (p.get('symbol') || '').toUpperCase().replace(/[^A-Z0-9]/g,'');
+    var m = (p.get('mode')   || '').toLowerCase().replace(/[^a-z]/g,'');
+    if (s) window.currentSymbol = s;
+    if (m) window.ATLAS_MODE = m;
+  } catch (e) {}
+})();
 function initWhenReady(){
   if(typeof echarts==='undefined'){setTimeout(initWhenReady,50);return;}
   ChartsEngine.init();
