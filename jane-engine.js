@@ -95,17 +95,71 @@ function includeEvent(title){
   return /cpi|inflation|pce|ppi|nfp|non-farm|non farm|payroll|unemployment|fomc|rate decision|speech|speaks|testifies|press conf|gdp|growth|pmi|ism|manufacturing|services/.test(t);
 }
 
+/* ATLAS DOCTRINE — forward-impact event engine.
+   Replaces descriptive commentary with directional bias risk,
+   expansion range, volatility shock scenario, execution degradation,
+   viability effect. Output is forecasting language, not narration. */
 var EV_FALLBACK =
   '<div class="ev-fallback">'+
-    '<div class="evf-hd">No scheduled news is moving the trade right now.</div>'+
-    '<div class="evf-sub">Price is being driven by macro flow rather than headlines:</div>'+
-    '<ul class="evf-list">'+
-      '<li>The strength or weakness of the US Dollar</li>'+
-      '<li>Movement in US interest rates</li>'+
-      '<li>The direction of risk in the stock market</li>'+
-    '</ul>'+
-    '<div class="evf-interp"><b>What this means for the trade:</b> Without an active news catalyst, the trade should be based on the macro picture in the Status and Mechanism sections. A surprise headline can change the picture quickly - keep position size sensible.</div>'+
+    '<div class="evf-hd">No scheduled high-impact events.</div>'+
+    '<div class="evf-sub">Market is currently flow-driven: DXY movement, US10Y, Equity flows.</div>'+
+    '<div class="evf-interp">Interpretation: Conditions are data-flow driven, not news-driven.</div>'+
   '</div>';
+
+/* Event-type forward impact library (pip expansion + shock severity). */
+var EV_IMPACT = {
+  NFP:   {expandLow:80,expandHigh:120,shock:'high',direction:'USD-symmetric'},
+  CPI:   {expandLow:60,expandHigh:90, shock:'high',direction:'USD-symmetric'},
+  RATES: {expandLow:50,expandHigh:150,shock:'high',direction:'currency-symmetric'},
+  GDP:   {expandLow:30,expandHigh:60, shock:'medium',direction:'currency-asymmetric'},
+  PMI:   {expandLow:20,expandHigh:40, shock:'medium',direction:'currency-asymmetric'},
+  'CB SPK': {expandLow:15,expandHigh:40,shock:'medium',direction:'policy-signal'},
+  MACRO: {expandLow:15,expandHigh:35, shock:'low',direction:'context-only'}
+};
+
+/* Forward-impact store consumed by viability engine (see data-feed.js). */
+A.EventsForward = {
+  store: [],
+  imminentShock: function(){
+    var now = Date.now();
+    var max = 0;
+    for(var i=0;i<A.EventsForward.store.length;i++){
+      var e = A.EventsForward.store[i];
+      var t = e.landAt - now;
+      if(t < 0 || t > 6*3600*1000) continue;
+      var sev = e.shock === 'high' ? 3 : e.shock === 'medium' ? 2 : 1;
+      if(t < 2*3600*1000) sev += 1;
+      if(sev > max) max = sev;
+    }
+    return max;
+  }
+};
+
+function viabilityEffect(shock, minutesUntil){
+  if(shock === 'high' && minutesUntil < 120) return 'INVALID during release window';
+  if(shock === 'high' && minutesUntil < 360) return 'MARGINAL — reduce size, widen stops';
+  if(shock === 'medium' && minutesUntil < 120) return 'MARGINAL — monitor execution';
+  return 'Minimal impact on current setup';
+}
+
+function degradationLabel(shock, minutesUntil){
+  if(shock === 'high' && minutesUntil < 120) return '<span class="dn">HIGH — spread blow-out + whipsaw</span>';
+  if(shock === 'high') return '<span class="or">MEDIUM — wider spreads expected</span>';
+  if(shock === 'medium' && minutesUntil < 180) return '<span class="or">MEDIUM — brief spread widening</span>';
+  return '<span class="mut">LOW — normal execution expected</span>';
+}
+
+function directionalBias(title, sym){
+  var t = (title||'').toLowerCase();
+  if(/hawk|tighten|cut.*surprise.*hold/.test(t)) return 'Bullish currency (hawkish)';
+  if(/dov|ease|hike.*surprise.*hold/.test(t)) return 'Bearish currency (dovish)';
+  if(/cpi|inflation|core pce|ppi/.test(t)) return 'Above forecast → bullish USD · below → bearish USD';
+  if(/nfp|non-farm|payroll/.test(t)) return 'Above forecast → bullish USD · below → bearish USD';
+  if(/gdp/.test(t)) return 'Above forecast → bullish local currency';
+  if(/pmi|ism/.test(t)) return 'Above 50 → bullish · below → bearish';
+  if(/rate decision|fomc|boe|ecb|boj|snb|rba|rbnz|boc/.test(t)) return 'Hawkish → bullish currency · dovish → bearish';
+  return 'Context-only — no direct directional bias';
+}
 
 /* Glossary entries: [code, plain-english one-liner used as a sub-label,
    full beginner-readable definition]. Beginner-readable: every entry is
@@ -150,37 +204,55 @@ A.Jane = {
     var list = document.getElementById("ev-list"); if(!list) return;
     return A.Feed.fetchEvents().then(function(evts){
       var now = Date.now();
-      /* Only show high-impact items that are landing inside the next ~24 hours
-         or that landed in the last 4 hours (those that may still be moving the
-         tape). Anything else is noise for an FX trader. */
+      var sym = A.activeSymbol || 'EURUSD';
       var filtered = (evts||[]).filter(function(e){
         if(!e || !e.title) return false;
         if(!includeEvent(e.title)) return false;
         if(!/high/i.test(e.impact||"")) return false;
         var t = new Date(e.date).getTime();
-        return t >= now - 4*3600*1000 && t <= now + 24*3600*1000;
-      }).sort(function(a,b){ return new Date(a.date) - new Date(b.date); }).slice(0,12);
+        return t >= now - 2*3600*1000 && t <= now + 24*3600*1000;
+      }).sort(function(a,b){ return new Date(a.date) - new Date(b.date); }).slice(0,10);
+
+      /* Populate forward-impact store used by viability engine. */
+      A.EventsForward.store = filtered.map(function(e){
+        var ty = evType(e.title);
+        var impact = EV_IMPACT[ty] || EV_IMPACT.MACRO;
+        return { title:e.title, ccy:e.country||'', type:ty, landAt:new Date(e.date).getTime(), shock:impact.shock };
+      });
+
       if(!filtered.length){ list.innerHTML = EV_FALLBACK; return; }
+
       list.innerHTML = filtered.map(function(e){
         var dt = new Date(e.date);
         var cls = evClass(e.impact);
         var ty = evType(e.title);
+        var impact = EV_IMPACT[ty] || EV_IMPACT.MACRO;
         var when = dt.toISOString().substr(5,11).replace("T"," ") + "Z";
         var ccy = e.country || "";
-        var landed = dt.getTime() < now;
-        var fc = (e.forecast!=null && e.forecast!=="") ? ("Forecast " + e.forecast) : "";
-        var pv = (e.previous!=null && e.previous!=="") ? (" . Previous " + e.previous) : "";
-        var plain = landed
-          ? 'This event has already landed and may still be moving the trade. Compare the actual print to the forecast - a surprise in either direction will keep the move running.'
-          : 'This event is scheduled. The market will likely tighten ranges before it lands and move sharply when it prints. Plan position size accordingly.';
+        var minutesUntil = (dt.getTime() - now) / 60000;
+        var dirBias = directionalBias(e.title, sym);
+        var expansion = impact.expandLow + '–' + impact.expandHigh + ' pips expected';
+        var shockScenario = impact.shock === 'high'
+          ? 'Spread blow-out, 3–5x normal range, whipsaw risk first 5 min'
+          : impact.shock === 'medium'
+            ? 'Brief spread widening, 1.5–2x normal range'
+            : 'Minimal volatility disturbance expected';
+        var degradation = degradationLabel(impact.shock, minutesUntil);
+        var viability = viabilityEffect(impact.shock, minutesUntil);
         return '<div class="ev '+cls+'">'+
-          '<div class="ev-top"><span>'+ccy+' . '+ty+'</span><span>'+when+'</span></div>'+
+          '<div class="ev-top"><span>'+ccy+' · '+ty+'</span><span>'+when+'</span></div>'+
           '<div class="ev-tt">'+e.title+'</div>'+
-          '<div class="ev-ft">'+fc+pv+'</div>'+
-          '<div class="ev-plain">'+plain+'</div>'+
+          '<div class="ev-fwd">'+
+            '<div class="ev-row"><span class="ev-k">DIRECTIONAL BIAS</span><span class="ev-v">'+dirBias+'</span></div>'+
+            '<div class="ev-row"><span class="ev-k">EXPANSION RANGE</span><span class="ev-v">'+expansion+'</span></div>'+
+            '<div class="ev-row"><span class="ev-k">VOL SHOCK</span><span class="ev-v">'+shockScenario+'</span></div>'+
+            '<div class="ev-row"><span class="ev-k">EXECUTION RISK</span><span class="ev-v">'+degradation+'</span></div>'+
+            '<div class="ev-row"><span class="ev-k">VIABILITY EFFECT</span><span class="ev-v">'+viability+'</span></div>'+
+          '</div>'+
         '</div>';
       }).join("");
     }).catch(function(){
+      A.EventsForward.store = [];
       list.innerHTML = EV_FALLBACK;
     });
   },
@@ -188,14 +260,23 @@ A.Jane = {
   renderTerms: function(){
     var host = document.getElementById("terms-list"); if(!host) return;
     host.innerHTML = TERMS.map(function(r){
-      var code = r[0], plain = r[1], def = r[2];
+      var code = r[0], plain = r[1];
+      var key = code.toUpperCase().replace(/[^A-Z0-9]/g,'');
       return '<div class="term">'+
-        '<details>'+
-          '<summary>'+code+'<span class="plain">'+plain+'</span></summary>'+
-          '<div class="body">'+def+'</div>'+
-        '</details>'+
+        '<button type="button" class="term-open" data-term="'+key+'" data-code="'+code+'">'+
+          '<span class="term-code">'+code+'</span>'+
+          '<span class="term-plain">'+plain+'</span>'+
+          '<span class="term-more">OPEN</span>'+
+        '</button>'+
       '</div>';
     }).join("");
+    Array.prototype.forEach.call(host.querySelectorAll('.term-open'), function(btn){
+      btn.addEventListener('click', function(){
+        var k = btn.getAttribute('data-term');
+        var c = btn.getAttribute('data-code');
+        if(window.openTermModal) window.openTermModal(k, c);
+      });
+    });
   }
 };
 })();

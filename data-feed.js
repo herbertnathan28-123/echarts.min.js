@@ -43,6 +43,83 @@ A.TFS["5m"]=A.TFS["5M"]; A.TFS["15m"]=A.TFS["15M"]; A.TFS["1h"]=A.TFS["1H"];
 A.TFS["4h"]=A.TFS["4H"]; A.TFS["1d"]=A.TFS["1D"]; A.TFS["1w"]=A.TFS["1W"];
 A.src = { provider:null, t:0 };
 
+/* ATLAS DOCTRINE — instrument metadata (pip size + dollar-per-pip per standard lot).
+   Used by execution + viability + astra payload. Defaults cover majors; unknown
+   symbols fall back to 0.0001 / $10. pipValueUSD is per standard lot (100k FX,
+   100 oz gold, 5000 oz silver, 1 contract index) as displayed by most retail brokers. */
+A.INSTRUMENT = {
+  EURUSD:{pipSize:0.0001,pipValueUSD:10,digits:5,spread:0.6,slippage:0.5},
+  GBPUSD:{pipSize:0.0001,pipValueUSD:10,digits:5,spread:0.9,slippage:0.5},
+  AUDUSD:{pipSize:0.0001,pipValueUSD:10,digits:5,spread:0.8,slippage:0.5},
+  NZDUSD:{pipSize:0.0001,pipValueUSD:10,digits:5,spread:1.2,slippage:0.5},
+  USDCAD:{pipSize:0.0001,pipValueUSD:7.4,digits:5,spread:1.0,slippage:0.5},
+  USDCHF:{pipSize:0.0001,pipValueUSD:11.2,digits:5,spread:1.0,slippage:0.5},
+  USDJPY:{pipSize:0.01,pipValueUSD:6.75,digits:3,spread:0.6,slippage:0.5},
+  EURJPY:{pipSize:0.01,pipValueUSD:6.75,digits:3,spread:1.2,slippage:0.5},
+  GBPJPY:{pipSize:0.01,pipValueUSD:6.75,digits:3,spread:1.8,slippage:0.5},
+  AUDJPY:{pipSize:0.01,pipValueUSD:6.75,digits:3,spread:1.0,slippage:0.5},
+  CADJPY:{pipSize:0.01,pipValueUSD:6.75,digits:3,spread:1.5,slippage:0.5},
+  CHFJPY:{pipSize:0.01,pipValueUSD:6.75,digits:3,spread:1.8,slippage:0.5},
+  EURGBP:{pipSize:0.0001,pipValueUSD:12.6,digits:5,spread:1.0,slippage:0.5},
+  EURCHF:{pipSize:0.0001,pipValueUSD:11.2,digits:5,spread:1.2,slippage:0.5},
+  EURAUD:{pipSize:0.0001,pipValueUSD:6.5,digits:5,spread:1.6,slippage:0.5},
+  EURCAD:{pipSize:0.0001,pipValueUSD:7.4,digits:5,spread:1.6,slippage:0.5},
+  XAUUSD:{pipSize:0.01,pipValueUSD:1,digits:2,spread:25,slippage:5},
+  XAGUSD:{pipSize:0.001,pipValueUSD:5,digits:3,spread:30,slippage:5},
+  NAS100:{pipSize:1,pipValueUSD:1,digits:1,spread:2,slippage:1},
+  US500:{pipSize:0.1,pipValueUSD:1,digits:2,spread:0.5,slippage:0.2},
+  US30:{pipSize:1,pipValueUSD:1,digits:1,spread:5,slippage:2},
+  _default:{pipSize:0.0001,pipValueUSD:10,digits:5,spread:2,slippage:0.5}
+};
+A.instrumentMeta = function(sym){
+  return A.INSTRUMENT[sym] || A.INSTRUMENT._default;
+};
+
+/* ATLAS DOCTRINE — viability engine.
+   Compares required move (exec cost + risk-adjusted) vs expected move
+   (structure-derived target distance + conviction modifier + event-shock).
+   State: VALID / MARGINAL / INVALID. */
+A.computeViability = function(){
+  var exec = A.Execution && A.Execution.state;
+  var macro = A.Macro && A.Macro.state;
+  if(!exec || exec.entry == null || exec.exit == null || exec.stopA == null){
+    return {state:'INVALID',reason:'No execution levels computed',rr:0,strength:0};
+  }
+  var meta = A.instrumentMeta(exec.sym);
+  var expected = Math.abs(exec.exit - exec.entry);
+  var risk     = Math.abs(exec.entry - exec.stopA);
+  var execCostPips = meta.spread + meta.slippage;
+  var execCostPrice = execCostPips * meta.pipSize;
+  var rr = risk > 0 ? (expected - execCostPrice) / risk : 0;
+  var strength = (macro && macro.strength) || 0;
+  var eventShock = (A.EventsForward && A.EventsForward.imminentShock) ? A.EventsForward.imminentShock() : 0;
+  var state;
+  if(rr >= 2 && strength >= 6 && eventShock < 2) state = 'VALID';
+  else if(rr >= 2 && strength >= 4 && eventShock < 3) state = 'MARGINAL';
+  else if(rr >= 1 && strength >= 4) state = 'MARGINAL';
+  else state = 'INVALID';
+  var expectedPips = expected / meta.pipSize;
+  var riskPips     = risk     / meta.pipSize;
+  return {
+    state:        state,
+    rr:           +rr.toFixed(2),
+    strength:     strength,
+    eventShock:   eventShock,
+    expected:     expected,
+    expectedPips: +expectedPips.toFixed(1),
+    expectedUSD:  +(expectedPips * meta.pipValueUSD).toFixed(0),
+    risk:         risk,
+    riskPips:     +riskPips.toFixed(1),
+    riskUSD:      +(riskPips * meta.pipValueUSD).toFixed(0),
+    execCostPips: +execCostPips.toFixed(1),
+    execCostPrice:+execCostPrice.toFixed(meta.digits),
+    execCostUSD:  +(execCostPips * meta.pipValueUSD).toFixed(0),
+    spread:       meta.spread,
+    slippage:     meta.slippage,
+    meta:         meta
+  };
+};
+
 A.fmt = function(v, d){ if(v==null||isNaN(v)) return "-"; d=(d==null?2:d); return (+v).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d}); };
 A.pct = function(v){ if(v==null||isNaN(v)) return "-"; return (v>=0?"+":"")+(+v).toFixed(2)+"%"; };
 A.sign = function(v){ return v>0?"up":v<0?"dn":"mut"; };
