@@ -551,8 +551,10 @@ html,body{font-size:14px;line-height:1.55}
     var p = new URLSearchParams(window.location.search);
     var s = (p.get('symbol') || '').toUpperCase().replace(/[^A-Z0-9]/g,'');
     var m = (p.get('mode')   || '').toLowerCase().replace(/[^a-z]/g,'');
+    var u = (p.get('user')   || '').toUpperCase().replace(/[^A-Z]/g,'');
     if (s) window.currentSymbol = s;
     if (m) window.ATLAS_MODE = m;
+    window.ATLAS_USER = u || 'AT';
   } catch (e) {}
 })();
 function initWhenReady(){
@@ -787,17 +789,55 @@ if(_origExecRun){
 window.addEventListener('DOMContentLoaded', function(){ setTimeout(atlasPostUpdate, 500); });
 
 function openAstraChat(){
-  var mode=(window.ATLAS_MODE||'').toUpperCase();
-  var symbol=window.currentSymbol||'UNKNOWN';
-  var links={
-    'AT':'https://discord.com/channels/1430048352568868928/1490037445490769951',
-    'SK':'https://discord.com/channels/1430048352568868928/1489248136961720370',
-    'NM':'https://discord.com/channels/1430048352568868928/1489248627921522810',
-    'BR':'https://discord.com/channels/1430048352568868928/1489247692499452055'
+  var GUILD_ID = '1430048352568868928';
+  var USER_CHANNELS = {
+    'AT': '1489245537395019908',
+    'NM': '1489248591854702744',
+    'SK': '1489246324552368178',
+    'BR': '1489247239359697067'
   };
-  var url=(links[mode]||links['AT'])+'?symbol='+encodeURIComponent(symbol);
-  fetch('/astra-handoff',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user:mode||'AT',symbol:symbol,timestamp:new Date().toISOString(),note:'User reviewed '+symbol+' and clicked Chat with Astra'})}).catch(function(){});
-  window.open(url,'_blank');
+  var USER_WEBHOOKS = {
+    'AT': 'https://discordapp.com/api/webhooks/1490037445490769951/FLSjm6IlLutkFLCOBj4xcgt-1Dyz7Sq0di8C6gp8AiRior2sWAQvCrAHFzzqv9U8XeA1',
+    'NM': 'https://discordapp.com/api/webhooks/1489248627921522810/JxgvqzM2ROJ0-W2Kf6rN3N48QsdVRKgle6-BPzRBk96g3DlkTGlIdjqoOCD3ppD3RMg0',
+    'SK': 'https://discordapp.com/api/webhooks/1489248136961720370/W8w-mvXwTbReAVZAlYaRm3doxjv8-hoCyFu76ZUB_DnN4Tf80_t84DQfXJupoMgreVj0',
+    'BR': 'https://discordapp.com/api/webhooks/1489247692499452055/SCHGuWHoUn7ZtxotEkaFw6QYgwEyXgbttMJvQs4wfH1gj63rjEQCfC8nLVEQiHK8qMBF'
+  };
+  var user = (window.ATLAS_USER || 'AT').toUpperCase();
+  if (!USER_CHANNELS[user]) user = 'AT';
+  var channelId  = USER_CHANNELS[user];
+  var webhookUrl = USER_WEBHOOKS[user];
+  var symbol = window.currentSymbol || 'Pending';
+  var mode   = window.ATLAS_MODE || '';
+  var A = window.ATLAS || {};
+  var mst = (A.Macro && A.Macro.state) || {};
+  var est = (A.Execution && A.Execution.state) || {};
+  var fmt = function(v){ return (v == null || v === '') ? 'Pending' : String(v); };
+  var dashboardUrl = window.location.origin + window.location.pathname +
+    '?symbol=' + encodeURIComponent(symbol) +
+    '&mode='   + encodeURIComponent(mode) +
+    '&user='   + encodeURIComponent(user);
+  var embed = {
+    title: 'ATLAS FX Trade Context — ' + fmt(symbol),
+    color: 0xFFD600,
+    fields: [
+      { name: 'Symbol',     value: fmt(symbol),      inline: true },
+      { name: 'Bias',       value: fmt(mst.bias),    inline: true },
+      { name: 'Conviction', value: fmt(mst.conv),    inline: true },
+      { name: 'Regime',     value: fmt(mst.risk),    inline: true },
+      { name: 'Risk',       value: fmt(mst.volLabel),inline: true },
+      { name: 'Entry',      value: fmt(est.entry),   inline: true },
+      { name: 'Stop',       value: fmt(est.stopA),   inline: true },
+      { name: 'Target',     value: fmt(est.exit),    inline: true },
+      { name: 'Dashboard',  value: dashboardUrl,     inline: false }
+    ],
+    timestamp: new Date().toISOString()
+  };
+  fetch(webhookUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ embeds: [embed] })
+  }).catch(function(){});
+  window.open('https://discord.com/channels/' + GUILD_ID + '/' + channelId, '_blank');
 }
 </script>
 </body>
