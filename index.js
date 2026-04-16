@@ -39,10 +39,19 @@ const MIME = {
 let latestSymbol = null;
 const subscribers = new Set();
 
+const SESSION_STORE = new Map();
+const SESSION_TTL_MS = 4 * 60 * 60 * 1000;
+function sessionCleanup(){
+  const now = Date.now();
+  for(const [id, ctx] of SESSION_STORE){
+    if(now - ctx._stored > SESSION_TTL_MS) SESSION_STORE.delete(id);
+  }
+}
+
 function cors(res){
   res.setHeader("Access-Control-Allow-Origin","*");
   res.setHeader("Access-Control-Allow-Headers","*");
-  res.setHeader("Access-Control-Allow-Methods","GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods","GET, POST, OPTIONS");
 }
 function broadcast(symbol){
   const payload = `data: ${JSON.stringify({symbol, t:Date.now()})}\n\n`;
@@ -69,6 +78,36 @@ const server = http.createServer((req, res) => {
       res.end();
       return;
     }
+    if(req.method === 'POST'){
+      let body=''; req.on('data',c=>body+=c);
+      req.on('end',()=>{
+        try{
+          const ctx = JSON.parse(body);
+          const sym = sanitizeSymbol(ctx.symbol || u.query.symbol);
+          if(!sym){ res.writeHead(400); return res.end(JSON.stringify({ok:false,error:"missing symbol"})); }
+          sessionCleanup();
+          const session_id = 'ATLAS-' + Date.now() + '-' + sym;
+          const stored = {
+            session_id, symbol:sym,
+            mode:     ctx.mode     || u.query.mode || '',
+            bias:     ctx.bias     || '',
+            probability: ctx.probability || '',
+            regime:   ctx.regime   || '',
+            signal_strength: ctx.signal_strength || 0,
+            verdict:  ctx.verdict  || '',
+            timestamp: new Date().toISOString(),
+            _stored: Date.now()
+          };
+          SESSION_STORE.set(session_id, stored);
+          latestSymbol = sym;
+          broadcast(sym);
+          console.log(`[atlas] /load POST -> ${sym} session:${session_id}`);
+          res.setHeader("Content-Type","application/json");
+          res.end(JSON.stringify({ok:true, session_id, symbol:sym, t:Date.now()}));
+        }catch(e){ res.writeHead(500); res.end(JSON.stringify({ok:false})); }
+      });
+      return;
+    }
     const sym = sanitizeSymbol(u.query.symbol);
     if(!sym){ res.statusCode = 400; res.setHeader("Content-Type","application/json"); return res.end(JSON.stringify({ok:false,error:"missing or invalid symbol"})); }
     latestSymbol = sym;
@@ -76,6 +115,15 @@ const server = http.createServer((req, res) => {
     console.log(`[atlas] /load -> ${sym}  (${subscribers.size} subscriber${subscribers.size===1?"":"s"})`);
     res.setHeader("Content-Type","application/json");
     return res.end(JSON.stringify({ok:true, symbol:sym, t:Date.now(), subscribers:subscribers.size}));
+  }
+
+  if(u.pathname.startsWith("/session/")){
+    const id = decodeURIComponent(u.pathname.slice(9));
+    const ctx = SESSION_STORE.get(id);
+    res.setHeader("Content-Type","application/json");
+    if(!ctx){ res.statusCode = 404; return res.end(JSON.stringify({ok:false,error:"session not found"})); }
+    const {_stored, ...safe} = ctx;
+    return res.end(JSON.stringify({ok:true, ...safe}));
   }
 
   if(u.pathname === "/events"){

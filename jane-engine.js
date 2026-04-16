@@ -111,7 +111,7 @@ var EV_FALLBACK =
    full beginner-readable definition]. Beginner-readable: every entry is
    written so a non-trader can understand the term in two short sentences. */
 var TERMS = [
-  ["DXY","US Dollar Strength Index","A single number that tracks how strong the US Dollar is against six major currencies. When DXY rises, the dollar is winning across the board; when it falls, the dollar is losing."],
+  ["Dollar Strength Index (DXY proxy)","US Dollar Strength Index","A single number that tracks how strong the US Dollar is against six major currencies. When it rises, the dollar is winning across the board; when it falls, the dollar is losing."],
   ["US10Y","US 10-Year Interest Rate","The return paid on a 10-year US government bond. Higher yields make holding dollars more rewarding; lower yields make dollars less attractive."],
   ["EQUITIES","Market Risk Appetite","The S&P 500 (the main US stock market). Rising stocks usually mean investors are willing to take risk; falling stocks mean investors want safety."],
   ["USDJPY","Global Money Flow","The dollar against the Japanese yen. The cleanest live read on whether money is flowing into or out of the dollar in size."],

@@ -47,7 +47,7 @@ function favouredSymDir(sym, usdDir){
    strings, where "means" is direction-aware so it speaks to the trade. */
 var DRIVERS = {
   DXY: {
-    title: 'DXY (US Dollar Strength)',
+    title: 'Dollar Strength Index (DXY proxy)',
     role:  'A single number that tracks how strong the US Dollar is against six major currencies. When this index rises the dollar is winning across the board; when it falls the dollar is losing.',
     what: function(m){
       var d = m.dxy.dir, p = A.pct(m.dxy.pc);
