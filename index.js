@@ -89,11 +89,16 @@ const server = http.createServer((req, res) => {
           const session_id = 'ATLAS-' + Date.now() + '-' + sym;
           const stored = {
             session_id, symbol:sym,
+            user:     ctx.user     || u.query.user || 'AT',
             mode:     ctx.mode     || u.query.mode || '',
             bias:     ctx.bias     || '',
+            conviction: ctx.conviction || '',
             probability: ctx.probability || '',
             regime:   ctx.regime   || '',
             signal_strength: ctx.signal_strength || 0,
+            viability: ctx.viability || '',
+            execution: ctx.execution || null,
+            events:    ctx.events    || [],
             verdict:  ctx.verdict  || '',
             timestamp: new Date().toISOString(),
             _stored: Date.now()

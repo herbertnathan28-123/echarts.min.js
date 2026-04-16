@@ -949,28 +949,81 @@ function openAstraChat(){
     : 'Primary: stand aside — viability ' + v.state;
   var scenarioAlt = 'Alternative: ' + scenarioBias + ' re-engages on pullback to entry';
   var scenarioInv = 'Invalidation: close beyond ' + (est.stopA != null ? Number(est.stopA).toFixed(meta.digits) : 'Pending');
-  var embed = {
-    title: 'ATLAS FX — ' + fmt(symbol) + ' — ' + v.state,
-    color: v.state === 'VALID' ? 0x07F911 : v.state === 'MARGINAL' ? 0xFF9100 : 0xFF0015,
-    fields: [
-      { name: 'Symbol',          value: fmt(symbol),                                inline: true },
-      { name: 'Viability',       value: fmt(v.state),                               inline: true },
-      { name: 'Bias / Strength', value: fmt(mst.bias) + ' · ' + (mst.strength || 0) + '/10', inline: true },
-      { name: 'Entry',           value: fmtLevel(est.entry, est.entry),             inline: false },
-      { name: 'Exit',            value: fmtLevel(est.exit,  est.entry),             inline: true },
-      { name: 'Stop Loss',       value: fmtLevel(est.stopA, est.entry),             inline: true },
-      { name: 'Execution Cost',  value: (v.execCostPrice || 0) + ' — $' + (v.execCostUSD || 0) + ' (' + (v.execCostPips || 0) + 'p)', inline: false },
-      { name: 'Events',          value: evSummary,                                  inline: false },
-      { name: 'Scenario',        value: scenarioPrimary + '\n' + scenarioAlt + '\n' + scenarioInv, inline: false },
-      { name: 'Dashboard',       value: dashboardUrl,                               inline: false }
-    ],
-    timestamp: new Date().toISOString()
+  var buf = bufferFor();
+  var d = meta.digits;
+  var fmtCompact = function(price){
+    if(price == null || !isFinite(price)) return 'Pending';
+    var lo = (price - buf).toFixed(d);
+    var hi = (price + buf).toFixed(d);
+    return Number(price).toFixed(d) + ' ± ' + buf.toFixed(d) + ' (' + lo + ' – ' + hi + ')';
   };
-  fetch(webhookUrl, {
+  var execution = {
+    entry: est.entry, exit: est.exit, stop: est.stopA,
+    buffer: buf, digits: d, pipSize: meta.pipSize
+  };
+  var eventsPayload = (A.EventsForward && A.EventsForward.store || []).slice(0, 3).map(function(e){
+    return { title: e.title, ccy: e.ccy, type: e.type, landAt: e.landAt, shock: e.shock };
+  });
+  var sessionPayload = {
+    user: user, symbol: symbol, mode: mode,
+    bias: mst.bias || '', conviction: mst.conv || '',
+    regime: mst.risk || '', signal_strength: mst.strength || 0,
+    viability: v.state, execution: execution, events: eventsPayload,
+    verdict: v.state
+  };
+  /* Phase 1: create session on ATLAS backend (SESSION_STORE). */
+  var sessionReq = fetch('/load', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ embeds: [embed] })
-  }).catch(function(){});
+    body: JSON.stringify(sessionPayload)
+  }).then(function(r){ return r.json(); }).catch(function(){ return {ok:false}; });
+
+  /* Phase 2: build system-prompt-formatted handoff text and POST to Astra
+     channel via webhook. Astra reads the channel history on the next user
+     turn; the first line it sees is the doctrine directive. */
+  sessionReq.then(function(sess){
+    var sessionId = (sess && sess.session_id) || 'ATLAS-unassigned';
+    var sessionUrl = window.location.origin + '/session/' + encodeURIComponent(sessionId);
+    var lines = [];
+    lines.push('**[ATLAS SESSION HANDOFF — system directive]**');
+    lines.push('');
+    lines.push('You are Astra, continuing an ATLAS FX trade discussion. Do NOT ask for context. Continue from this state.');
+    lines.push('');
+    lines.push('Context:');
+    lines.push('Symbol: ' + symbol);
+    lines.push('Bias: ' + (mst.bias || 'Pending') + '  (strength ' + (mst.strength || 0) + '/10)');
+    lines.push('Conviction: ' + (mst.conv || 'Pending'));
+    lines.push('Regime: ' + (mst.risk || 'Pending'));
+    lines.push('Execution:');
+    lines.push('  Entry: ' + fmtCompact(est.entry));
+    lines.push('  Exit:  ' + fmtCompact(est.exit));
+    lines.push('  Stop:  ' + fmtCompact(est.stopA));
+    lines.push('Viability: ' + v.state);
+    lines.push('Events: ' + (eventsPayload.length
+      ? eventsPayload.map(function(e){
+          var mins = Math.round((e.landAt - Date.now()) / 60000);
+          return e.ccy + ' ' + e.type + ' in ' + (mins > 0 ? mins + 'm' : 'landed') + ' (' + e.shock + ')';
+        }).join(' · ')
+      : 'No high-impact events — flow-driven'));
+    lines.push('');
+    lines.push('Scenario:');
+    lines.push('  ' + scenarioPrimary);
+    lines.push('  ' + scenarioAlt);
+    lines.push('  ' + scenarioInv);
+    lines.push('');
+    lines.push('Session: `' + sessionId + '`');
+    lines.push('Fetch: ' + sessionUrl);
+    lines.push('Dashboard: ' + dashboardUrl);
+    lines.push('');
+    lines.push('_Acknowledge context and continue. Do not ask "what trade?" — you already have the symbol, levels, viability, and events._');
+    var content = lines.join('\n');
+    return fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: content })
+    }).catch(function(){});
+  });
+
   window.open('https://discord.com/channels/' + GUILD_ID + '/' + channelId, '_blank');
 }
 </script>
