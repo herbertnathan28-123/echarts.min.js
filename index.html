@@ -364,6 +364,50 @@ html,body{font-size:14px;line-height:1.55}
 .astra-chat-btn{display:block;margin-top:16px;padding:12px 18px;font-size:15px;font-weight:bold;background:#111;border:1px solid #00ffcc;color:#00ffcc;cursor:pointer;width:100%;text-align:left;}
 .astra-chat-btn:hover{background:#00ffcc;color:#000;}
 
+/* ATLAS DOCTRINE v1 — precision levels + viability pill */
+.exec-tbl td.xr-r .px-line{font-family:"SF Mono",Menlo,Consolas,monospace;font-weight:700}
+.exec-tbl td.xr-r .px-price{color:#FFD600;font-size:15px}
+.exec-tbl td.xr-r .px-buffer{color:#6c7a89;font-size:12px;font-weight:600}
+.exec-tbl td.xr-r .px-bounds{font-family:"SF Mono",Menlo,Consolas,monospace;color:#9aa4ad;font-size:12px;margin-top:2px}
+.exec-tbl td.xr-r .px-meta{font-family:"SF Mono",Menlo,Consolas,monospace;color:#fff;font-size:12px;margin-top:4px;padding-top:4px;border-top:1px dashed #1a1a1a}
+.exec-tbl td.xr-r .px-dollars{color:#fff;font-weight:700;letter-spacing:.5px}
+.exec-tbl td.xr-r .px-pips{color:#6c7a89;margin-left:8px}
+.vb-pill{display:inline-block;padding:4px 12px;border-radius:2px;font-weight:900;letter-spacing:2px;font-size:12px}
+.vb-valid{background:#07f911;color:#000}
+.vb-marginal{background:#FF9100;color:#000}
+.vb-invalid{background:#ff0015;color:#fff}
+
+/* FORWARD-IMPACT EVENT CARDS */
+.ev .ev-fwd{padding-top:8px;margin-top:8px;border-top:1px solid #1a1a1a;display:flex;flex-direction:column;gap:4px}
+.ev .ev-row{display:flex;gap:10px;font-size:12px;line-height:1.5}
+.ev .ev-k{flex:0 0 140px;color:#6c7a89;letter-spacing:1.2px;font-weight:600;font-size:10px;padding-top:2px}
+.ev .ev-v{flex:1;color:#d7dde3}
+
+/* STATUS VIABILITY ROW (doctrine addition) */
+.sx-viability{padding:16px 20px;background:#050a10;border:1px solid #1a1a1a;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.sx-viability .lbl{font-size:11px;letter-spacing:2px;color:#6c7a89;font-weight:700}
+.sx-viability .ts{margin-left:auto;color:#6c7a89;font-size:11px;letter-spacing:1px;font-family:"SF Mono",Menlo,Consolas,monospace}
+
+/* GLOSSARY MODAL */
+.term-open{display:flex;align-items:center;gap:12px;width:100%;padding:14px 18px;background:#000;border:none;outline:none;cursor:pointer;font-family:inherit;text-align:left;transition:background .12s}
+.term-open:hover{background:#0a1420}
+.term-code{color:#FFD600;font-weight:700;font-size:14px;letter-spacing:1px;flex:0 0 auto}
+.term-plain{color:#d7dde3;font-size:13px;flex:1}
+.term-more{color:#00B0FF;font-size:10px;letter-spacing:2px;font-weight:700}
+#term-modal{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px}
+#term-modal.open{display:flex}
+#term-modal .tm-card{background:#000;border:1px solid #FFD600;max-width:720px;width:100%;max-height:86vh;overflow-y:auto;box-shadow:0 0 0 1px #FFD600 inset}
+#term-modal .tm-hd{padding:18px 22px;background:#050a10;border-bottom:1px solid #1a1a1a;display:flex;align-items:center;gap:14px}
+#term-modal .tm-code{color:#FFD600;font-size:18px;font-weight:900;letter-spacing:1.5px}
+#term-modal .tm-close{margin-left:auto;background:transparent;border:1px solid #1a1a1a;color:#d7dde3;padding:6px 14px;font-family:inherit;font-size:12px;letter-spacing:1.5px;cursor:pointer}
+#term-modal .tm-close:hover{border-color:#FFD600;color:#FFD600}
+#term-modal .tm-body{padding:6px 0}
+#term-modal .tm-sec{padding:14px 22px;border-bottom:1px solid #1a1a1a}
+#term-modal .tm-sec:last-child{border-bottom:none}
+#term-modal .tm-k{color:#FFD600;font-size:11px;letter-spacing:2px;font-weight:700;margin-bottom:6px}
+#term-modal .tm-v{color:#d7dde3;font-size:13px;line-height:1.7}
+#term-modal .tm-v ul{margin:4px 0 0 18px}
+
 /* PROBABILITY MODEL (under signal strength) */
 .sx-prob{padding:16px 20px;background:#050a10;border:1px solid #1a1a1a;margin-top:14px}
 .sx-prob .prob-hd{font-size:11px;letter-spacing:2px;color:#FFD600;font-weight:700;margin-bottom:10px}
@@ -526,6 +570,7 @@ html,body{font-size:14px;line-height:1.55}
 <script src="./spidey-engine.js"></script>
 <script src="./jane-engine.js"></script>
 <script src="./execution-engine.js"></script>
+<script src="./terms-modal.js"></script>
 <script>
 (function(){
   var A = window.ATLAS;
@@ -788,6 +833,65 @@ if(_origExecRun){
 }
 window.addEventListener('DOMContentLoaded', function(){ setTimeout(atlasPostUpdate, 500); });
 
+/* ATLAS DOCTRINE v1 — viability status row injected into #status-root */
+function atlasRenderViability(){
+  var A = window.ATLAS; if(!A || !A.computeViability) return;
+  var v = A.computeViability();
+  var root = document.getElementById('status-root');
+  if(!root) return;
+  var existing = document.getElementById('sx-viability');
+  if(existing) existing.remove();
+  var cls = v.state === 'VALID' ? 'vb-valid' : v.state === 'MARGINAL' ? 'vb-marginal' : 'vb-invalid';
+  var ts = new Date().toISOString().replace('T',' ').slice(0,16) + 'Z';
+  var div = document.createElement('div');
+  div.id = 'sx-viability';
+  div.className = 'sx-viability';
+  div.innerHTML =
+    '<span class="lbl">TRADE VIABILITY</span>' +
+    '<span class="vb-pill ' + cls + '">' + v.state + '</span>' +
+    '<span class="ts">valid @ ' + ts + '</span>';
+  root.appendChild(div);
+}
+var _origAtlasPost = atlasPostUpdate;
+atlasPostUpdate = function(){
+  _origAtlasPost();
+  setTimeout(function(){ try { atlasRenderViability(); } catch(e){} }, 80);
+};
+
+/* Glossary modal control */
+function closeTermModal(){
+  var m = document.getElementById('term-modal');
+  if(m) m.classList.remove('open');
+}
+window.openTermModal = function(key, code){
+  var data = (window.TERM_MODALS && window.TERM_MODALS[key]) || null;
+  var body = document.getElementById('tm-body');
+  var title = document.getElementById('tm-title');
+  var plain = document.getElementById('tm-plain');
+  var modal = document.getElementById('term-modal');
+  if(!body || !modal) return;
+  title.textContent = code || key;
+  plain.textContent = (data && data.plain) || '';
+  if(!data){
+    body.innerHTML = '<div class="tm-sec"><div class="tm-k">DEFINITION</div><div class="tm-v">Definition pending — this term is in the glossary index but full doctrine content has not yet been loaded.</div></div>';
+  } else {
+    var sections = [
+      ['DEFINITION',                data.definition],
+      ['WHAT IT MEANS IN MARKETS',  data.meansInMarkets],
+      ['WHY IT MATTERS',            data.whyMatters],
+      ['HOW TO IDENTIFY IT',        data.howIdentify],
+      ['REAL EXAMPLE',              data.realExample],
+      ['COMMON MISTAKES',           data.commonMistakes],
+      ['ATLAS INTERPRETATION',      data.atlasInterpretation],
+      ['QUICK CHECKLIST',           data.checklist]
+    ];
+    body.innerHTML = sections.map(function(s){
+      return '<div class="tm-sec"><div class="tm-k">' + s[0] + '</div><div class="tm-v">' + (s[1] || '—') + '</div></div>';
+    }).join('');
+  }
+  modal.classList.add('open');
+};
+
 function openAstraChat(){
   var GUILD_ID = '1430048352568868928';
   var USER_CHANNELS = {
@@ -816,19 +920,49 @@ function openAstraChat(){
     '?symbol=' + encodeURIComponent(symbol) +
     '&mode='   + encodeURIComponent(mode) +
     '&user='   + encodeURIComponent(user);
+  var v = (A.computeViability && A.computeViability()) || {state:'INVALID',execCostPips:0,execCostUSD:0};
+  var meta = (est.meta) || (A.instrumentMeta && A.instrumentMeta(symbol)) || {digits:5,pipSize:0.0001,pipValueUSD:10};
+  var bufferFor = function(){ return Math.max(0.00001, meta.pipSize * 0.1); };
+  var fmtLevel = function(price, refPrice){
+    if(price == null || !isFinite(price)) return 'Pending';
+    var d = meta.digits;
+    var buf = bufferFor();
+    var lower = price - buf;
+    var upper = price + buf;
+    var pips = refPrice != null ? Math.abs((price - refPrice) / meta.pipSize) : null;
+    var dollars = pips != null ? '$' + (pips * meta.pipValueUSD).toFixed(0) : 'Pending';
+    var pipsStr = pips != null ? ' (' + pips.toFixed(1) + 'p)' : '';
+    return Number(price).toFixed(d) + ' ± ' + buf.toFixed(d) +
+           '\n(' + lower.toFixed(d) + ' – ' + upper.toFixed(d) + ')' +
+           '\n' + dollars + pipsStr;
+  };
+  var evStore = (A.EventsForward && A.EventsForward.store) || [];
+  var evSummary = evStore.length
+    ? evStore.slice(0, 2).map(function(e){
+        var mins = Math.round((e.landAt - Date.now()) / 60000);
+        return '• ' + e.ccy + ' ' + e.type + ' — ' + (mins > 0 ? 'in ' + mins + 'm' : 'just landed') + ' (' + e.shock + ' shock)';
+      }).join('\n')
+    : 'No scheduled high-impact events — flow-driven';
+  var scenarioBias = mst.bias || 'Pending';
+  var scenarioPrimary = v.state === 'VALID'
+    ? 'Primary: enter at ' + (est.entry != null ? Number(est.entry).toFixed(meta.digits) : 'Pending') + ', target ' + (est.exit != null ? Number(est.exit).toFixed(meta.digits) : 'Pending')
+    : 'Primary: stand aside — viability ' + v.state;
+  var scenarioAlt = 'Alternative: ' + scenarioBias + ' re-engages on pullback to entry';
+  var scenarioInv = 'Invalidation: close beyond ' + (est.stopA != null ? Number(est.stopA).toFixed(meta.digits) : 'Pending');
   var embed = {
-    title: 'ATLAS FX Trade Context — ' + fmt(symbol),
-    color: 0xFFD600,
+    title: 'ATLAS FX — ' + fmt(symbol) + ' — ' + v.state,
+    color: v.state === 'VALID' ? 0x07F911 : v.state === 'MARGINAL' ? 0xFF9100 : 0xFF0015,
     fields: [
-      { name: 'Symbol',     value: fmt(symbol),      inline: true },
-      { name: 'Bias',       value: fmt(mst.bias),    inline: true },
-      { name: 'Conviction', value: fmt(mst.conv),    inline: true },
-      { name: 'Regime',     value: fmt(mst.risk),    inline: true },
-      { name: 'Risk',       value: fmt(mst.volLabel),inline: true },
-      { name: 'Entry',      value: fmt(est.entry),   inline: true },
-      { name: 'Stop',       value: fmt(est.stopA),   inline: true },
-      { name: 'Target',     value: fmt(est.exit),    inline: true },
-      { name: 'Dashboard',  value: dashboardUrl,     inline: false }
+      { name: 'Symbol',          value: fmt(symbol),                                inline: true },
+      { name: 'Viability',       value: fmt(v.state),                               inline: true },
+      { name: 'Bias / Strength', value: fmt(mst.bias) + ' · ' + (mst.strength || 0) + '/10', inline: true },
+      { name: 'Entry',           value: fmtLevel(est.entry, est.entry),             inline: false },
+      { name: 'Exit',            value: fmtLevel(est.exit,  est.entry),             inline: true },
+      { name: 'Stop Loss',       value: fmtLevel(est.stopA, est.entry),             inline: true },
+      { name: 'Execution Cost',  value: (v.execCostPrice || 0) + ' — $' + (v.execCostUSD || 0) + ' (' + (v.execCostPips || 0) + 'p)', inline: false },
+      { name: 'Events',          value: evSummary,                                  inline: false },
+      { name: 'Scenario',        value: scenarioPrimary + '\n' + scenarioAlt + '\n' + scenarioInv, inline: false },
+      { name: 'Dashboard',       value: dashboardUrl,                               inline: false }
     ],
     timestamp: new Date().toISOString()
   };
@@ -840,5 +974,17 @@ function openAstraChat(){
   window.open('https://discord.com/channels/' + GUILD_ID + '/' + channelId, '_blank');
 }
 </script>
+
+<!-- ATLAS DOCTRINE v1 — Glossary 8-section modal -->
+<div id="term-modal" role="dialog" aria-modal="true" aria-labelledby="tm-title" onclick="if(event.target.id==='term-modal')closeTermModal()">
+  <div class="tm-card">
+    <div class="tm-hd">
+      <span class="tm-code" id="tm-title">-</span>
+      <span class="tm-plain" id="tm-plain" style="color:#6c7a89;font-size:13px;flex:1"></span>
+      <button type="button" class="tm-close" onclick="closeTermModal()">CLOSE</button>
+    </div>
+    <div class="tm-body" id="tm-body"></div>
+  </div>
+</div>
 </body>
 </html>
