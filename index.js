@@ -61,6 +61,14 @@ const server = http.createServer((req, res) => {
   if(req.method === "OPTIONS"){ res.statusCode = 204; return res.end(); }
 
   if(u.pathname === "/load"){
+    if (req.method === 'GET') {
+      const symbol = u.query.symbol || '';
+      const mode = u.query.mode || '';
+      const target = `/?symbol=${encodeURIComponent(symbol)}&mode=${encodeURIComponent(mode)}`;
+      res.writeHead(302, { Location: target });
+      res.end();
+      return;
+    }
     const sym = sanitizeSymbol(u.query.symbol);
     if(!sym){ res.statusCode = 400; res.setHeader("Content-Type","application/json"); return res.end(JSON.stringify({ok:false,error:"missing or invalid symbol"})); }
     latestSymbol = sym;
