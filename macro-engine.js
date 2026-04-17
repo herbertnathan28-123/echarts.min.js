@@ -81,8 +81,7 @@ A.Macro = {
     var y10 = panelBars('ch-macro-US10Y');
     var eq  = panelBars('ch-macro-EQUITIES');
     var jpy = panelBars('ch-macro-USDJPY');
-    if(!A.activeSymbol) return;
-    var sym = A.activeSymbol;
+    var sym = A.activeSymbol || 'EURUSD';
     var root = document.getElementById('status-root');
     if(!root) return;
     if(!dxy || !y10 || !eq || !jpy){

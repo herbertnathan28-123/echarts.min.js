@@ -173,8 +173,7 @@ A.Spidey = {
     var y10 = (cd['ch-macro-US10Y']    || {}).bars;
     var eq  = (cd['ch-macro-EQUITIES'] || {}).bars;
     var jpy = (cd['ch-macro-USDJPY']   || {}).bars;
-    if(!A.activeSymbol) return;
-    var sym = A.activeSymbol;
+    var sym = A.activeSymbol || 'EURUSD';
     var st  = A.Macro && A.Macro.state;
 
     var grid = document.getElementById('hist-grid');
