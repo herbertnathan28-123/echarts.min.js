@@ -45,7 +45,7 @@ A.Corey = {
       root.innerHTML = '<div class="mut" style="padding:14px 16px">awaiting macro data...</div>';
       return;
     }
-    if(!A.activeSymbol){ throw new Error('SYMBOL INTEGRITY FAILURE: activeSymbol undefined'); }
+    if(!A.activeSymbol) return;
     var sym = A.activeSymbol;
     var m = st.moves;
     var favDir = favouredSymDir(sym, st.biasDir);
