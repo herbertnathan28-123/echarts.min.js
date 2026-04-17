@@ -607,10 +607,12 @@ window.resolveSymbol=function(s){if(!s)return s;var up=s.toUpperCase().replace(/
 function initWhenReady(){
   if(typeof echarts==='undefined'){setTimeout(initWhenReady,50);return;}
   ChartsEngine.init();
-  /* ATLAS DOCTRINE: no implicit symbol. If no ?symbol= in URL,
-     wait for the user to request one via !SYMBOL in Discord or the
-     matrix search. Silent fallback to EURUSD would violate integrity. */
-  if(window.currentSymbol) ChartsEngine.load(window.currentSymbol);
+  if(window.currentSymbol){
+    ChartsEngine.load(window.currentSymbol).then(function(){
+      try { MacroEngine.run(); } catch(e){}
+      try { ExecutionEngine.run(); } catch(e){}
+    }).catch(function(){});
+  }
 }
 window.addEventListener("DOMContentLoaded", async function(){
   var A = window.ATLAS, start = performance.now();
