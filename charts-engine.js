@@ -10,7 +10,9 @@ var A = window.ATLAS = window.ATLAS || {};
 A.chartData = A.chartData || {};
 A.chartMeta = A.chartMeta || {};
 A.charts    = A.charts    || {};
-A.activeSymbol = A.activeSymbol || "EURUSD";
+/* ATLAS DOCTRINE: no implicit symbol default. activeSymbol is set
+   only by explicit user request (URL param, !SYMBOL, or reloadSymbol). */
+if(!A.activeSymbol) A.activeSymbol = null;
 
 var PANELS = [
   { domIds:["htf-1","ch-htf-1W"],  key:"ch-htf-1W",  tf:"1W",  group:"htf" },
@@ -260,7 +262,7 @@ window.addEventListener("resize", resizeAll);
 A.Charts = {
   load: function(symbol){
     if(symbol){
-      var s = (""+symbol).toUpperCase().replace(/[^A-Z]/g,"");
+      var s = window.resolveSymbol ? window.resolveSymbol(symbol) : (""+symbol).toUpperCase().replace(/[^A-Z0-9]/g,"");
       if(s) A.activeSymbol = s;
     }
     setSymLabels(A.activeSymbol);

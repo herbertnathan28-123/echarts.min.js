@@ -4,7 +4,7 @@
 var A = window.ATLAS;
 A.pmCache = {};
 A.searchHistory = [];
-A.activeSymbol = A.activeSymbol || "EURUSD";
+if(!A.activeSymbol) A.activeSymbol = null;
 
 function digitsFor(sym){ if(A.FX && A.FX[sym]) return A.FX[sym].digits; if(A.SYMBOLS && A.SYMBOLS[sym]) return A.SYMBOLS[sym].digits; return 4; }
 
@@ -55,7 +55,7 @@ function fetchMatrixPair(p){
 
 window.addSearch = function(symbol){
   if(!symbol) return;
-  var s = (""+symbol).toUpperCase().replace(/[^A-Z]/g,"");
+  var s = window.resolveSymbol ? window.resolveSymbol(symbol) : (""+symbol).toUpperCase().replace(/[^A-Z0-9]/g,"");
   if(!s) return;
   A.searchHistory = A.searchHistory.filter(function(x){ return x!==s; });
   A.searchHistory.unshift(s);
@@ -204,7 +204,8 @@ A.Jane = {
     var list = document.getElementById("ev-list"); if(!list) return;
     return A.Feed.fetchEvents().then(function(evts){
       var now = Date.now();
-      var sym = A.activeSymbol || 'EURUSD';
+      var sym = A.activeSymbol;
+      if(!sym) return;
       var filtered = (evts||[]).filter(function(e){
         if(!e || !e.title) return false;
         if(!includeEvent(e.title)) return false;

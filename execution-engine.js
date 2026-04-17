@@ -31,13 +31,14 @@ function atr(bars, n){
   return slice.reduce(function(s,v){return s+v;},0)/slice.length;
 }
 function pickSymbol(){
-  var s = A.activeSymbol || 'USDJPY';
+  /* ATLAS DOCTRINE: user-requested symbol MUST NEVER be replaced.
+     Returns the requested symbol; bars may be empty if data is
+     unavailable. No substitution, no fallback. */
+  var s = A.activeSymbol;
+  if(!s) return { sym:null, bars:[] };
   var id = 'ch-htf-1H';
-  if(A.chartData[id] && A.chartData[id].bars && A.chartData[id].bars.length){
-    return { sym:s, bars:A.chartData[id].bars };
-  }
-  var j = 'ch-macro-USDJPY';
-  return { sym:'USDJPY', bars:(A.chartData[j]||{}).bars || [] };
+  var bars = (A.chartData[id] && A.chartData[id].bars) || [];
+  return { sym:s, bars:bars };
 }
 
 /* Doctrine buffer: ±0.00001 default, normalised per instrument tick size. */
@@ -92,6 +93,7 @@ function ctxRow(label, html){
 A.Execution = {
   state: {},
   update: function(){
+    var requestedSymbol = A.activeSymbol;
     var pick = pickSymbol();
     var sym = pick.sym, bars = pick.bars;
     var host    = document.getElementById('exec-grid');
@@ -99,21 +101,29 @@ A.Execution = {
     var ghHost  = document.getElementById('exec-explainer');
     if(!host) return;
 
+    /* ATLAS DOCTRINE: symbol integrity check. The symbol we render for
+       MUST match the requested active symbol. Any mismatch is a
+       SYMBOL INTEGRITY FAILURE and we refuse to draw. */
+    if(requestedSymbol && sym && sym !== requestedSymbol){
+      console.error('[ATLAS] SYMBOL INTEGRITY FAILURE: requested=' + requestedSymbol + ' resolved=' + sym);
+      host.innerHTML = '<div class="mut" style="padding:14px 16px;color:#ff0015">SYMBOL INTEGRITY FAILURE — requested ' + requestedSymbol + ', resolver returned ' + sym + '. No render.</div>';
+      return;
+    }
+    if(!sym){
+      host.innerHTML = '<div class="mut" style="padding:14px 16px">No symbol requested. Use !SYMBOL via Discord or ?symbol= in the URL.</div>';
+      A.Execution.state = {};
+      return;
+    }
+
     var meta = A.instrumentMeta(sym);
     var d = meta.digits;
 
     if(!bars || !bars.length){
       host.innerHTML =
-        '<table class="exec-tbl">' +
-          '<thead><tr class="xr xr-hdr">' +
-            '<th><span class="xr-bar"></span><span class="xr-lab">' + sym + ' — LEVELS</span></th>' +
-            '<th class="xr-r">PRICE — $ VALUE (PIPS)</th>' +
-          '</tr></thead>' +
-          '<tbody>' +
-            '<tr class="xr xc-neu"><td colspan="2"><span class="xr-bar"></span>' +
-            '<span class="xr-lab">Market feed initialising — levels will compute on first bar.</span></td></tr>' +
-          '</tbody>' +
-        '</table>';
+        '<div class="mut" style="padding:14px 16px;color:#ff0015;border:1px solid #1a1a1a">' +
+          'Data unavailable for requested symbol: <b style="color:#FFD600">' + sym + '</b>.<br>' +
+          'No fallback applied. Please retry.' +
+        '</div>';
       if(ctxHost) ctxHost.innerHTML =
         '<div class="ctx-sec"><div class="ctx-k">VIABILITY</div>' +
         '<div class="ctx-body">No levels computed yet. Viability will resolve when bars load.</div></div>';
