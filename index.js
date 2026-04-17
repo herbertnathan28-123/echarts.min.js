@@ -59,8 +59,8 @@ function broadcast(symbol){
 }
 function sanitizeSymbol(raw){
   if(!raw) return null;
-  const s = (""+raw).toUpperCase().replace(/[^A-Z0-9:]/g,"");
-  if(s.length < 2 || s.length > 15) return null;
+  const s = (""+raw).toUpperCase().replace(/[^A-Z]/g,"");
+  if(s.length < 2 || s.length > 10) return null;
   return s;
 }
 
