@@ -591,8 +591,8 @@ html,body{font-size:14px;line-height:1.55}
   };
   A.status("warn","-","BOOT");
 })();
-var SYMBOL_ALIASES={SILVER:'XAGUSD',XAG:'XAGUSD',GOLD:'XAUUSD',XAU:'XAUUSD',NASDAQ:'NAS100',NDX:'NAS100',NAS:'NAS100',SP500:'US500',SPX:'US500',DOW:'US30',DJI:'US30',DAX:'GER40',FTSE:'UK100',OIL:'USOIL',BRENT:'BCOUSD',WTI:'USOIL',GAS:'NATGAS',MICRON:'MU',ASML:'ASML',AMD:'AMD'};
-window.resolveSymbol=function(s){if(!s)return s;var up=s.toUpperCase().replace(/[^A-Z0-9]/g,'');return SYMBOL_ALIASES[up]||up;};
+var SYMBOL_ALIASES={SILVER:'XAGUSD',XAG:'XAGUSD',GOLD:'XAUUSD',XAU:'XAUUSD',NASDAQ:'NAS100',NDX:'NAS100',NAS:'NAS100',SP500:'US500',SPX:'US500',DOW:'US30',DJI:'US30',DAX:'GER40',FTSE:'UK100',OIL:'WTIUSD',USOIL:'WTIUSD',BRENT:'BCOUSD',UKOIL:'BCOUSD',WTI:'WTIUSD',GAS:'NATGAS',MICRON:'MU',ASML:'ASML',AMD:'AMD'};
+window.resolveSymbol=function(s){if(!s)return s;var up=s.toUpperCase().replace(/[^A-Z0-9]/g,'');var resolved=SYMBOL_ALIASES[up]||up;console.log('[SYMBOL TRACE]',{input:s,resolved:resolved,final:window.ATLAS&&window.ATLAS.activeSymbol||null});return resolved;};
 (function(){
   try {
     var p = new URLSearchParams(window.location.search);
@@ -736,10 +736,38 @@ var HIST_ANALOGS = [
   {year:'2023',label:'SOFT LANDING',dxy:0,vix:'LOW',eq:1,contPct:63,avgMove5:'0.9%',avgMove10:'1.7%',desc:'Inflation eased without recession. Dollar drifted, equities grinded higher on low vol.'},
   {year:'2024',label:'USD EXCEPTIONALISM',dxy:1,vix:'LOW',eq:1,contPct:66,avgMove5:'1.1%',avgMove10:'2.2%',desc:'US outperformance attracted global capital. Dollar and equities rose together.'}
 ];
+var HIST_NO_MATCH =
+  'No strong historical alignment detected.\n' +
+  'Current market conditions are mixed and do not resemble a high-conviction historical regime.\n' +
+  'Predictive reliability is low. Stand-aside conditions remain valid.';
+
 function matchHistoricalAnalog(){
   var A = window.ATLAS; if(!A || !A.Macro || !A.Macro.state) return null;
   var st = A.Macro.state;
   var m = st.moves || {};
+  var fav = st.favDir || 0;
+  var strength = st.strength || 0;
+  var bias = st.bias || '';
+  var flow = st.flow || '';
+  var conv = st.conv || '';
+
+  /* Compute driver alignment count (same logic as probability model). */
+  var drivers_aligned = 0;
+  if(m.dxy && Math.sign(m.dxy.dir)===Math.sign(fav) && fav!==0) drivers_aligned++;
+  if(m.y10 && Math.sign(m.y10.dir)===Math.sign(fav) && fav!==0) drivers_aligned++;
+  if(m.eq  && Math.sign(-m.eq.dir)===Math.sign(fav) && fav!==0) drivers_aligned++;
+  if(m.jpy && Math.sign(m.jpy.dir)===Math.sign(fav) && fav!==0) drivers_aligned++;
+
+  /* GATE — skip historical matching entirely if conditions are mixed.
+     Allow ONLY when ALL thresholds pass. */
+  var biasUndefined = !bias || bias === 'USD FLAT' || bias === 'NO CLEAR BIAS';
+  var flowMixed = !flow || flow === 'MIXED' || flow === 'ROTATING' || flow === 'NO CLEAR FLOW';
+  var convWeak = !conv || conv === 'WEAK ALIGNMENT' || conv === 'WEAK';
+  if(drivers_aligned < 3 || strength < 6 || biasUndefined || flowMixed || convWeak){
+    return null;
+  }
+
+  /* Matching proceeds only for high-conviction regimes. */
   var curDxy = (m.dxy && m.dxy.dir>0) ? 1 : (m.dxy && m.dxy.dir<0) ? -1 : 0;
   var curVix = st.volLabel || 'LOW';
   var curEq  = (m.eq && m.eq.dir>0) ? 1 : (m.eq && m.eq.dir<0) ? -1 : 0;
@@ -759,25 +787,32 @@ function matchHistoricalAnalog(){
 }
 function atlasRenderHistoricalAnalog(){
   var analog = matchHistoricalAnalog();
-  if(!analog) return;
   var el = document.getElementById('hist-why');
   if(!el) return;
   var existing = document.getElementById('atlas-analog');
   if(existing) existing.remove();
   var div = document.createElement('div');
   div.id = 'atlas-analog';
-  div.innerHTML =
-    '<div class="ha-block">'+
-      '<div class="ha-hd">HISTORICAL PATTERN RECOGNITION</div>'+
-      '<div class="ha-match">'+analog.year+' — '+analog.label+'</div>'+
-      '<div class="ha-desc">'+analog.desc+'</div>'+
-      '<div class="ha-stats">'+
-        '<div class="ha-stat"><div class="hsk">CONTINUATION</div><div class="hsv gn">'+analog.contPct+'%</div></div>'+
-        '<div class="ha-stat"><div class="hsk">AVG MOVE (5 SESSIONS)</div><div class="hsv hi">'+analog.avgMove5+'</div></div>'+
-        '<div class="ha-stat"><div class="hsk">AVG MOVE (10 SESSIONS)</div><div class="hsv hi">'+analog.avgMove10+'</div></div>'+
-      '</div>'+
-      '<div class="ha-conclusion"><b>CONCLUSION:</b> Current conditions most closely match the <b>'+analog.year+' '+analog.label+'</b> environment. In that regime, the dominant move continued '+analog.contPct+'% of the time over the following 5–10 sessions.</div>'+
-    '</div>';
+  if(!analog){
+    div.innerHTML =
+      '<div class="ha-block" style="border-left-color:#6c7a89">'+
+        '<div class="ha-hd">HISTORICAL PATTERN RECOGNITION</div>'+
+        '<div class="ha-desc" style="white-space:pre-line;color:#6c7a89">'+HIST_NO_MATCH+'</div>'+
+      '</div>';
+  } else {
+    div.innerHTML =
+      '<div class="ha-block">'+
+        '<div class="ha-hd">HISTORICAL PATTERN RECOGNITION</div>'+
+        '<div class="ha-match">'+analog.year+' — '+analog.label+'</div>'+
+        '<div class="ha-desc">'+analog.desc+'</div>'+
+        '<div class="ha-stats">'+
+          '<div class="ha-stat"><div class="hsk">CONTINUATION</div><div class="hsv gn">'+analog.contPct+'%</div></div>'+
+          '<div class="ha-stat"><div class="hsk">AVG MOVE (5 SESSIONS)</div><div class="hsv hi">'+analog.avgMove5+'</div></div>'+
+          '<div class="ha-stat"><div class="hsk">AVG MOVE (10 SESSIONS)</div><div class="hsv hi">'+analog.avgMove10+'</div></div>'+
+        '</div>'+
+        '<div class="ha-conclusion"><b>CONCLUSION:</b> Current conditions most closely match the <b>'+analog.year+' '+analog.label+'</b> environment. In that regime, the dominant move continued '+analog.contPct+'% of the time over the following 5–10 sessions.</div>'+
+      '</div>';
+  }
   el.parentNode.insertBefore(div, el.nextSibling);
 }
 
