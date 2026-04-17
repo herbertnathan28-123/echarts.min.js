@@ -12,6 +12,18 @@ A.chartMeta = A.chartMeta || {};
 A.charts    = A.charts    || {};
 A.activeSymbol = A.activeSymbol || "EURUSD";
 
+/* [COREY] Per-key load status: 'loading' | 'ready' | 'failed'. Consumed by
+   macro-engine.js to render LOADING / READY / FAILED instead of the indefinite
+   "Awaiting macro driver data..." state. failReason carries the underlying
+   error message for the FAILED render. */
+A.chartStatus = A.chartStatus || {};
+A.chartFailReason = A.chartFailReason || {};
+function setChartStatus(key, state, reason){
+  A.chartStatus[key] = state;
+  if(state === 'failed') A.chartFailReason[key] = reason || 'unknown';
+  else delete A.chartFailReason[key];
+}
+
 var PANELS = [
   { domIds:["htf-1","ch-htf-1W"],  key:"ch-htf-1W",  tf:"1W",  group:"htf" },
   { domIds:["htf-2","ch-htf-1D"],  key:"ch-htf-1D",  tf:"1D",  group:"htf" },
@@ -31,6 +43,7 @@ var MACRO = [
 function digitsFor(sym){
   if(A.FX && A.FX[sym]) return A.FX[sym].digits;
   if(A.SYMBOLS && A.SYMBOLS[sym]) return A.SYMBOLS[sym].digits;
+  if(A.INDICES && A.INDICES[sym]) return A.INDICES[sym].digits;
   if(sym==="USDJPY"||sym==="AUDJPY"||sym==="GBPJPY"||sym==="EURJPY"||sym==="US10Y") return 3;
   if(sym==="DXY"||sym==="EQUITIES") return 2;
   return 5;
@@ -206,32 +219,49 @@ function fetchLive(sym, tf){
   });
 }
 function loadPanel(p, sym){
+  /* [SYMBOL] instrumentation point 1 — requested symbol / timeframe received. */
+  console.log("[SYMBOL] loadPanel request", { key:p.key, sym:sym, tf:p.tf, group:p.group });
   A.chartMeta[p.key] = { sym:sym, tf:p.tf, group:p.group };
+  setChartStatus(p.key, 'loading');
   var found = findEl(p.domIds);
   return fetchLive(sym, p.tf).then(function(r){
     A.chartData[p.key] = r;
+    /* [SYMBOL] instrumentation point 4 — transformed series length before render. */
+    var seriesLen = (r && r.bars) ? r.bars.length : 0;
+    console.log("[SYMBOL] loadPanel series", { key:p.key, sym:sym, tf:p.tf, seriesLen:seriesLen });
     if(found){
       var ch = buildOrGet(found.id);
       if(ch){
-        try { ch.setOption(chartOption(sym, p.tf, r.bars), true); } catch(e){ console.error("[atlas] setOption fail", p.key, e); }
+        try { ch.setOption(chartOption(sym, p.tf, r.bars), true); } catch(e){ console.error("[SYMBOL] setOption fail", p.key, e); }
         var wrap = found.el.closest && found.el.closest(".chart-panel");
         if(wrap) updatePanelHdr(wrap, sym, p.tf, r.bars);
         setTimeout(function(){ renderLadder(ch, sym, r.bars); }, 16);
       }
     }
+    setChartStatus(p.key, 'ready');
     return r;
   }).catch(function(e){
-    console.error("[atlas] panel load failed", p.key, sym, p.tf, e && (e.message || e));
+    var reason = (e && (e.message || String(e))) || 'unknown';
+    setChartStatus(p.key, 'failed', reason);
+    console.error("[SYMBOL] panel load failed", { key:p.key, sym:sym, tf:p.tf, reason:reason });
     return null;
   });
 }
 function loadMacroSilent(){
+  /* [COREY] mark all four drivers as loading at the start of the batch. */
+  MACRO.forEach(function(m){ setChartStatus(m.key, 'loading'); });
   return Promise.allSettled(MACRO.map(function(m){
+    console.log("[COREY] macro driver request", { key:m.key, sym:m.sym, tf:m.tf });
     return fetchLive(m.sym, m.tf).then(function(r){
       A.chartData[m.key] = r;
       A.chartMeta[m.key] = { sym:m.sym, tf:m.tf };
+      var seriesLen = (r && r.bars) ? r.bars.length : 0;
+      setChartStatus(m.key, 'ready');
+      console.log("[COREY] macro driver ready", { key:m.key, sym:m.sym, tf:m.tf, seriesLen:seriesLen });
     }).catch(function(e){
-      console.error("[atlas] macro load failed", m.key, e && (e.message || e));
+      var reason = (e && (e.message || String(e))) || 'unknown';
+      setChartStatus(m.key, 'failed', reason);
+      console.error("[COREY] macro driver failed", { key:m.key, sym:m.sym, tf:m.tf, reason:reason });
     });
   }));
 }
@@ -260,7 +290,9 @@ window.addEventListener("resize", resizeAll);
 A.Charts = {
   load: function(symbol){
     if(symbol){
-      var s = (""+symbol).toUpperCase().replace(/[^A-Z]/g,"");
+      /* [SYMBOL] R1 — preserve digits here too; this sanitizer runs on the
+         browser side after the Node bridge has already normalised the symbol. */
+      var s = (""+symbol).toUpperCase().replace(/[^A-Z0-9]/g,"");
       if(s) A.activeSymbol = s;
     }
     setSymLabels(A.activeSymbol);

@@ -25,7 +25,29 @@ A.FX = {
   AUDUSD: { td:"AUD/USD", digits:5 },
   NZDUSD: { td:"NZD/USD", digits:5 },
   EURJPY: { td:"EUR/JPY", digits:3 },
-  GBPJPY: { td:"GBP/JPY", digits:3 }
+  GBPJPY: { td:"GBP/JPY", digits:3 },
+  /* [SYMBOL] R2 — FX cross + metals coverage. Metals are native TwelveData
+     symbols; no ETF proxy. */
+  EURGBP: { td:"EUR/GBP", digits:5 },
+  EURCHF: { td:"EUR/CHF", digits:5 },
+  EURAUD: { td:"EUR/AUD", digits:5 },
+  EURCAD: { td:"EUR/CAD", digits:5 },
+  CADJPY: { td:"CAD/JPY", digits:3 },
+  CHFJPY: { td:"CHF/JPY", digits:3 },
+  NZDJPY: { td:"NZD/JPY", digits:3 },
+  XAUUSD: { td:"XAU/USD", digits:2 },
+  XAGUSD: { td:"XAG/USD", digits:3 }
+};
+
+/* [SYMBOL] R2 — indices via ETF proxies. Same doctrine as A.SYMBOLS (DXY/UUP,
+   US10Y/IEF, EQUITIES/SPY): the native index tickers sit behind TwelveData
+   tiers the dashboard does not use, so the matching ETF carries the bars. The
+   proxy is declared explicitly here, not silently substituted at runtime. */
+A.INDICES = {
+  NAS100: { td:"QQQ", digits:2, proxy:true },
+  US500:  { td:"SPY", digits:2, proxy:true },
+  US30:   { td:"DIA", digits:2, proxy:true },
+  US10Y:  { td:"IEF", digits:2, proxy:true }
 };
 /* Map UI timeframes -> TwelveData interval strings. Native TD resolutions only. */
 A.TFS = {
@@ -146,8 +168,16 @@ A.fetchJSON = function(url, opts){
 };
 
 A.tdFetch = function(sym, tf){
-  var s = A.SYMBOLS[sym] || A.FX[sym], t = A.TFS[tf];
-  if(!s || !t) return Promise.reject(new Error("bad sym/tf: "+sym+"/"+tf));
+  var s = A.SYMBOLS[sym] || A.FX[sym] || A.INDICES[sym], t = A.TFS[tf];
+  if(!s || !t){
+    /* [SYMBOL] instrumentation point 2 — resolved symbol would-be-sent, but
+       the lookup failed. Log the miss before rejecting so the console shows
+       why a panel didn't fetch. */
+    console.error("[SYMBOL] tdFetch lookup miss", { sym:sym, tf:tf, hasSymbols:!!s, hasTf:!!t });
+    return Promise.reject(new Error("bad sym/tf: "+sym+"/"+tf));
+  }
+  /* [SYMBOL] instrumentation point 2 — resolved symbol sent to OHLC source. */
+  console.log("[SYMBOL] tdFetch resolve", { sym:sym, tf:tf, tdSymbol:s.td, tdInterval:t.td, outputsize:t.barsMax + 20 });
   var url = A.proxyHost() +
     "/twelvedata?symbol=" + encodeURIComponent(s.td) +
     "&interval="   + encodeURIComponent(t.td) +
@@ -155,17 +185,26 @@ A.tdFetch = function(sym, tf){
   return A.fetchJSON(url, { timeout: 9000 }).then(function(j){
     if(!j || j.status === "error") throw new Error("twelvedata: " + (j && j.message || "error"));
     if(!j.values || !j.values.length) throw new Error("twelvedata: empty values");
-    return {
-      provider: "TWELVEDATA",
-      bars: j.values.slice().reverse().map(function(b){
-        return [
-          new Date(b.datetime.replace(" ","T") + (b.datetime.length<=10 ? "T00:00:00Z" : "Z")).getTime(),
-          +b.open, +b.high, +b.low, +b.close
-        ];
-      }).filter(function(b){
-        return isFinite(b[0]) && isFinite(b[1]) && isFinite(b[2]) && isFinite(b[3]) && isFinite(b[4]);
-      })
-    };
+    /* [SYMBOL] instrumentation point 3 — raw OHLC fetch result count + first/last
+       bar timestamps and close prices, logged before transform. */
+    var rawCount = j.values.length;
+    var rawFirst = j.values[j.values.length - 1]; /* TD returns newest→oldest; first bar = last entry */
+    var rawLast  = j.values[0];
+    console.log("[SYMBOL] tdFetch raw", {
+      sym:sym, tf:tf, tdSymbol:s.td,
+      count: rawCount,
+      first: rawFirst ? { t:rawFirst.datetime, c:+rawFirst.close } : null,
+      last:  rawLast  ? { t:rawLast.datetime,  c:+rawLast.close  } : null
+    });
+    var bars = j.values.slice().reverse().map(function(b){
+      return [
+        new Date(b.datetime.replace(" ","T") + (b.datetime.length<=10 ? "T00:00:00Z" : "Z")).getTime(),
+        +b.open, +b.high, +b.low, +b.close
+      ];
+    }).filter(function(b){
+      return isFinite(b[0]) && isFinite(b[1]) && isFinite(b[2]) && isFinite(b[3]) && isFinite(b[4]);
+    });
+    return { provider: "TWELVEDATA", bars: bars };
   });
 };
 

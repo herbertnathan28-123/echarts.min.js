@@ -74,8 +74,32 @@ function buildSummary(sym, biasDir, favDir){
   return 'The US Dollar is ' + usd + '. ' + move + '. ' + act;
 }
 
+/* [COREY] driver readiness inspector — collapses the four per-key chartStatus
+   values into one of LOADING / READY / FAILED. READY requires all four bars
+   present AND all four marked 'ready'. FAILED fires the moment any driver is
+   marked 'failed'. Anything else is LOADING. */
+function macroReadiness(){
+  var keys = ['ch-macro-DXY','ch-macro-US10Y','ch-macro-EQUITIES','ch-macro-USDJPY'];
+  var byKey = {};
+  var anyFailed = false, allReady = true;
+  keys.forEach(function(k){
+    var st = (A.chartStatus && A.chartStatus[k]) || 'loading';
+    var bars = panelBars(k);
+    byKey[k] = {
+      status: st,
+      bars: (bars && bars.length) ? bars.length : 0,
+      reason: (A.chartFailReason && A.chartFailReason[k]) || null
+    };
+    if(st === 'failed') anyFailed = true;
+    if(st !== 'ready' || !bars || !bars.length) allReady = false;
+  });
+  var overall = anyFailed ? 'FAILED' : (allReady ? 'READY' : 'LOADING');
+  return { overall:overall, byKey:byKey };
+}
+
 A.Macro = {
   state: {},
+  readiness: macroReadiness,
   update: function(){
     var dxy = panelBars('ch-macro-DXY');
     var y10 = panelBars('ch-macro-US10Y');
@@ -84,8 +108,35 @@ A.Macro = {
     var sym = A.activeSymbol || 'EURUSD';
     var root = document.getElementById('status-root');
     if(!root) return;
-    if(!dxy || !y10 || !eq || !jpy){
-      root.innerHTML = '<div class="sx-summary">Awaiting macro driver data&hellip; the four macro charts (US Dollar, US Interest Rates, Equities, Yen) need to load before the status can be computed.</div>';
+
+    /* [COREY] instrumentation point 5 — macro panel readiness state for all
+       four macro drivers. Logged on every update() call so the console reflects
+       the current state snapshot. */
+    var ready = macroReadiness();
+    console.log("[COREY] macro readiness", ready);
+
+    if(ready.overall !== 'READY'){
+      var rows = ['DXY','US10Y','EQUITIES','USDJPY'].map(function(label){
+        var k = 'ch-macro-' + label;
+        var info = ready.byKey[k];
+        var tag = info.status === 'ready'   ? '<span class="macro-tag rdy">READY</span>'
+                : info.status === 'failed'  ? '<span class="macro-tag fail">FAILED</span>'
+                :                             '<span class="macro-tag load">LOADING</span>';
+        var detail = info.status === 'failed' ? ' <span class="macro-reason">' + (info.reason || 'unknown') + '</span>' : '';
+        return '<div class="macro-row"><span class="macro-k">' + label + '</span>' + tag + detail + '</div>';
+      }).join('');
+      var headline = ready.overall === 'FAILED'
+        ? 'Macro drivers <b>FAILED</b> &mdash; one or more of the four macro feeds is unavailable. Status cannot be computed until the failure is cleared.'
+        : 'Macro drivers <b>LOADING</b> &mdash; awaiting DXY, US10Y, Equities, and USDJPY bars.';
+      root.innerHTML =
+        '<div class="sx-summary sx-macro-status ' + ready.overall.toLowerCase() + '">' +
+          headline +
+          '<div class="macro-grid">' + rows + '</div>' +
+        '</div>';
+      /* [COREY] preserve downstream-visible state shape; mark not-ready so
+         Corey / Spidey / Jane / Execution consumers do not treat stale or
+         partial data as a computable snapshot. */
+      A.Macro.state = { ready:false, overallStatus:ready.overall, byKey:ready.byKey };
       return;
     }
 
@@ -251,6 +302,8 @@ A.Macro = {
 
     /* Preserve state shape used by Corey, Spidey, and Execution engines. */
     A.Macro.state = {
+      ready:    true,
+      overallStatus: 'READY',
       bias:     biasDir>0 ? 'USD LONG' : biasDir<0 ? 'USD SHORT' : 'USD FLAT',
       biasCls:  biasDir>0 ? 'gn' : biasDir<0 ? 'dn' : 'mut',
       biasDir:  biasDir,

@@ -58,8 +58,11 @@ function broadcast(symbol){
   for (const s of subscribers){ try { s.write(payload); } catch(e){} }
 }
 function sanitizeSymbol(raw){
+  /* [SYMBOL] R1 — preserve digits so NAS100, US500, US30, US10Y survive as
+     themselves. Previous [^A-Z] regex stripped trailing digits and broke every
+     index / yield symbol at the gateway. */
   if(!raw) return null;
-  const s = (""+raw).toUpperCase().replace(/[^A-Z]/g,"");
+  const s = (""+raw).toUpperCase().replace(/[^A-Z0-9]/g,"");
   if(s.length < 2 || s.length > 10) return null;
   return s;
 }
