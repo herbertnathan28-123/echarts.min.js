@@ -591,10 +591,12 @@ html,body{font-size:14px;line-height:1.55}
   };
   A.status("warn","-","BOOT");
 })();
+var SYMBOL_ALIASES={SILVER:'XAGUSD',XAG:'XAGUSD',GOLD:'XAUUSD',XAU:'XAUUSD',NASDAQ:'NAS100',NDX:'NAS100',NAS:'NAS100',SP500:'US500',SPX:'US500',DOW:'US30',DJI:'US30',DAX:'GER40',FTSE:'UK100',OIL:'USOIL',BRENT:'BCOUSD',WTI:'USOIL',GAS:'NATGAS',MICRON:'MU',ASML:'ASML',AMD:'AMD'};
+window.resolveSymbol=function(s){if(!s)return s;var up=s.toUpperCase().replace(/[^A-Z0-9]/g,'');return SYMBOL_ALIASES[up]||up;};
 (function(){
   try {
     var p = new URLSearchParams(window.location.search);
-    var s = (p.get('symbol') || '').toUpperCase().replace(/[^A-Z0-9]/g,'');
+    var s = window.resolveSymbol((p.get('symbol') || ''));
     var m = (p.get('mode')   || '').toLowerCase().replace(/[^a-z]/g,'');
     var u = (p.get('user')   || '').toUpperCase().replace(/[^A-Z]/g,'');
     if (s) window.currentSymbol = s;

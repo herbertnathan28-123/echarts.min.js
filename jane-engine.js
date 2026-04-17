@@ -66,7 +66,7 @@ window.addSearch = function(symbol){
 
 window.reloadSymbol = function(symbol){
   if(!symbol) return;
-  var s = (""+symbol).toUpperCase().replace(/[^A-Z]/g,"");
+  var s = window.resolveSymbol ? window.resolveSymbol(symbol) : (""+symbol).toUpperCase().replace(/[^A-Z0-9]/g,"");
   A.activeSymbol = s;
   window.addSearch(s);
   try { window.ChartsEngine    && ChartsEngine.load    && ChartsEngine.load(s); } catch(e){}
