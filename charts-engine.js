@@ -10,7 +10,11 @@ var A = window.ATLAS = window.ATLAS || {};
 A.chartData = A.chartData || {};
 A.chartMeta = A.chartMeta || {};
 A.charts    = A.charts    || {};
-A.activeSymbol = A.activeSymbol || "EURUSD";
+// Symbol integrity: NO silent EURUSD fallback. activeSymbol is null until a
+// caller explicitly sets it via A.Charts.load(symbol). If no symbol has been
+// supplied by URL/query/Discord trigger, the panels render the hard-block
+// state instead of showing a different asset.
+A.activeSymbol = A.activeSymbol || null;
 
 var PANELS = [
   { domIds:["htf-1","ch-htf-1W"],  key:"ch-htf-1W",  tf:"1W",  group:"htf" },
@@ -68,6 +72,45 @@ function axisFmt(tf){
     return dt.toISOString().substr(5,11).replace("T"," ");
   };
 }
+// Build the prominent timeframe badge as ECharts graphic elements. Visible
+// within one second to a new user — large bold gold text on solid black with
+// a thick border, fixed top-left of every panel, z-index above the canvas.
+// Symbol label sits beside the TF so each panel answers "what asset" + "what
+// timeframe" instantly.
+function tfBadgeGraphic(sym, tf){
+  var BADGE_BG     = "#000000";
+  var BADGE_BORDER = "#FFD600";
+  var BADGE_TEXT   = "#FFD600";
+  var SYM_TEXT     = "#FFFFFF";
+  var BADGE_W      = 78;
+  var BADGE_H      = 38;
+  var SYM_PADX     = 10;
+  return {
+    elements: [
+      { type:"group", id:"atlas-tfbadge", left:6, top:6, z:200,
+        children:[
+          // Coloured rounded badge box
+          { type:"rect",
+            shape:{ x:0, y:0, width:BADGE_W, height:BADGE_H, r:4 },
+            style:{ fill:BADGE_BG, stroke:BADGE_BORDER, lineWidth:2 } },
+          // Big bold timeframe text inside the badge
+          { type:"text",
+            style:{ x:BADGE_W/2, y:BADGE_H/2, text:tf, fill:BADGE_TEXT,
+              font:"800 22px 'SF Mono',Menlo,Consolas,monospace",
+              textAlign:"center", textVerticalAlign:"middle" } },
+          // Symbol label beside the badge — high contrast, bold, big enough
+          // to be read instantly on iPad and desktop.
+          { type:"text",
+            style:{ x:BADGE_W + SYM_PADX, y:BADGE_H/2, text:sym, fill:SYM_TEXT,
+              font:"700 18px 'SF Mono',Menlo,Consolas,monospace",
+              textAlign:"left", textVerticalAlign:"middle" } }
+        ] },
+      // Preserve the price-ladder graphic group so renderLadder can keep
+      // updating its own children without colliding with the badge group.
+      { type:"group", id:"ladder", children:[] }
+    ]
+  };
+}
 function chartOption(sym, tf, bars){
   var dg = digitsFor(sym);
   var C = A.COLORS || {};
@@ -83,10 +126,14 @@ function chartOption(sym, tf, bars){
   return {
     animation:false,
     backgroundColor: bg,
-    grid:{ left:6, right:72, top:22, bottom:20, containLabel:false },
-    title:{ text: sym + "  " + tf, left:6, top:3,
-      textStyle:{color:"#FFD600", fontSize:11, fontWeight:700,
-        fontFamily:"SF Mono,Menlo,Consolas,monospace"} },
+    // Top padding bumped to 56px to clear the new TF badge.
+    grid:{ left:6, right:72, top:56, bottom:20, containLabel:false },
+    // Tiny default title removed — replaced by the high-contrast graphic
+    // badge below. Title intentionally blank.
+    title:{ show:false },
+    // Big bold TF + symbol badge. Independent per chart instance — set via a
+    // fresh option object each call so panels never share a graphic ref.
+    graphic: tfBadgeGraphic(sym, tf),
     xAxis:{
       type:"category", data:cats, boundaryGap:true,
       axisLine:{lineStyle:{color:grid}},
@@ -167,7 +214,12 @@ function renderLadder(ch, sym, bars){
       ]
     };
   }).filter(Boolean);
-  try { ch.setOption({ graphic:{ elements: [{ type:"group", id:"ladder", children: elements }] } }); } catch(e){}
+  // Merge by element id so the price ladder updates without clobbering the
+  // TF badge graphic. ECharts diffs graphic elements by `id`.
+  try { ch.setOption({ graphic:{ elements: [
+    { id:"atlas-tfbadge" },
+    { type:"group", id:"ladder", children: elements }
+  ] } }); } catch(e){}
 }
 function updatePanelHdr(wrap, sym, tf, bars){
   if(!wrap || !bars || !bars.length) return;
@@ -222,6 +274,11 @@ function loadPanel(p, sym){
     return r;
   }).catch(function(e){
     console.error("[atlas] panel load failed", p.key, sym, p.tf, e && (e.message || e));
+    // Symbol integrity: do NOT silently leave the panel showing a previous
+    // symbol's data. Render the hard-block state so the user can never see
+    // EURUSD (or any other asset) while a different symbol was requested.
+    var found2 = findEl(p.domIds);
+    if(found2) renderBlockedPanel(found2.id, sym, p.tf);
     return null;
   });
 }
@@ -242,17 +299,57 @@ function setSymLabels(sym){
 function resizeAll(){
   Object.keys(A.charts).forEach(function(k){ try { A.charts[k].resize(); } catch(e){} });
 }
-function groupConnect(){
+// Each chart panel must own its own zoom / pan / pointer state. ECharts
+// shared groups + echarts.connect() are forbidden by spec — they make
+// dragging or zooming one panel move the others. Explicitly DISCONNECT any
+// previously assigned group so reloads on the same page (Discord trigger
+// → SSE → reload) cannot leave stale connections in place.
+function groupDisconnect(){
   try {
-    PANELS.filter(function(p){return p.group==="htf";}).forEach(function(p){
-      var id = (findEl(p.domIds)||{}).id; if(id && A.charts[id]) A.charts[id].group = "atlas-htf";
+    Object.keys(A.charts).forEach(function(id){
+      var ch = A.charts[id];
+      if(!ch) return;
+      // Clear any group ID we may have set in earlier builds. ECharts honours
+      // the "group" property on the instance and only links charts whose
+      // group string matches AND have been passed to echarts.connect(...).
+      ch.group = null;
+      if(typeof echarts !== "undefined" && echarts.disconnect){
+        try { echarts.disconnect("atlas-htf"); } catch(e){}
+        try { echarts.disconnect("atlas-ltf"); } catch(e){}
+      }
     });
-    PANELS.filter(function(p){return p.group==="ltf";}).forEach(function(p){
-      var id = (findEl(p.domIds)||{}).id; if(id && A.charts[id]) A.charts[id].group = "atlas-ltf";
-    });
-    if(typeof echarts !== "undefined" && echarts.connect){
-      echarts.connect("atlas-htf"); echarts.connect("atlas-ltf");
-    }
+  } catch(e){}
+}
+// HARD-BLOCK panel — used when the requested symbol has no data. Spec:
+// "If MU data cannot load: Show a hard blocked panel — ATLAS blocked — MU
+// chart data unavailable. No fallback chart rendered." Never falls back to
+// a different symbol.
+function renderBlockedPanel(domId, sym, tf){
+  var ch = buildOrGet(domId);
+  if(!ch) return;
+  try {
+    ch.setOption({
+      animation:false,
+      backgroundColor:"#000000",
+      grid:{ left:6, right:6, top:56, bottom:6, containLabel:false },
+      title:{ show:false },
+      xAxis:{ show:false, type:"category", data:[] },
+      yAxis:{ show:false, type:"value" },
+      series:[],
+      // Reuse the same TF badge so the user still sees which timeframe the
+      // panel is FOR, even when no data is available.
+      graphic: {
+        elements: tfBadgeGraphic(sym || "—", tf).elements.concat([
+          { type:"text",
+            left:"center", top:"middle",
+            style:{ text:"⚠ ATLAS BLOCKED — " + (sym || "(no symbol)") +
+              " chart data unavailable.\nNo fallback chart rendered.",
+              fill:"#ff0015",
+              font:"700 13px 'SF Mono',Menlo,Consolas,monospace",
+              textAlign:"center", textVerticalAlign:"middle" } }
+        ])
+      }
+    }, true);
   } catch(e){}
 }
 window.addEventListener("resize", resizeAll);
@@ -260,14 +357,30 @@ window.addEventListener("resize", resizeAll);
 A.Charts = {
   load: function(symbol){
     if(symbol){
-      var s = (""+symbol).toUpperCase().replace(/[^A-Z]/g,"");
+      // Allow alphanumeric symbols (MU, NAS100, US500, BCOUSD, EURUSD ...).
+      // The earlier version stripped digits, which made e.g. "NAS100" → "NAS".
+      var s = (""+symbol).toUpperCase().replace(/[^A-Z0-9]/g,"");
       if(s) A.activeSymbol = s;
+    }
+    // Hard symbol-integrity guard. If no symbol has been supplied (URL
+    // lacked ?symbol=, Discord SSE hasn't fired yet), render every panel as
+    // BLOCKED rather than fall back to EURUSD or any other asset.
+    if(!A.activeSymbol){
+      console.warn("[atlas] Charts.load called with no active symbol — rendering blocked panels.");
+      setSymLabels("—");
+      PANELS.forEach(function(p){
+        var found = findEl(p.domIds);
+        if(found) renderBlockedPanel(found.id, null, p.tf);
+      });
+      if(A.status) A.status("err", "-", "NO SYMBOL");
+      return Promise.resolve(null);
     }
     setSymLabels(A.activeSymbol);
     var tasks = PANELS.map(function(p){ return loadPanel(p, A.activeSymbol); });
     tasks.push(loadMacroSilent());
     return Promise.all(tasks).then(function(r){
-      groupConnect();
+      // Each panel owns its own zoom/pan state — never connect.
+      groupDisconnect();
       if(A.status){
         var prov = (A.src && A.src.provider) || null;
         if(prov) A.status("ok", prov, "LIVE");
@@ -289,7 +402,12 @@ A.Charts = {
 };
 
 window.ChartsEngine = {
-  init:    async function(){ await A.Charts.load(A.activeSymbol); return true; },
+  // init is intentionally a no-op for chart loading. The active path now
+  // requires the caller (index.html boot block, SSE handler, or Discord
+  // trigger) to provide the symbol explicitly via load(symbol). This
+  // eliminates the previous race where init() loaded EURUSD into all 8
+  // panels before load(MU) overwrote them.
+  init:    async function(){ return true; },
   load:    async function(symbol){ await A.Charts.load(symbol); return true; },
   run:     async function(symbol){ await A.Charts.load(symbol); return true; },
   loadAll: async function(){ await A.Charts.load(A.activeSymbol); return true; }

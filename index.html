@@ -459,7 +459,7 @@ html,body{font-size:14px;line-height:1.55}
 
 <!-- 1. HTF CHART MATRIX -->
 <section class="matrix-wrap" id="sec-htf">
-<div class="matrix-hd"><h3>HTF &mdash; HIGHER TIMEFRAMES</h3><span class="sub">Weekly &middot; Daily &middot; 4-Hour &middot; 1-Hour</span><span class="sym-label">EURUSD</span></div>
+<div class="matrix-hd"><h3>HTF &mdash; HIGHER TIMEFRAMES</h3><span class="sub">Weekly &middot; Daily &middot; 4-Hour &middot; 1-Hour</span><span class="sym-label">&mdash;</span></div>
 <div class="matrix-grid">
 <div class="chart-panel"><div class="panel-hdr"><span class="sym">-</span><span class="tf">1W</span><span class="last">-</span><span class="chg">-</span><div class="quotes"><span class="q sell"><span class="l">SELL</span><span class="v">-</span></span><span class="q spread"><span class="l">SPR</span><span class="v">-</span></span><span class="q buy"><span class="l">BUY</span><span class="v">-</span></span></div></div><div class="chart" id="ch-htf-1W"></div></div>
 <div class="chart-panel"><div class="panel-hdr"><span class="sym">-</span><span class="tf">1D</span><span class="last">-</span><span class="chg">-</span><div class="quotes"><span class="q sell"><span class="l">SELL</span><span class="v">-</span></span><span class="q spread"><span class="l">SPR</span><span class="v">-</span></span><span class="q buy"><span class="l">BUY</span><span class="v">-</span></span></div></div><div class="chart" id="ch-htf-1D"></div></div>
@@ -470,7 +470,7 @@ html,body{font-size:14px;line-height:1.55}
 
 <!-- 2. LTF CHART MATRIX -->
 <section class="matrix-wrap hidden" id="sec-ltf">
-<div class="matrix-hd"><h3>LTF &mdash; LOWER TIMEFRAMES</h3><span class="sub">30-Minute &middot; 15-Minute &middot; 5-Minute &middot; 1-Minute</span><span class="sym-label">EURUSD</span></div>
+<div class="matrix-hd"><h3>LTF &mdash; LOWER TIMEFRAMES</h3><span class="sub">30-Minute &middot; 15-Minute &middot; 5-Minute &middot; 1-Minute</span><span class="sym-label">&mdash;</span></div>
 <div class="matrix-grid">
 <div class="chart-panel"><div class="panel-hdr"><span class="sym">-</span><span class="tf">30M</span><span class="last">-</span><span class="chg">-</span><div class="quotes"><span class="q sell"><span class="l">SELL</span><span class="v">-</span></span><span class="q spread"><span class="l">SPR</span><span class="v">-</span></span><span class="q buy"><span class="l">BUY</span><span class="v">-</span></span></div></div><div class="chart" id="ch-ltf-30M"></div></div>
 <div class="chart-panel"><div class="panel-hdr"><span class="sym">-</span><span class="tf">15M</span><span class="last">-</span><span class="chg">-</span><div class="quotes"><span class="q sell"><span class="l">SELL</span><span class="v">-</span></span><span class="q spread"><span class="l">SPR</span><span class="v">-</span></span><span class="q buy"><span class="l">BUY</span><span class="v">-</span></span></div></div><div class="chart" id="ch-ltf-15M"></div></div>
@@ -604,8 +604,11 @@ html,body{font-size:14px;line-height:1.55}
 })();
 function initWhenReady(){
   if(typeof echarts==='undefined'){setTimeout(initWhenReady,50);return;}
-  ChartsEngine.init();
-  ChartsEngine.load(window.currentSymbol||'EURUSD');
+  // ChartsEngine.init() is now a no-op for loading. Only ChartsEngine.load
+  // with the URL-supplied symbol may render data. If no symbol was passed
+  // in the URL, the chart engine renders the hard-block state instead of
+  // falling back to EURUSD or any other asset.
+  ChartsEngine.load(window.currentSymbol);
 }
 window.addEventListener("DOMContentLoaded", async function(){
   var A = window.ATLAS, start = performance.now();
