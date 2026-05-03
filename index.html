@@ -256,7 +256,12 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   <div class="src-row" id="src-row">
     <span class="pill"        id="src-marketData"><span class="pdot"></span><span class="pkey">marketData</span><span class="pval">loading</span></span>
     <span class="pill"        id="src-corey"     ><span class="pdot"></span><span class="pkey">corey</span><span class="pval">loading</span></span>
-    <span class="pill"        id="src-coreyClone"><span class="pdot"></span><span class="pkey">coreyClone</span><span class="pval">loading</span></span>
+    <!-- CoreyClone is hidden from the operational execution surface until it is
+         actually implemented. Showing a red 'not implemented' pill here makes
+         the desk look like it has a live system failure when CoreyClone simply
+         is not wired yet. Status still emitted to console + visible inside the
+         Source Status / Audit tab. -->
+    <span class="pill"        id="src-coreyClone" style="display:none"><span class="pdot"></span><span class="pkey">coreyClone</span><span class="pval">loading</span></span>
     <span class="pill"        id="src-spidey"    ><span class="pdot"></span><span class="pkey">spidey</span><span class="pval">loading</span></span>
     <span class="pill"        id="src-jane"      ><span class="pdot"></span><span class="pkey">jane</span><span class="pval">loading</span></span>
     <span class="pill"        id="src-historical"><span class="pdot"></span><span class="pkey">historical</span><span class="pval">loading</span></span>
@@ -316,12 +321,15 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
 
   <nav class="sec-nav" id="sec-nav">
     <button class="tab active" data-target="sec-charts">CHARTS</button>
-    <button class="tab"        data-target="sec-historical">HISTORICAL</button>
-    <button class="tab"        data-target="sec-mechanism">MECHANISM</button>
-    <button class="tab"        data-target="sec-scenario">SCENARIO</button>
-    <button class="tab"        data-target="sec-events">EVENTS</button>
+    <button class="tab"        data-target="sec-final">JANE FINAL ASSESSMENT</button>
+    <button class="tab"        data-target="sec-corey">COREY MACRO</button>
+    <button class="tab"        data-target="sec-spidey">SPIDEY STRUCTURE</button>
+    <button class="tab"        data-target="sec-historical">HISTORICAL CONTEXT</button>
+    <button class="tab"        data-target="sec-mechanism">MECHANISM CHAIN</button>
+    <button class="tab"        data-target="sec-scenario">SCENARIO ENGINE</button>
+    <button class="tab"        data-target="sec-events">EVENTS / CALENDAR</button>
     <button class="tab"        data-target="sec-matrix">MATRIX</button>
-    <button class="tab"        data-target="sec-final">FINAL READ</button>
+    <button class="tab"        data-target="sec-audit">SOURCE STATUS / AUDIT</button>
     <button class="tab"        data-target="sec-glossary">GLOSSARY / INDEX</button>
     <span class="badge">SURFACE COMPRESSED · v3.0</span>
   </nav>
@@ -369,6 +377,21 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     <div class="sec-hd"><h2>FINAL READ</h2><span class="sub">Same content as Final Assessment block above. Listed here only for reference.</span></div>
     <div class="final-banner"><b>NOTE:</b> Final Assessment lives inside Trade Status / Live Plan above. This tab is a duplicate-summary surface only — never the source of truth.</div>
     <div id="final-body"></div>
+  </section>
+
+  <section class="sec-body hidden" id="sec-corey">
+    <div class="sec-hd"><h2>COREY MACRO</h2><span class="sub">Macro driver read · USD / yields / vol / regime</span></div>
+    <div id="corey-body"></div>
+  </section>
+
+  <section class="sec-body hidden" id="sec-spidey">
+    <div class="sec-hd"><h2>SPIDEY STRUCTURE</h2><span class="sub">HTF / LTF structure · displacement · liquidity</span></div>
+    <div id="spidey-body"></div>
+  </section>
+
+  <section class="sec-body hidden" id="sec-audit">
+    <div class="sec-hd"><h2>SOURCE STATUS / AUDIT</h2><span class="sub">All upstream sources, including pending-implementation</span></div>
+    <div id="audit-body"></div>
   </section>
 
   <section class="sec-body hidden" id="sec-glossary">
@@ -709,11 +732,16 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(banner, anchor);
     else document.getElementById('dashboard-root').insertBefore(banner, document.getElementById('dashboard-root').firstChild);
 
-    // Historical, Mechanism, Scenario, Events, Final Read tabs are also
-    // Jane-derived. Hide them via the surrounding nav-tab buttons so the user
-    // cannot accidentally read fabricated content. The inner divs remain in
-    // the DOM so renderFromCtx(stub) can populate them harmlessly (invisibly).
-    ['sec-historical','sec-mechanism','sec-scenario','sec-events','sec-final'].forEach(function(secId){
+    // Historical, Mechanism, Scenario, Events, Final Read, Corey, Spidey
+    // tabs are all Jane / upstream-derived. Hide them via the surrounding
+    // nav-tab buttons so the user cannot accidentally read fabricated
+    // content. The inner divs remain in the DOM so renderFromCtx(stub) can
+    // populate them harmlessly (invisibly).
+    //
+    // The Source Status / Audit tab stays VISIBLE — it is the diagnostic
+    // surface for "why is everything withheld", so hiding it would defeat
+    // its purpose.
+    ['sec-historical','sec-mechanism','sec-scenario','sec-events','sec-final','sec-corey','sec-spidey'].forEach(function(secId){
       var navBtn = document.querySelector('.sec-nav .tab[data-target="' + secId + '"]');
       if (navBtn) navBtn.style.display = 'none';
       var sec = document.getElementById(secId);
@@ -1266,6 +1294,46 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     if (score === 2) return { chip: 'AMBER', state: 'Weak' };
     return { chip: 'RED', state: 'Blocked' };
   }
+  // Per-dimension fallback reason — used when the packet did not carry
+  // gridNotes[key]. Derived from upstream packet sources / Jane decision so
+  // the cell never shows a bare "Blocked" without sourcing on a live screen.
+  function defaultReasonFor(key, ctx){
+    var s = (ctx && ctx.sources) || {};
+    var fmtSrc = function(label, val){
+      if (!val) return label + ': unavailable';
+      return label + ': ' + String(val);
+    };
+    switch (key) {
+      case 'executionAuthority':
+        return 'Jane: ' + (ctx.tradePermission || ctx.actionState || 'no entry authorised');
+      case 'structure':
+        return fmtSrc('Spidey', s.spidey) + ' — HTF/LTF structure not provided by packet';
+      case 'liquidityPressure':
+        return 'Packet did not provide liquidity-pressure read for this symbol';
+      case 'eventRisk':
+        var n = (ctx.events && ctx.events.length) || 0;
+        return n
+          ? 'Calendar: ' + n + ' event' + (n===1?'':'s') + ' in window — see Events tab'
+          : 'Calendar: no events in active window';
+      case 'sessionEnergy':
+        var h = new Date().getUTCHours();
+        var sess = (h>=0&&h<7)  ? 'Asia / late-Asia'
+                 : (h>=7&&h<12) ? 'London open'
+                 : (h>=12&&h<16)? 'London / NY overlap'
+                 : (h>=16&&h<21)? 'NY afternoon'
+                 :                'post-NY / late-session drift';
+        return 'Session: ' + sess + ' (UTC ' + h + ':00)';
+      case 'macroAlignment':
+        return fmtSrc('Corey', s.corey) + ' — no macro-alignment read attached to packet';
+      case 'conviction':
+        return 'Jane: ' + (ctx.tradePermission || 'composite withheld') +
+               (ctx.biasDirection ? ' · bias=' + ctx.biasDirection : '');
+      case 'regime':
+        return fmtSrc('Corey', s.corey) + ' — regime classification not attached to packet';
+      default:
+        return 'No source-reason supplied for ' + key;
+    }
+  }
   var grid = document.getElementById('cond-grid');
   GRID_DIMS.forEach(function(dim){
     var key = dim[0], label = dim[1];
@@ -1273,6 +1341,11 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     var note = (ctx.gridNotes && ctx.gridNotes[key]) || '';
     var effect = (ctx.gridEffects && ctx.gridEffects[key]) || '';
     var c = chipFor(v);
+    // If packet didn't supply a per-dim note AND the chip would otherwise
+    // read as a bare "Blocked"/"Weak"/etc., fall back to a sourced reason
+    // so no cell ever surfaces "Blocked" alone on the live desk.
+    var displayNote = note || defaultReasonFor(key, ctx);
+    var displayEffect = effect || '';
     var dotsHtml = '';
     for (var i=1; i<=5; i++){
       dotsHtml += '<span class="d ' + (i<=v ? 'on' : '') + '"></span>';
@@ -1286,12 +1359,31 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         '<span class="cl-num">' + v + '/5</span>' +
         '<span class="cl-chip ' + c.chip + '">' + c.chip + '</span>' +
       '</div>' +
-      '<div class="cl-state">' + c.state + (note ? ' — ' + escapeHtml(note) : '') + '</div>' +
-      (effect ? '<div class="cl-effect">Effect: ' + escapeHtml(effect) + '</div>' : '');
+      '<div class="cl-state">' + c.state + ' — ' + escapeHtml(displayNote) + '</div>' +
+      (displayEffect ? '<div class="cl-effect">Effect: ' + escapeHtml(displayEffect) + '</div>' : '');
     grid.appendChild(cell);
   });
 
   // ---------- Forward Expectation (Phase 6 — operational fields) ----------
+  // Single sourced reason used wherever a Forward / Trigger field would
+  // otherwise be a bare dash. Every empty field on the live desk now reads
+  // "Not authorised because <packet-derived reason>" instead.
+  function notAuthorisedBecause(ctx){
+    var s = (ctx && ctx.sources) || {};
+    var bits = [];
+    if (s.jane)       bits.push('jane=' + s.jane);
+    if (s.corey)      bits.push('corey=' + s.corey);
+    if (s.spidey)     bits.push('spidey=' + s.spidey);
+    if (s.historical) bits.push('historical=' + s.historical);
+    var srcStr = bits.length ? bits.join(' · ') : 'no upstream sources reported';
+    var perm = ctx.tradePermission || 'no entry authorised';
+    return 'Not authorised because Jane has not produced this field for ' + activeSymbol + '. ' +
+           'Source state: ' + srcStr + '. Current permission: ' + perm + '.';
+  }
+  function feValOrWithheld(v){
+    if (v && String(v).trim() && String(v).trim() !== '—') return String(v);
+    return notAuthorisedBecause(ctx);
+  }
   var fe = ctx.forward || {};
   var feWithhold = (ctx.withholdNotes && ctx.withholdNotes.forwardExpectation) || fe.withholdNote;
   if (feWithhold) {
@@ -1303,15 +1395,15 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       (fe.behaviour ? feRow('Available context', fe.behaviour) : '');
   } else {
     document.getElementById('fe-body').innerHTML =
-      feRow('Expected Behaviour', fe.behaviour || '—') +
+      feRow('Expected Behaviour', feValOrWithheld(fe.behaviour)) +
       feRow('Reassess At',         reassessStr) +
-      (fe.boundaryUpper ? feRow('Upper Boundary',   fe.boundaryUpper) : '') +
-      (fe.boundaryLower ? feRow('Lower Boundary',   fe.boundaryLower) : '') +
-      feRow('Daily Movement',     fe.movement || '—') +
-      feRow('Tradability',         fe.tradability || fe.absorption || '—') +
-      feRow('Confirms Bullish',    fe.confirmsBullish || fe.waitingFor || '—') +
-      feRow('Confirms Bearish',    fe.confirmsBearish || '—') +
-      feRow('Keeps Blocked',       fe.keepsBlocked || '—');
+      feRow('Upper Boundary',      feValOrWithheld(fe.boundaryUpper)) +
+      feRow('Lower Boundary',      feValOrWithheld(fe.boundaryLower)) +
+      feRow('Daily Movement',      feValOrWithheld(fe.movement)) +
+      feRow('Tradability',         feValOrWithheld(fe.tradability || fe.absorption)) +
+      feRow('Confirms Bullish',    feValOrWithheld(fe.confirmsBullish || fe.waitingFor)) +
+      feRow('Confirms Bearish',    feValOrWithheld(fe.confirmsBearish)) +
+      feRow('Keeps Blocked',       feValOrWithheld(fe.keepsBlocked));
   }
 
   function feRow(k,v){
@@ -1327,21 +1419,23 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       '<div class="wb-detail">' + escapeHtml(tmWithhold) + '</div>' +
       '</div>';
   } else {
+    var noTradeVal = (tm.noTrade && tm.noTrade !== '—') ? tm.noTrade : notAuthorisedBecause(ctx);
+    var tfNoteVal  = (tm.timeframeNote && tm.timeframeNote !== '—') ? tm.timeframeNote : notAuthorisedBecause(ctx);
     document.getElementById('tm-body').innerHTML =
       tmBlock('up', 'BULLISH SHIFT', tm.bullish) +
       tmBlock('dn', 'BEARISH SHIFT', tm.bearish) +
       '<div class="tm-block">' +
         '<div class="tm-hd"><span class="arrow no">·</span><span class="ttl">NO-TRADE CONDITION</span></div>' +
-        '<div style="font-size:12px;color:var(--mut2)">'+escapeHtml(tm.noTrade || '—')+'</div>' +
+        '<div style="font-size:12px;color:var(--mut2)">'+escapeHtml(noTradeVal)+'</div>' +
       '</div>' +
       '<div class="tm-block">' +
         '<div class="tm-hd"><span class="arrow no">·</span><span class="ttl">TIMEFRAME NOTE</span></div>' +
-        '<div style="font-size:11px;color:var(--mut2);font-style:italic">'+escapeHtml(tm.timeframeNote || '—')+'</div>' +
+        '<div style="font-size:11px;color:var(--mut2);font-style:italic">'+escapeHtml(tfNoteVal)+'</div>' +
       '</div>';
   }
 
   function tmBlock(arrow, title, t){
-    if (!t) return '<div class="tm-block"><div class="tm-hd"><span class="arrow '+arrow+'">' + (arrow==='up'?'▲':arrow==='dn'?'▼':'·') + '</span><span class="ttl">'+title+'</span></div><div style="font-size:11px;color:var(--mut2);font-style:italic">Exact shift level unavailable — withheld until Jane provides triggers.</div></div>';
+    if (!t) return '<div class="tm-block"><div class="tm-hd"><span class="arrow '+arrow+'">' + (arrow==='up'?'▲':arrow==='dn'?'▼':'·') + '</span><span class="ttl">'+title+'</span></div><div style="font-size:11px;color:var(--mut2);font-style:italic">'+escapeHtml(notAuthorisedBecause(ctx))+'</div></div>';
     return '<div class="tm-block">' +
       '<div class="tm-hd"><span class="arrow '+arrow+'">' + (arrow==='up'?'▲':arrow==='dn'?'▼':'·') + '</span><span class="ttl">'+title+'</span></div>' +
       '<div class="tm-grid">' +
@@ -1464,7 +1558,8 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       var tf = pane.getAttribute('data-tf');
       var sym = pane.getAttribute('data-sym');
       console.log('[CHART-PANE] tf=' + tf + ' sym=' + sym + ' action=' + (action || 'init') +
-        ' start=' + state.start + ' end=' + state.end + ' bars=' + (state.end - state.start) + ' zoom=' + pct + '%');
+        ' start=' + state.start + ' end=' + state.end + ' bars=' + (state.end - state.start) + ' zoom=' + pct + '%' +
+        ' isolated=true scope=pane');
       try { renderPriceBoxes(pane, candles); } catch (e) { console.error('[PRICE-BOX] render err', e && e.message); }
     }
 
@@ -1515,7 +1610,11 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     document.addEventListener('mouseup', function(){ if (dragging) { dragging = false; pane.style.cursor = 'crosshair'; } });
 
     reset.addEventListener('click', function(e){
+      // Closure-captured `state` and `candles` are this pane's only — clicking
+      // RESET on 15M cannot touch 1H/5M state. The redraw() log carries
+      // isolated=true scope=pane as the proof emission.
       e.stopPropagation();
+      e.preventDefault();
       state.start = 0;
       state.end   = candles.length;
       redraw('reset');
@@ -1681,8 +1780,10 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
           headerVal = 'PRICE DATA MISMATCH';
           source = 'mismatch';
         } else {
-          // Prefer OHLC close as the authoritative live price.
-          headerVal = fmt(ohlcLast); source = 'ohlc+quote'; raw = ohlcLast;
+          // Prefer the live quote so the header matches the [PRICE-BOX]
+          // current= reading (which is sourced from twelvedata-quote). The
+          // OHLC last-close lags by up to one bar; the quote is real-time.
+          headerVal = fmt(packetPrice); source = 'quote+ohlc'; raw = packetPrice;
         }
       }
 
@@ -1709,16 +1810,29 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         var anchor = document.querySelector('.action-row');
         if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(banner, anchor);
       } else if (!mismatch && hdChg) {
-        // Compute change % from the 1D series if possible; otherwise label "chg n/a".
+        // "Today's change" baseline = previous daily close (penultimate bar).
+        // Using daily[0] previously made the header read +127.94% on MU
+        // because the 1D series is 180 bars deep — that's a year-scale
+        // baseline, not "today". If we don't have a prior daily close,
+        // suppress the percentage rather than print a false one.
         var daily = paneCandles['1D'];
         if (daily && daily.length >= 2 && raw != null) {
-          var first = daily[0].c;
-          var pct = first ? ((raw - first) / first * 100) : 0;
-          hdChg.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
-          hdChg.classList.remove('pos','neg');
-          hdChg.classList.add(pct >= 0 ? 'pos' : 'neg');
+          var prevClose = daily[daily.length - 2].c;
+          if (prevClose && isFinite(prevClose)) {
+            var pct = ((raw - prevClose) / prevClose) * 100;
+            hdChg.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+            hdChg.classList.remove('pos','neg');
+            hdChg.classList.add(pct >= 0 ? 'pos' : 'neg');
+            console.log('[HEADER-CHG] symbol=' + activeSymbol + ' baseline=prevClose prevClose=' + prevClose + ' current=' + raw + ' pct=' + pct.toFixed(2) + '%');
+          } else {
+            hdChg.textContent = 'change unavailable';
+            hdChg.classList.remove('pos','neg');
+            console.warn('[HEADER-CHG] symbol=' + activeSymbol + ' baseline=missing prevClose=' + prevClose + ' status=suppressed');
+          }
         } else if (raw != null) {
-          hdChg.textContent = 'chg n/a';
+          hdChg.textContent = 'change unavailable';
+          hdChg.classList.remove('pos','neg');
+          console.warn('[HEADER-CHG] symbol=' + activeSymbol + ' baseline=missing daily=' + (daily ? daily.length : 'null') + ' status=suppressed');
         }
       }
     })();
@@ -1884,6 +1998,151 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     '<p style="margin-top:8px"><b style="color:var(--gold)">VALIDITY:</b> ' + escapeHtml(ctx.validity) + '</p>' +
     '<p style="margin-top:14px;color:var(--mut);font-style:italic">Re-read Trade Status / Live Plan above for the live source. This duplicate exists only as a quick scroll-back for users who land on this tab from a deep link.</p>' +
     '</div>';
+
+  // ---------- Corey Macro / Spidey Structure / Source Audit (scaffold + withheld-with-reason) ----------
+  // These are first usable versions. They render whatever the packet provides
+  // and otherwise emit a structured withheld block that names the upstream
+  // source and the exact missing field — never an empty pane on a live screen.
+  function structuredWithheldCard(title, sourceLabel, sourceVal, missing){
+    var statusTxt = sourceVal ? String(sourceVal) : 'unavailable';
+    return '<div class="withhold-banner" style="margin:0">' +
+      '<div class="wb-title">' + escapeHtml(title) + ' WITHHELD</div>' +
+      '<div class="wb-detail"><b>Source:</b> ' + escapeHtml(sourceLabel) + ' · status <code>' + escapeHtml(statusTxt) + '</code></div>' +
+      '<div class="wb-detail" style="margin-top:6px"><b>Missing:</b> ' + escapeHtml(missing) + '</div>' +
+      '<div class="wb-detail" style="margin-top:8px;color:var(--mut2);font-style:italic">Not authorised to populate this section until the upstream source posts the required fields.</div>' +
+      '</div>';
+  }
+  function kvBlock(rows){
+    var html = '<div style="background:var(--cell);border:1px solid var(--line2);border-radius:3px;padding:14px;display:grid;grid-template-columns:max-content 1fr;gap:8px 16px;font-size:13px">';
+    rows.forEach(function(r){
+      html += '<div style="color:var(--mut);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding-top:2px">' + escapeHtml(r[0]) + '</div>' +
+              '<div style="color:var(--fg)">' + escapeHtml(r[1] == null ? '—' : String(r[1])) + '</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  // Corey Macro
+  var coreyBody = document.getElementById('corey-body');
+  if (coreyBody) {
+    var c = ctx.coreyMacro || ctx.macro || null;
+    var coreySrc = (ctx.sources && ctx.sources.corey) || 'unavailable';
+    if (c && (c.dxy != null || c.us10y != null || c.vix != null || c.regime || c.bias)) {
+      coreyBody.innerHTML = kvBlock([
+        ['DXY / USD',   c.dxy   != null ? c.dxy   : 'unavailable'],
+        ['US10Y',       c.us10y != null ? c.us10y : 'unavailable'],
+        ['VIX',         c.vix   != null ? c.vix   : 'unavailable'],
+        ['Equities',    c.equities != null ? c.equities : 'unavailable'],
+        ['Macro Bias',  c.bias  || 'unavailable'],
+        ['Regime',      c.regime|| 'unavailable'],
+        ['Source',      'Corey · ' + coreySrc]
+      ]);
+    } else {
+      coreyBody.innerHTML = structuredWithheldCard(
+        'COREY MACRO', 'corey', coreySrc,
+        'macro driver read (DXY / US10Y / VIX / equities / bias / regime) not in current packet'
+      );
+    }
+  }
+
+  // Spidey Structure
+  var spideyBody = document.getElementById('spidey-body');
+  if (spideyBody) {
+    var sp = ctx.spideyStructure || ctx.structure || null;
+    var spSrc = (ctx.sources && ctx.sources.spidey) || 'unavailable';
+    if (sp && (sp.htfBias || sp.ltfBias || sp.displacement || sp.liquidity)) {
+      spideyBody.innerHTML = kvBlock([
+        ['HTF Bias',       sp.htfBias       || 'unavailable'],
+        ['LTF Bias',       sp.ltfBias       || 'unavailable'],
+        ['Displacement',   sp.displacement  || 'unavailable'],
+        ['Liquidity Pools',sp.liquidity     || 'unavailable'],
+        ['Last BOS / CHoCH', sp.lastShift   || 'unavailable'],
+        ['Imbalance / FVG',  sp.imbalance   || 'unavailable'],
+        ['Source',         'Spidey · ' + spSrc]
+      ]);
+    } else {
+      spideyBody.innerHTML = structuredWithheldCard(
+        'SPIDEY STRUCTURE', 'spidey', spSrc,
+        'HTF/LTF bias, displacement, liquidity pools, BOS/CHoCH, imbalance — none attached to packet'
+      );
+    }
+  }
+
+  // Source Status / Audit — lists EVERY upstream including CoreyClone (which
+  // is hidden from the operational source-row but still surfaced here).
+  var auditBody = document.getElementById('audit-body');
+  if (auditBody) {
+    var src = ctx.sources || {};
+    var rows = [
+      ['marketData',  src.marketData  || 'unavailable', 'TwelveData REST proxy · /twelvedata'],
+      ['corey',       src.corey       || 'unavailable', 'Corey macro engine'],
+      ['coreyClone',  src.coreyClone  || 'unavailable: not implemented', 'CoreyClone pending implementation — not used in current Jane decision'],
+      ['spidey',      src.spidey      || 'unavailable', 'Spidey structure engine'],
+      ['jane',        src.jane        || 'unavailable', 'Jane decision packet'],
+      ['historical',  src.historical  || 'unavailable', 'Historical analogues lookup']
+    ];
+    var rowHtml = rows.map(function(r){
+      var v = String(r[1]);
+      var tone = STATUS_TONE[v] || STATUS_TONE[v.split(':')[0]] || STATUS_TONE[v.split(/[: ]/)[0]] || 'fail';
+      var color = tone === 'ok' ? 'var(--green)' : tone === 'warn' ? 'var(--amber)' : tone === 'partial' ? 'var(--gold)' : 'var(--red)';
+      return '<tr>' +
+        '<td style="padding:10px 8px;border-bottom:1px solid var(--line);color:var(--gold);font-weight:700;font-family:\'SF Mono\',monospace">' + escapeHtml(r[0]) + '</td>' +
+        '<td style="padding:10px 8px;border-bottom:1px solid var(--line);color:' + color + ';font-family:\'SF Mono\',monospace;font-size:11px">' + escapeHtml(v) + '</td>' +
+        '<td style="padding:10px 8px;border-bottom:1px solid var(--line);color:var(--mut2);font-size:11px">' + escapeHtml(r[2]) + '</td>' +
+        '</tr>';
+    }).join('');
+    auditBody.innerHTML =
+      '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
+        '<thead><tr style="text-align:left">' +
+          '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut);font-weight:600;letter-spacing:1px">SOURCE</th>' +
+          '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut);font-weight:600;letter-spacing:1px">STATUS</th>' +
+          '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut);font-weight:600;letter-spacing:1px">NOTE</th>' +
+        '</tr></thead><tbody>' + rowHtml + '</tbody>' +
+      '</table>' +
+      '<div style="margin-top:14px;font-size:11px;color:var(--mut2);font-style:italic">' +
+        'Audit-only surface. CoreyClone is hidden from the operational source-row at the top of the desk because it is not yet implemented — showing it as a red "not implemented" pill on the live desk would look like an active system failure. It is listed here so the audit surface is complete.' +
+      '</div>';
+  }
+
+  // Empty-state guards for historical / events / matrix / mechanism / scenario:
+  // when the packet supplied an empty array / zeroed scenario, replace the
+  // bare empty area with a structured withheld block instead of leaving a
+  // blank pane on a live screen.
+  if (!hist.length) {
+    histGrid.innerHTML = structuredWithheldCard(
+      'HISTORICAL CONTEXT', 'historical',
+      (ctx.sources && ctx.sources.historical) || 'unavailable',
+      'no historical analogues attached to packet for ' + activeSymbol
+    );
+  }
+  if (!ev.length) {
+    document.getElementById('events-body').innerHTML = structuredWithheldCard(
+      'EVENTS / CALENDAR', 'calendar',
+      (ctx.sources && ctx.sources.calendar) || 'unavailable',
+      'no calendar events attached to packet for the active window'
+    );
+  }
+  if (!mx.length) {
+    document.getElementById('matrix-body').innerHTML = structuredWithheldCard(
+      'MATRIX', 'matrix',
+      (ctx.sources && ctx.sources.matrix) || 'unavailable',
+      'no cross-symbol matrix snapshot attached to packet'
+    );
+  }
+  if ((!sc || (sc.continuation === 0 && sc.range === 0 && sc.reversal === 0)) && !sd) {
+    document.getElementById('scen-body').innerHTML = structuredWithheldCard(
+      'SCENARIO ENGINE', 'jane',
+      (ctx.sources && ctx.sources.jane) || 'unavailable',
+      'scenario probabilities (continuation / range / reversal) not in packet'
+    );
+  }
+  if (!ctx.mechanism && !md) {
+    document.getElementById('mech-body').innerHTML = structuredWithheldCard(
+      'MECHANISM CHAIN', 'jane',
+      (ctx.sources && ctx.sources.jane) || 'unavailable',
+      'mechanism chain (cause → reaction → impact → outcome) not in packet'
+    );
+  }
 
   var GLOSSARY = [
     ['BOS', 'Break of Structure — price closes beyond a prior swing high/low, marking a structural shift.'],
