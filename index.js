@@ -122,6 +122,24 @@ const server = http.createServer((req, res) => {
     return res.end(JSON.stringify({ok:true, symbol:sym, t:Date.now(), subscribers:subscribers.size}));
   }
 
+  // Latest Jane packet for a given symbol — scans SESSION_STORE for the
+  // most recent entry whose .symbol matches the requested symbol. Returns
+  // 404 with a clear "no jane packet" body when nothing has been posted.
+  // Dashboard uses this to either render or withhold the execution surface.
+  if(u.pathname === "/jane"){
+    res.setHeader("Content-Type","application/json");
+    const sym = sanitizeSymbol(u.query.symbol);
+    if(!sym){ res.statusCode = 400; return res.end(JSON.stringify({ok:false,error:"missing or invalid symbol"})); }
+    sessionCleanup();
+    let latest = null;
+    for(const ctx of SESSION_STORE.values()){
+      if(ctx.symbol === sym && (!latest || ctx._stored > latest._stored)) latest = ctx;
+    }
+    if(!latest){ res.statusCode = 404; return res.end(JSON.stringify({ok:false, symbol:sym, error:"no_jane_packet_for_symbol"})); }
+    const {_stored, ...safe} = latest;
+    return res.end(JSON.stringify({ok:true, symbol:sym, packet:safe, ageMs: Date.now() - _stored}));
+  }
+
   if(u.pathname.startsWith("/session/")){
     const id = decodeURIComponent(u.pathname.slice(9));
     const ctx = SESSION_STORE.get(id);

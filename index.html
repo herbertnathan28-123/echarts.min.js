@@ -44,6 +44,30 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
 .atlas-hd .src.warn .dot{background:var(--amber)}
 .atlas-hd .src.fail .dot{background:var(--red)}
 
+.src-row{display:flex;flex-wrap:wrap;gap:8px;padding:10px 22px;background:var(--bg2);border-bottom:1px solid var(--line2)}
+.src-row .pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:3px;background:var(--cell);border:1px solid var(--line2);font-size:10px;letter-spacing:1.5px;font-weight:700;text-transform:uppercase;color:var(--mut)}
+.src-row .pill .pdot{width:8px;height:8px;border-radius:50%;background:var(--mut)}
+.src-row .pill .pkey{color:var(--mut);font-size:9px;letter-spacing:1px}
+.src-row .pill .pval{color:var(--fg);font-family:"SF Mono",monospace;font-size:10px}
+.src-row .pill.ok      {border-color:var(--green-d)}
+.src-row .pill.ok      .pdot{background:var(--green)}
+.src-row .pill.ok      .pval{color:var(--green)}
+.src-row .pill.partial {border-color:var(--gold-d)}
+.src-row .pill.partial .pdot{background:var(--gold)}
+.src-row .pill.partial .pval{color:var(--gold)}
+.src-row .pill.warn    {border-color:var(--amber-d)}
+.src-row .pill.warn    .pdot{background:var(--amber)}
+.src-row .pill.warn    .pval{color:var(--amber)}
+.src-row .pill.fail    {border-color:var(--red-d)}
+.src-row .pill.fail    .pdot{background:var(--red)}
+.src-row .pill.fail    .pval{color:var(--red)}
+
+.withhold-banner{margin:14px 22px;padding:18px 22px;border:2px dashed var(--red-d);background:rgba(255,0,21,0.06);border-radius:6px;color:var(--fg)}
+.withhold-banner .wb-title{font-size:14px;letter-spacing:3px;color:var(--red);font-weight:900;text-transform:uppercase;margin-bottom:8px;font-family:"SF Mono",monospace}
+.withhold-banner .wb-detail{font-size:12px;color:var(--mut2)}
+.withhold-banner .wb-list{margin-top:10px;font-size:11px;color:var(--mut2)}
+.withhold-banner .wb-list li{margin:4px 0 4px 20px;list-style:disc}
+
 .action-row{padding:18px 22px 8px}
 .action-pill{display:flex;align-items:center;gap:14px;padding:18px 22px;border-radius:6px;border:1px solid var(--line2);background:var(--cell)}
 .action-pill .label{font-size:10px;letter-spacing:3px;color:var(--mut);text-transform:uppercase}
@@ -139,7 +163,10 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
 .sec-body .sec-hd .sub{font-size:11px;color:var(--mut)}
 
 .chart-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.chart-pane{background:#000;border:1px solid var(--line2);border-radius:3px;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:11px;letter-spacing:2px;position:relative;overflow:hidden}
+.chart-pane{background:#000;border:1px solid var(--line2);border-radius:3px;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:11px;letter-spacing:2px;position:relative;overflow:hidden;cursor:crosshair}
+.chart-pane .zoom-readout{position:absolute;bottom:6px;right:8px;font-family:"SF Mono",monospace;font-size:9px;color:var(--mut);letter-spacing:1px;pointer-events:none}
+.chart-pane .zoom-reset{position:absolute;bottom:6px;left:8px;font-family:"SF Mono",monospace;font-size:9px;color:var(--gold);letter-spacing:1px;cursor:pointer;background:rgba(0,0,0,0.6);padding:2px 6px;border-radius:2px;border:1px solid var(--line2);user-select:none}
+.chart-pane .zoom-reset:hover{background:rgba(255,214,0,0.15)}
 .chart-pane .tf-tag{position:absolute;top:6px;left:8px;font-size:9px;letter-spacing:2px;color:var(--gold);font-weight:700}
 .chart-pane .sym-tag{position:absolute;top:6px;right:8px;font-size:9px;letter-spacing:2px;color:var(--fg);font-weight:700;font-family:"SF Mono",monospace}
 .chart-pane svg{width:100%;height:100%;opacity:0.85}
@@ -216,6 +243,16 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
 </header>
 
 <div id="dashboard-root">
+  <!-- SOURCE STATUS ROW -->
+  <div class="src-row" id="src-row">
+    <span class="pill"        id="src-marketData"><span class="pdot"></span><span class="pkey">marketData</span><span class="pval">loading</span></span>
+    <span class="pill"        id="src-corey"     ><span class="pdot"></span><span class="pkey">corey</span><span class="pval">loading</span></span>
+    <span class="pill"        id="src-coreyClone"><span class="pdot"></span><span class="pkey">coreyClone</span><span class="pval">loading</span></span>
+    <span class="pill"        id="src-spidey"    ><span class="pdot"></span><span class="pkey">spidey</span><span class="pval">loading</span></span>
+    <span class="pill"        id="src-jane"      ><span class="pdot"></span><span class="pkey">jane</span><span class="pval">loading</span></span>
+    <span class="pill"        id="src-historical"><span class="pdot"></span><span class="pkey">historical</span><span class="pval">loading</span></span>
+  </div>
+
   <div class="action-row">
     <div class="action-pill" id="action-pill" data-tone="red">
       <div>
@@ -571,21 +608,235 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     }
   };
 
-  var ctx = STAGED_PLAN[requestedSymbol];
-  if(!ctx){
-    hardFail('No data context loaded for ' + requestedSymbol + '.', 'requestedSymbol='+requestedSymbol+' action=blocked_no_context');
-    return;
-  }
-
   var activeSymbol = requestedSymbol;
   var chartSymbol  = requestedSymbol;
   console.log('[DASHBOARD] requestedSymbol='+activeSymbol);
   console.log('[DASHBOARD] resolvedSymbol='+activeSymbol);
   console.log('[DASHBOARD] providerSymbol='+chartSymbol+' user='+requestedUser);
 
+  // ─────────────────────────────────────────────────────────────────────
+  // SOURCE-STATUS ROW — six pills reflecting the live state of each layer.
+  // Set from the Jane packet when present; set to "unavailable: …" otherwise.
+  // ─────────────────────────────────────────────────────────────────────
+  var STATUS_TONE = {
+    'live':           'ok',     'ok':              'ok',
+    'final':          'ok',     'confirms':        'ok',
+    '30Y-active':     'ok',
+    'partial':        'partial','15Y-cache':       'partial','5Y-cache':'partial',
+    'sample':         'partial','degraded':        'partial',
+    'conflicts':      'warn',   'no-match':        'warn',
+    'unavailable':    'fail',   'withheld':        'fail',  'fail':'fail'
+  };
+  function setSourcePill(key, value){
+    var el = document.getElementById('src-' + key);
+    if (!el) return;
+    el.querySelector('.pval').textContent = value || 'unavailable';
+    el.classList.remove('ok','partial','warn','fail');
+    var headWord = String(value || 'unavailable').split(/[: ]/)[0];
+    el.classList.add(STATUS_TONE[headWord] || 'fail');
+  }
+  function setSourceStatusFromPacket(sources){
+    var s = sources || {};
+    setSourcePill('marketData', s.marketData || 'pending');
+    setSourcePill('corey',      s.corey      || 'unavailable');
+    setSourcePill('coreyClone', s.coreyClone || 'unavailable: not implemented');
+    setSourcePill('spidey',     s.spidey     || 'unavailable');
+    setSourcePill('jane',       s.jane       || 'final');
+    setSourcePill('historical', s.historical || 'unavailable');
+  }
+  function setSourceStatusUnavailable(reason){
+    setSourcePill('marketData', 'pending');
+    setSourcePill('corey',      'unavailable: ' + reason);
+    setSourcePill('coreyClone', 'unavailable: not implemented');
+    setSourcePill('spidey',     'unavailable: ' + reason);
+    setSourcePill('jane',       'unavailable: ' + reason);
+    setSourcePill('historical', 'unavailable: ' + reason);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // WITHHOLDING — when no Jane packet exists for this symbol, the
+  // execution-decision surface MUST NOT fake values. This function hides
+  // the action-pill, execution strip, candidate-levels, condition grid,
+  // forward expectation, and trigger map sections, replacing them with
+  // a single explicit banner. Charts, header, and source-status row stay.
+  // ─────────────────────────────────────────────────────────────────────
+  function renderWithheldExecutionSurface(reason){
+    var hide = function(sel){ document.querySelectorAll(sel).forEach(function(el){ el.style.display = 'none'; }); };
+    hide('.action-row');
+    hide('.exec-strip');
+    hide('.candidate-row');
+    hide('.cond-grid');
+    hide('.fe-tm');
+
+    var banner = document.createElement('div');
+    banner.className = 'withhold-banner';
+    banner.innerHTML =
+      '<div class="wb-title">JANE DECISION UNAVAILABLE — EXECUTION DECISION WITHHELD</div>' +
+      '<div class="wb-detail">No Jane packet has been posted for <b>' + activeSymbol + '</b>. ' +
+      'The execution-decision surface (action state, entry, target, stop, candidate levels, condition grid, ' +
+      'forward expectation, trigger map) is intentionally blank. The dashboard will not invent values that ' +
+      'Jane has not produced.</div>' +
+      '<div class="wb-detail" style="margin-top:8px"><b>Reason:</b> ' + escapeHtml(reason || 'no Jane packet for symbol') + '.</div>' +
+      '<div class="wb-list"><b>To populate this surface:</b>' +
+        '<ul>' +
+          '<li>Run <code>!' + activeSymbol.toLowerCase() + ' analyse</code> in any FX Bot#3867 channel.</li>' +
+          '<li>The bot computes Corey + Spidey + Jane and POSTs the packet to <code>/load</code> on this service.</li>' +
+          '<li>This page will pick it up on next reload (or via SSE in a future pass).</li>' +
+        '</ul></div>';
+    var anchor = document.querySelector('.action-row');
+    if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(banner, anchor);
+    else document.getElementById('dashboard-root').insertBefore(banner, document.getElementById('dashboard-root').firstChild);
+
+    // Historical, Mechanism, Scenario, Events, Final Read tabs are also
+    // Jane-derived. Hide them via the surrounding nav-tab buttons so the user
+    // cannot accidentally read fabricated content. The inner divs remain in
+    // the DOM so renderFromCtx(stub) can populate them harmlessly (invisibly).
+    ['sec-historical','sec-mechanism','sec-scenario','sec-events','sec-final'].forEach(function(secId){
+      var navBtn = document.querySelector('.sec-nav .tab[data-target="' + secId + '"]');
+      if (navBtn) navBtn.style.display = 'none';
+      var sec = document.getElementById(secId);
+      if (sec) sec.classList.add('hidden');
+    });
+
+    console.warn('[DASHBOARD] jane=withheld reason=' + reason + ' symbol=' + activeSymbol);
+  }
+
+  // Asset-class inference for the chart layer (works without a Jane packet,
+  // since OHLC is a separate data layer from Jane decisions).
+  function inferAssetClass(sym){
+    if (/^[A-Z]{6}$/.test(sym)) return 'fx';
+    if (/^(NAS100|US500|US30|DJI|GER40|UK100|SPX|NDX|HK50|JPN225)$/.test(sym)) return 'index';
+    if (/XAU|XAG|OIL|BRENT|WTI|NATGAS/.test(sym)) return 'commodity';
+    if (/^[A-Z]{1,5}$/.test(sym)) return 'equity';
+    return 'unknown';
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // BOOTSTRAP — fetch Jane packet, dispatch to render or withhold.
+  // Charts always run independently (live OHLC layer is a separate concern).
+  // ─────────────────────────────────────────────────────────────────────
+  var allowFakeMode = qs.get('fake') === '1';
+  var ctx; // assigned by the dispatcher below
+
+  document.getElementById('hd-sym').textContent     = activeSymbol;
+  document.getElementById('hd-class').textContent   = inferAssetClass(activeSymbol).toUpperCase();
+  document.getElementById('hd-price').textContent   = '—';
+  document.getElementById('hd-chg').textContent     = '—';
+
+  function tickClock(){
+    var d = new Date(); var pad = function(n){ return n<10?'0'+n:n; };
+    document.getElementById('hd-clock').textContent = pad(d.getUTCHours())+':'+pad(d.getUTCMinutes())+':'+pad(d.getUTCSeconds())+' UTC';
+  }
+  tickClock(); setInterval(tickClock, 1000);
+
+  fetch('/jane?symbol=' + encodeURIComponent(activeSymbol))
+    .then(function(r){ return r.json().then(function(j){ return Object.assign({_status: r.status}, j); }); })
+    .catch(function(e){ return { ok: false, _status: 0, error: e.message }; })
+    .then(function(jane){
+      if (jane && jane.ok && jane.packet) {
+        ctx = janePacketToCtx(jane.packet);
+        setSourceStatusFromPacket(ctx.sources || jane.packet.sources || {});
+        renderFromCtx(ctx);
+        document.getElementById('ses-id').textContent = 'session=' + (jane.packet.session_id || '?') + ' age=' + Math.round((jane.ageMs||0)/1000) + 's';
+        console.log('[DASHBOARD] jane=final session=' + jane.packet.session_id + ' age=' + jane.ageMs + 'ms');
+      } else if (allowFakeMode && STAGED_PLAN[activeSymbol]) {
+        ctx = STAGED_PLAN[activeSymbol];
+        setSourceStatusFromPacket({ marketData:'live', corey:'sample', coreyClone:'unavailable: not implemented', spidey:'sample', jane:'sample', historical:'sample' });
+        renderFromCtx(ctx);
+        document.getElementById('ses-id').textContent = 'sample-mode (?fake=1)';
+        console.log('[DASHBOARD] jane=sample (fake mode active)');
+      } else {
+        var reason = jane && jane.error ? jane.error : ('http ' + (jane && jane._status));
+        setSourceStatusUnavailable(reason);
+        // Hide the surface FIRST, then renderFromCtx(stub) populates the
+        // (now-hidden) DOM nodes and ALSO fires the chart loader. The user
+        // sees: source-status row + withhold banner + live candlestick charts.
+        renderWithheldExecutionSurface(reason);
+        ctx = withholdStub();
+        renderFromCtx(ctx);
+        document.getElementById('ses-id').textContent = 'jane=withheld';
+      }
+      // Live OHLC charts attempt is fired from inside renderFromCtx() above.
+      // In withhold mode, renderFromCtx(stub) still fires the chart loader
+      // (the marketData layer is independent of the Jane decision layer).
+    });
+
+  // Withhold stub — minimal ctx that lets renderFromCtx run safely without
+  // populating any meaningful execution-decision values. The DOM nodes that
+  // would receive these values are pre-hidden by renderWithheldExecutionSurface().
+  function withholdStub(){
+    return {
+      assetClass: inferAssetClass(activeSymbol),
+      lastPrice: null, lastChangePct: 0,
+      actionState: 'WITHHELD', actionTone: 'red',
+      biasDirection: 'Withheld', tradePermission: 'Withheld — no Jane packet',
+      validityMinutes: 15, reassessMinutes: 60,
+      direction: 'Withheld',
+      entry: 'Withheld', entrySub: 'no Jane packet',
+      stopLoss: 'Withheld', extendedStopLoss: 'Withheld', target: 'Withheld',
+      riskDollars: 'Withheld', riskSub: '', targetDollars: 'Withheld',
+      costDollars: 'Withheld', cancellation: 'Withheld',
+      bullishCandidate: null, bearishCandidate: null,
+      grid: { executionAuthority:0, structure:0, liquidityPressure:0, eventRisk:0, sessionEnergy:0, macroAlignment:0, conviction:0, regime:0 },
+      gridNotes: {}, gridEffects: {},
+      forward: { behaviour:'Withheld — no Jane packet for this symbol.' },
+      triggers: { bullish:null, bearish:null, noTrade:'Withheld', timeframeNote:'Withheld' },
+      historical: [], mechanism: '', mechanismDetail: null,
+      scenario: { continuation:0, range:0, reversal:0 }, scenarioDetail: null,
+      events: [], matrix: [],
+      sources: { jane:'unavailable', corey:'unavailable', spidey:'unavailable', historical:'unavailable', coreyClone:'unavailable: not implemented' }
+    };
+  }
+
+  // Adapter: Jane packet (server shape) → ctx (renderer shape).
+  // Tolerates partial packets — missing fields fall through to the existing
+  // renderer's own null-safe handling.
+  function janePacketToCtx(p){
+    return {
+      assetClass: p.assetClass || inferAssetClass(activeSymbol),
+      lastPrice:  p.lastPrice  != null ? p.lastPrice  : null,
+      lastChangePct: p.lastChangePct != null ? p.lastChangePct : 0,
+      actionState: p.actionState || p.verdict || 'WAIT — NO TRADE',
+      actionTone:  p.actionTone  || (p.actionState && /AUTHORISED|CONFIRMED/i.test(p.actionState) ? 'green' : /ARMED/i.test(p.actionState||'') ? 'gold' : 'red'),
+      biasDirection: p.biasDirection || p.bias || 'Neutral',
+      tradePermission: p.tradePermission || 'No entry authorised',
+      validityMinutes: p.validityMinutes || 15,
+      reassessMinutes: p.reassessMinutes || 60,
+      direction: p.direction || '',
+      entry: p.entry == null ? 'Pending' : p.entry,
+      entrySub: p.entrySub || '',
+      stopLoss: p.stopLoss || 'Not authorised',
+      extendedStopLoss: p.extendedStopLoss || 'Not authorised',
+      target: p.target || 'Not authorised',
+      riskDollars: p.riskDollars || 'Not active',
+      riskSub: p.riskSub || '',
+      targetDollars: p.targetDollars || 'Not active',
+      costDollars: p.costDollars || '—',
+      cancellation: p.cancellation || '—',
+      bullishCandidate: p.bullishCandidate || null,
+      bearishCandidate: p.bearishCandidate || null,
+      grid:        p.grid        || { executionAuthority:0, structure:0, liquidityPressure:0, eventRisk:0, sessionEnergy:0, macroAlignment:0, conviction:0, regime:0 },
+      gridNotes:   p.gridNotes   || {},
+      gridEffects: p.gridEffects || {},
+      forward:     p.forward     || {},
+      triggers:    p.triggers    || { bullish:null, bearish:null, noTrade:'—', timeframeNote:'—' },
+      historical:  p.historical  || [],
+      mechanism:   p.mechanism   || '',
+      mechanismDetail: p.mechanismDetail || null,
+      scenario:    p.scenario    || { continuation:0, range:0, reversal:0 },
+      scenarioDetail: p.scenarioDetail || null,
+      events:      p.events      || [],
+      matrix:      p.matrix      || [],
+      sources:     p.sources     || null
+    };
+  }
+
+  function renderFromCtx(ctx){
+    if (!ctx) return;
+
   document.getElementById('hd-sym').textContent     = activeSymbol;
   document.getElementById('hd-class').textContent   = ctx.assetClass.toUpperCase();
-  document.getElementById('hd-price').textContent   = (ctx.assetClass==='fx' ? ctx.lastPrice.toFixed(5) : '$' + ctx.lastPrice.toFixed(2));
+  document.getElementById('hd-price').textContent   = (ctx.lastPrice == null) ? '—' : (ctx.assetClass==='fx' ? ctx.lastPrice.toFixed(5) : '$' + ctx.lastPrice.toFixed(2));
   var chgEl = document.getElementById('hd-chg');
   chgEl.textContent = (ctx.lastChangePct >= 0 ? '+' : '') + ctx.lastChangePct.toFixed(2) + '%';
   chgEl.classList.add(ctx.lastChangePct >= 0 ? 'pos' : 'neg');
@@ -749,6 +1000,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     '</div>';
 
   function tmBlock(arrow, title, t){
+    if (!t) return '<div class="tm-block"><div class="tm-hd"><span class="arrow '+arrow+'">' + (arrow==='up'?'▲':arrow==='dn'?'▼':'·') + '</span><span class="ttl">'+title+'</span></div><div style="font-size:11px;color:var(--mut2);font-style:italic">Exact shift level unavailable — withheld until Jane provides triggers.</div></div>';
     return '<div class="tm-block">' +
       '<div class="tm-hd"><span class="arrow '+arrow+'">' + (arrow==='up'?'▲':arrow==='dn'?'▼':'·') + '</span><span class="ttl">'+title+'</span></div>' +
       '<div class="tm-grid">' +
@@ -824,12 +1076,102 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   }
 
   function panelHtml(tf, sym, body, statusText){
-    return '<div class="chart-pane">' +
+    return '<div class="chart-pane" data-tf="' + tf + '" data-sym="' + sym + '">' +
       '<span class="tf-tag">' + tf + '</span>' +
       '<span class="sym-tag">' + sym + '</span>' +
       body +
       (statusText ? '<div style="position:absolute;left:0;right:0;bottom:6px;text-align:center;color:#ff0015;font-size:9px;letter-spacing:1px;font-family:\'SF Mono\',monospace">' + statusText + '</div>' : '') +
     '</div>';
+  }
+
+  // Independent per-pane zoom — each chart panel gets its OWN wheel handler,
+  // its OWN view-range state, and its OWN reset control. No shared zoom group,
+  // no echarts.connect, no global dispatcher. Wheeling on 1W never moves 1D.
+  function wirePaneZoom(pane, candles){
+    if (!pane || !candles || !candles.length) return;
+    var state = { start: 0, end: candles.length };
+    pane._zoomState = state;
+    pane._zoomCandles = candles;
+
+    // Add zoom readout + reset chip
+    var readout = document.createElement('div');
+    readout.className = 'zoom-readout';
+    readout.textContent = '100% (' + candles.length + ' bars)';
+    pane.appendChild(readout);
+
+    var reset = document.createElement('div');
+    reset.className = 'zoom-reset';
+    reset.textContent = 'RESET';
+    reset.title = 'Reset zoom on this panel only';
+    pane.appendChild(reset);
+
+    function redraw(){
+      var slice = candles.slice(Math.max(0, state.start), Math.min(candles.length, state.end));
+      var newSvg = buildCandleSVG(slice);
+      var existing = pane.querySelector('svg');
+      if (existing) existing.outerHTML = newSvg;
+      else {
+        // re-insert SVG before readout/reset
+        var tmp = document.createElement('div');
+        tmp.innerHTML = newSvg;
+        pane.insertBefore(tmp.firstChild, readout);
+      }
+      var pct = Math.round(100 * (state.end - state.start) / candles.length);
+      readout.textContent = pct + '% (' + (state.end - state.start) + ' bars)';
+    }
+
+    pane.addEventListener('wheel', function(e){
+      // Critical: prevent page scroll AND stop sibling panes from receiving
+      // any cascaded zoom. Each pane is fully isolated.
+      e.preventDefault();
+      e.stopPropagation();
+      var rect = pane.getBoundingClientRect();
+      var x = (e.clientX - rect.left) / rect.width;  // 0..1 anchor for the zoom
+      var width = state.end - state.start;
+      var anchor = state.start + x * width;
+      var factor = e.deltaY < 0 ? 0.85 : 1.18;       // wheel up = zoom in
+      var newWidth = Math.max(8, Math.min(candles.length, width * factor));
+      var newStart = Math.round(anchor - x * newWidth);
+      var newEnd   = Math.round(newStart + newWidth);
+      if (newStart < 0) { newEnd -= newStart; newStart = 0; }
+      if (newEnd > candles.length) { newStart -= (newEnd - candles.length); newEnd = candles.length; newStart = Math.max(0, newStart); }
+      state.start = newStart;
+      state.end   = newEnd;
+      redraw();
+    }, { passive: false });
+
+    // Click-and-drag pan within the pane (also strictly local)
+    var dragging = false, dragStartX = 0, dragStartRange = null;
+    pane.addEventListener('mousedown', function(e){
+      if (e.button !== 0) return;
+      dragging = true;
+      dragStartX = e.clientX;
+      dragStartRange = { start: state.start, end: state.end };
+      pane.style.cursor = 'grabbing';
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', function(e){
+      if (!dragging) return;
+      var rect = pane.getBoundingClientRect();
+      var dxRatio = (e.clientX - dragStartX) / rect.width;
+      var width = dragStartRange.end - dragStartRange.start;
+      var shift = -Math.round(dxRatio * width);
+      var newStart = dragStartRange.start + shift;
+      var newEnd   = dragStartRange.end   + shift;
+      if (newStart < 0) { newStart = 0; newEnd = width; }
+      if (newEnd > candles.length) { newEnd = candles.length; newStart = newEnd - width; }
+      state.start = newStart;
+      state.end   = newEnd;
+      redraw();
+    });
+    document.addEventListener('mouseup', function(){ if (dragging) { dragging = false; pane.style.cursor = 'crosshair'; } });
+
+    reset.addEventListener('click', function(e){
+      e.stopPropagation();
+      state.start = 0;
+      state.end   = candles.length;
+      redraw();
+    });
   }
 
   function renderPlaceholderPanels(){
@@ -842,10 +1184,14 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     renderPlaceholderPanels();
     var liveCount = 0, blockedCount = 0;
     var resolvedHtml = { '1W':'','1D':'','4H':'','1H':'','30M':'','15M':'','5M':'','1M':'' };
+    // Per-pane candle cache (independent — never shared across timeframes)
+    var paneCandles = { '1W':null,'1D':null,'4H':null,'1H':null,'30M':null,'15M':null,'5M':null,'1M':null };
 
     var jobs = HTF.concat(LTF).map(function(tf){
-      return fetchOHLC(activeSymbol, tf, ctx.assetClass).then(function(r){
+      var ac = (ctx && ctx.assetClass) ? ctx.assetClass : inferAssetClass(activeSymbol);
+      return fetchOHLC(activeSymbol, tf, ac).then(function(r){
         if (r.ok){
+          paneCandles[tf] = r.candles;
           // Symbol-integrity guard at panel level: validate symbol stamp matches
           // requested. We do not parse the proxy response to recover server-side
           // symbol echo (TwelveData doesn't always return it), so we trust the
@@ -867,6 +1213,15 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     await Promise.all(jobs);
     document.getElementById('ch-htf-grid').innerHTML = HTF.map(function(t){ return resolvedHtml[t]; }).join('');
     document.getElementById('ch-ltf-grid').innerHTML = LTF.map(function(t){ return resolvedHtml[t]; }).join('');
+
+    // Wire per-pane independent zoom AFTER the DOM is in place.
+    // Each pane gets its own state, its own wheel handler, its own candle
+    // cache, and its own reset chip. Panes never share zoom state.
+    HTF.concat(LTF).forEach(function(tf){
+      if (!paneCandles[tf]) return;
+      var pane = document.querySelector('.chart-pane[data-tf="' + tf + '"][data-sym="' + activeSymbol + '"]');
+      if (pane) wirePaneZoom(pane, paneCandles[tf]);
+    });
 
     // Header badge transitions from LOADING → LIVE / UNAVAILABLE (never MOCK).
     var src = document.getElementById('hd-src');
@@ -1061,7 +1416,9 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
 
   // ses-id is set by loadAllPanels() once data resolves; placeholder until then.
   document.getElementById('ses-id').textContent = 'source=loading';
+  } // ← close renderFromCtx
 
+  // Tab switcher — wired once at IIFE scope (DOM elements always present).
   document.querySelectorAll('.sec-nav .tab').forEach(function(btn){
     btn.addEventListener('click', function(){
       var target = btn.getAttribute('data-target');
