@@ -907,18 +907,45 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     } else {
       stack.innerHTML = '';
     }
-    var make = function(cls, lbl, price){
-      if (price == null || !isFinite(price)) return;
+
+    // Collision avoidance — when two prices map to nearby Y positions
+    // (e.g. HIGH 545.91 vs CURRENT 542.21 on a tight intraday range),
+    // the boxes visually touch / overlap. Compute desired Y for each
+    // visible label, sort by Y, then push neighbours apart by GAP_PCT
+    // (forward pass; reverse pass on overflow). This guarantees no two
+    // boxes within MIN_GAP_PCT of pane height. Anchors stay inside the
+    // 4..92% safe band yOf already enforces.
+    var GAP_PCT = 13;   // ~16px on a ~125px pane; box font 9px + padding 2px = ~13px tall
+    var MIN_Y = 4, MAX_Y = 92;
+    var labels = [
+      { cls: 'high',    lbl: 'HIGH',         price: hi },
+      { cls: 'current', lbl: currentLabel,   price: currentPrice },
+      { cls: 'entry',   lbl: 'ENTRY',        price: entry },
+      { cls: 'low',     lbl: 'LOW',          price: lo }
+    ].filter(function(it){ return it.price != null && isFinite(it.price); });
+    labels.forEach(function(it){ it.y = yOf(it.price); });
+    labels.sort(function(a,b){ return a.y - b.y; });
+    // forward pass
+    for (var li = 1; li < labels.length; li++) {
+      if (labels[li].y < labels[li-1].y + GAP_PCT) labels[li].y = labels[li-1].y + GAP_PCT;
+    }
+    // reverse pass if last overflows the bottom band
+    if (labels.length && labels[labels.length-1].y > MAX_Y) {
+      labels[labels.length-1].y = MAX_Y;
+      for (var lj = labels.length - 2; lj >= 0; lj--) {
+        if (labels[lj].y > labels[lj+1].y - GAP_PCT) labels[lj].y = labels[lj+1].y - GAP_PCT;
+      }
+    }
+    // final clamp to safe band
+    labels.forEach(function(it){ it.y = Math.max(MIN_Y, Math.min(MAX_Y, it.y)); });
+    // render in deconflicted order
+    labels.forEach(function(it){
       var el = document.createElement('div');
-      el.className = 'price-box ' + cls;
-      el.style.top = yOf(price).toFixed(2) + '%';
-      el.textContent = lbl + ' ' + (+price).toFixed(dg);
+      el.className = 'price-box ' + it.cls;
+      el.style.top = it.y.toFixed(2) + '%';
+      el.textContent = it.lbl + ' ' + (+it.price).toFixed(dg);
       stack.appendChild(el);
-    };
-    make('high',    'HIGH',                  hi);
-    make('current', currentLabel,            currentPrice);
-    make('entry',   'ENTRY',                 entry);   // skipped silently when entry is null
-    make('low',     'LOW',                   lo);
+    });
 
     // Per-pane state lives on the DOM node — never on a shared object.
     pane._priceBoxState = {
@@ -1459,6 +1486,31 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   var OUTPUT_SIZE = 120;
   var MIN_CANDLES = 20;
 
+  // Client-side TD cache + usage tracker. Conserves the upgraded TD plan
+  // on soft reloads (sessionStorage persists across F5; Ctrl+Shift+R clears
+  // it intentionally). The server-side proxy carries an independent cache
+  // for cross-client conservation. Per-tf TTL keeps 1M data fresh while
+  // letting 1W cache for an hour. Emits [TD-CACHE] hit/miss per call and
+  // [TD-USAGE] summary at the end of loadAllPanels.
+  var TD_CACHE_PREFIX = 'atlas:td:v1:';
+  var TD_TTL_MS = { '1M':30000, '5M':60000, '15M':120000, '30M':300000, '1H':600000, '4H':900000, '1D':3600000, '1W':3600000 };
+  var tdUsage = { hits: 0, misses: 0, fetches: 0, errors: 0 };
+  function tdCacheGet(key){
+    try {
+      var raw = sessionStorage.getItem(key);
+      if (!raw) return null;
+      var obj = JSON.parse(raw);
+      if (!obj || !obj.ts || !obj.payload) return null;
+      if ((Date.now() - obj.ts) > (obj.ttl || 60000)) { sessionStorage.removeItem(key); return null; }
+      obj.payload._cachedAt = obj.ts;
+      return obj.payload;
+    } catch (e) { return null; }
+  }
+  function tdCachePut(key, payload, ttl){
+    try { sessionStorage.setItem(key, JSON.stringify({ ts: Date.now(), ttl: ttl, payload: payload })); }
+    catch (e) { /* quota exceeded — silently skip; cache is best-effort */ }
+  }
+
   // providerSymbol() is defined at outer-IIFE scope (above) so both
   // fetchLiveQuote (outer scope) and fetchOHLC (this nested scope) share
   // the same resolver. Do not re-declare here.
@@ -1467,16 +1519,32 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     var sym = providerSymbol(displaySymbol, assetClass);
     var interval = TF_TO_TD[tf];
     var url = '/twelvedata?symbol=' + encodeURIComponent(sym) + '&interval=' + encodeURIComponent(interval) + '&outputsize=' + OUTPUT_SIZE;
+    var cacheKey = TD_CACHE_PREFIX + sym + ':' + tf + ':' + OUTPUT_SIZE;
+    var ttl = TD_TTL_MS[tf] || 60000;
+
+    var cached = tdCacheGet(cacheKey);
+    if (cached && cached.ok) {
+      tdUsage.hits++;
+      var ageS = Math.round((Date.now() - cached._cachedAt) / 1000);
+      console.log('[TD-CACHE] hit symbol=' + displaySymbol + ' tf=' + tf + ' provSym=' + sym + ' candles=' + (cached.candles ? cached.candles.length : 0) + ' ageS=' + ageS + ' ttlS=' + Math.round(ttl/1000));
+      return Promise.resolve(cached);
+    }
+    tdUsage.misses++;
+    console.log('[TD-CACHE] miss symbol=' + displaySymbol + ' tf=' + tf + ' provSym=' + sym + ' fetching');
+
     return fetch(url).then(function(r){ return r.json(); }).then(function(j){
-      if (j && j.status === 'error') return { ok:false, reason: j.message || ('http ' + (j.code || '?')), provSym: sym };
-      if (!j || !Array.isArray(j.values) || !j.values.length) return { ok:false, reason: 'empty_values', provSym: sym };
+      if (j && j.status === 'error') { tdUsage.errors++; return { ok:false, reason: j.message || ('http ' + (j.code || '?')), provSym: sym }; }
+      if (!j || !Array.isArray(j.values) || !j.values.length) { tdUsage.errors++; return { ok:false, reason: 'empty_values', provSym: sym }; }
       // TwelveData returns newest-first; reverse for chronological.
       var candles = j.values.slice().reverse().map(function(v){
         return { t: v.datetime, o: parseFloat(v.open), h: parseFloat(v.high), l: parseFloat(v.low), c: parseFloat(v.close) };
       }).filter(function(c){ return isFinite(c.o) && isFinite(c.h) && isFinite(c.l) && isFinite(c.c); });
-      if (candles.length < MIN_CANDLES) return { ok:false, reason: 'too_few_candles=' + candles.length, provSym: sym };
-      return { ok:true, candles: candles, source: 'twelvedata', provSym: sym };
-    }).catch(function(e){ return { ok:false, reason: 'fetch_error: ' + (e && e.message || e), provSym: sym }; });
+      if (candles.length < MIN_CANDLES) { tdUsage.errors++; return { ok:false, reason: 'too_few_candles=' + candles.length, provSym: sym }; }
+      var result = { ok:true, candles: candles, source: 'twelvedata', provSym: sym };
+      tdUsage.fetches++;
+      tdCachePut(cacheKey, result, ttl);
+      return result;
+    }).catch(function(e){ tdUsage.errors++; return { ok:false, reason: 'fetch_error: ' + (e && e.message || e), provSym: sym }; });
   }
 
   function buildCandleSVG(candles){
@@ -1704,6 +1772,13 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     // CURRENT box's contract, not a nice-to-have — render must observe
     // its result before painting boxes.
     await Promise.all(jobs.concat([quoteJob]));
+    // Per-reload TD usage summary. hits = sessionStorage cache hits;
+    // misses = network calls; fetches = successful upstream responses;
+    // errors = upstream/payload/parse failures. Conserves the upgraded
+    // TD plan: 8 panes × N reloads should not equal 8 × N upstream calls.
+    var tdTotal = tdUsage.hits + tdUsage.misses;
+    var tdHitRate = tdTotal ? Math.round(100 * tdUsage.hits / tdTotal) : 0;
+    console.log('[TD-USAGE] symbol=' + activeSymbol + ' hits=' + tdUsage.hits + ' misses=' + tdUsage.misses + ' fetches=' + tdUsage.fetches + ' errors=' + tdUsage.errors + ' total=' + tdTotal + ' hitRate=' + tdHitRate + '%');
     document.getElementById('ch-htf-grid').innerHTML = HTF.map(function(t){ return resolvedHtml[t]; }).join('');
     document.getElementById('ch-ltf-grid').innerHTML = LTF.map(function(t){ return resolvedHtml[t]; }).join('');
 

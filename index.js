@@ -48,6 +48,48 @@ function sessionCleanup(){
   }
 }
 
+/* TwelveData proxy cache + usage tracker.
+   Keyed by exact upstream URL (sans api key). TTL is timeframe-aware so a
+   1W series is cached longer than a 1min series. Conserves the upgraded TD
+   plan on dashboard reloads / multi-client open: 8 panes × N reloads no
+   longer translates to 8 × N upstream calls. Emits [TD-PROXY] hit/miss per
+   request and [TD-USAGE] every minute (and on /td-usage). */
+const TD_CACHE = new Map();
+const TD_TTL_MS = {
+  "1min":   30 * 1000,
+  "5min":   60 * 1000,
+  "15min":  2 * 60 * 1000,
+  "30min":  5 * 60 * 1000,
+  "45min":  5 * 60 * 1000,
+  "1h":     10 * 60 * 1000,
+  "2h":     15 * 60 * 1000,
+  "4h":     15 * 60 * 1000,
+  "1day":   60 * 60 * 1000,
+  "1week":  60 * 60 * 1000,
+  "1month": 60 * 60 * 1000,
+  "_quote": 15 * 1000   // /quote — 15s; live ticks expected
+};
+const TD_USAGE = { hits: 0, misses: 0, fetches: 0, errors: 0, started: Date.now() };
+function tdCacheGet(key){
+  const ent = TD_CACHE.get(key);
+  if(!ent) return null;
+  if(Date.now() - ent.ts > ent.ttl){ TD_CACHE.delete(key); return null; }
+  return ent;
+}
+function tdCachePut(key, body, statusCode, ttl){
+  TD_CACHE.set(key, { ts: Date.now(), ttl, body, statusCode });
+  // Light bound: drop oldest entries if cache grows past 500 items.
+  if(TD_CACHE.size > 500){
+    const firstKey = TD_CACHE.keys().next().value;
+    if(firstKey) TD_CACHE.delete(firstKey);
+  }
+}
+function tdLogUsage(reason){
+  const upMin = ((Date.now() - TD_USAGE.started) / 60000).toFixed(1);
+  console.log(`[TD-USAGE] reason=${reason} hits=${TD_USAGE.hits} misses=${TD_USAGE.misses} fetches=${TD_USAGE.fetches} errors=${TD_USAGE.errors} cacheSize=${TD_CACHE.size} upMin=${upMin}`);
+}
+setInterval(() => tdLogUsage("interval"), 60 * 1000).unref?.();
+
 function cors(res){
   res.setHeader("Access-Control-Allow-Origin","*");
   res.setHeader("Access-Control-Allow-Headers","*");
@@ -238,21 +280,57 @@ const server = http.createServer((req, res) => {
       "&timezone=UTC" +
       "&format=JSON" +
       "&apikey=" + encodeURIComponent(TWELVE_DATA_API_KEY);
+    const cacheKey = "ts:" + symbol + ":" + interval + ":" + outputsize;
+    const ttl = TD_TTL_MS[interval] || 60 * 1000;
+    const cached = tdCacheGet(cacheKey);
+    if(cached){
+      TD_USAGE.hits++;
+      const ageMs = Date.now() - cached.ts;
+      console.log(`[TD-PROXY] hit path=/twelvedata symbol=${symbol} interval=${interval} ageMs=${ageMs} ttl=${ttl}`);
+      res.statusCode = cached.statusCode;
+      return res.end(cached.body);
+    }
+    TD_USAGE.misses++;
+    console.log(`[TD-PROXY] miss path=/twelvedata symbol=${symbol} interval=${interval} fetching`);
     const tdReq = https.get("https://api.twelvedata.com/time_series?" + qs, { timeout: 8000 }, (tdRes) => {
       let body = "";
       tdRes.setEncoding("utf8");
       tdRes.on("data", (chunk) => { body += chunk; });
       tdRes.on("end", () => {
-        res.statusCode = tdRes.statusCode || 502;
+        const sc = tdRes.statusCode || 502;
+        // Only cache successful responses (don't cache TD errors / rate-limits).
+        if(sc >= 200 && sc < 300){
+          let isErrPayload = false;
+          try { const j = JSON.parse(body); if(j && j.status === "error") isErrPayload = true; } catch(_){}
+          if(!isErrPayload){
+            TD_USAGE.fetches++;
+            tdCachePut(cacheKey, body, sc, ttl);
+          } else {
+            TD_USAGE.errors++;
+          }
+        } else {
+          TD_USAGE.errors++;
+        }
+        res.statusCode = sc;
         res.end(body);
       });
     });
     tdReq.on("timeout", () => { try { tdReq.destroy(new Error("timeout")); } catch(_){} });
     tdReq.on("error", (e) => {
+      TD_USAGE.errors++;
       res.statusCode = 502;
       res.end(JSON.stringify({status:"error", code:502, message:"twelvedata fetch failed: "+(e && e.message || e)}));
     });
     return;
+  }
+
+  if(u.pathname === "/td-usage"){
+    res.setHeader("Content-Type","application/json");
+    return res.end(JSON.stringify({
+      ...TD_USAGE,
+      cacheSize: TD_CACHE.size,
+      upMs: Date.now() - TD_USAGE.started
+    }));
   }
 
   /* /quote — single-symbol live quote proxy. Returned shape:
@@ -280,6 +358,18 @@ const server = http.createServer((req, res) => {
       "symbol=" + encodeURIComponent(symbol) +
       "&format=JSON" +
       "&apikey=" + encodeURIComponent(TWELVE_DATA_API_KEY);
+    const cacheKey = "q:" + symbol;
+    const ttl = TD_TTL_MS._quote;
+    const cached = tdCacheGet(cacheKey);
+    if(cached){
+      TD_USAGE.hits++;
+      const ageMs = Date.now() - cached.ts;
+      console.log(`[TD-PROXY] hit path=/quote symbol=${symbol} ageMs=${ageMs} ttl=${ttl}`);
+      res.statusCode = cached.statusCode;
+      return res.end(cached.body);
+    }
+    TD_USAGE.misses++;
+    console.log(`[TD-PROXY] miss path=/quote symbol=${symbol} fetching`);
     const tdReq = https.get("https://api.twelvedata.com/quote?" + qs, { timeout: 8000 }, (tdRes) => {
       let body = "";
       tdRes.setEncoding("utf8");
@@ -288,6 +378,7 @@ const server = http.createServer((req, res) => {
         try {
           const j = JSON.parse(body);
           if (j && (j.status === 'error' || j.code)) {
+            TD_USAGE.errors++;
             res.statusCode = tdRes.statusCode || 502;
             return res.end(JSON.stringify({
               status: 'error',
@@ -299,8 +390,7 @@ const server = http.createServer((req, res) => {
           // TwelveData /quote returns { symbol, name, exchange, currency, ..., close, datetime }
           const price = j && j.close != null ? parseFloat(j.close) : null;
           const ts = j && j.timestamp != null ? parseInt(j.timestamp, 10) : null;
-          res.statusCode = 200;
-          return res.end(JSON.stringify({
+          const out = JSON.stringify({
             status: 'ok',
             symbol: j.symbol || symbol,
             price: isFinite(price) ? price : null,
@@ -308,8 +398,13 @@ const server = http.createServer((req, res) => {
             timestamp: ts,
             asOf: j.datetime || null,
             upstream: j
-          }));
+          });
+          TD_USAGE.fetches++;
+          tdCachePut(cacheKey, out, 200, ttl);
+          res.statusCode = 200;
+          return res.end(out);
         } catch (e) {
+          TD_USAGE.errors++;
           res.statusCode = 502;
           res.end(JSON.stringify({status:'error', code:502, message:'twelvedata quote parse: '+(e && e.message || e)}));
         }
@@ -317,6 +412,7 @@ const server = http.createServer((req, res) => {
     });
     tdReq.on("timeout", () => { try { tdReq.destroy(new Error("timeout")); } catch(_){} });
     tdReq.on("error", (e) => {
+      TD_USAGE.errors++;
       res.statusCode = 502;
       res.end(JSON.stringify({status:"error", code:502, message:"twelvedata quote fetch failed: "+(e && e.message || e)}));
     });
