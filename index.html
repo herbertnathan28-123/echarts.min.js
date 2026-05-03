@@ -738,6 +738,11 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         setSourceStatusFromPacket(ctx.sources || jane.packet.sources || {});
         renderFromCtx(ctx);
         document.getElementById('ses-id').textContent = 'session=' + (jane.packet.session_id || '?') + ' age=' + Math.round((jane.ageMs||0)/1000) + 's';
+        var srcSummary = (ctx.sources && Object.keys(ctx.sources).length) ? Object.keys(ctx.sources).map(function(k){ return k+'='+ctx.sources[k]; }).join(' ') : 'no-sources';
+        var gridLit = ctx.grid ? Object.keys(ctx.grid).filter(function(k){ return ctx.grid[k] > 0; }).length : 0;
+        var trigState = (ctx.triggers && (ctx.triggers.bullish || ctx.triggers.bearish)) ? 'present' : 'withheld';
+        console.log('[DASHBOARD] jane packet received symbol=' + activeSymbol + ' actionState=' + (ctx.actionState||'?') + ' grid=' + gridLit + ' triggers=' + trigState);
+        console.log('[DASHBOARD] sources: ' + srcSummary);
         console.log('[DASHBOARD] jane=final session=' + jane.packet.session_id + ' age=' + jane.ageMs + 'ms');
       } else if (allowFakeMode && STAGED_PLAN[activeSymbol]) {
         ctx = STAGED_PLAN[activeSymbol];
@@ -970,34 +975,53 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   });
 
   // ---------- Forward Expectation (Phase 6 — operational fields) ----------
-  var fe = ctx.forward;
-  document.getElementById('fe-body').innerHTML =
-    feRow('Expected Behaviour', fe.behaviour) +
-    feRow('Reassess At',         reassessStr) +
-    (fe.boundaryUpper ? feRow('Upper Boundary',   fe.boundaryUpper) : '') +
-    (fe.boundaryLower ? feRow('Lower Boundary',   fe.boundaryLower) : '') +
-    feRow('Daily Movement',     fe.movement) +
-    feRow('Tradability',         fe.tradability || fe.absorption || '—') +
-    feRow('Confirms Bullish',    fe.confirmsBullish || fe.waitingFor || '—') +
-    feRow('Confirms Bearish',    fe.confirmsBearish || '—') +
-    feRow('Keeps Blocked',       fe.keepsBlocked || '—');
+  var fe = ctx.forward || {};
+  var feWithhold = (ctx.withholdNotes && ctx.withholdNotes.forwardExpectation) || fe.withholdNote;
+  if (feWithhold) {
+    document.getElementById('fe-body').innerHTML =
+      '<div class="withhold-banner" style="margin:0">' +
+      '<div class="wb-title">FORWARD EXPECTATION WITHHELD</div>' +
+      '<div class="wb-detail">' + escapeHtml(feWithhold) + '</div>' +
+      '</div>' +
+      (fe.behaviour ? feRow('Available context', fe.behaviour) : '');
+  } else {
+    document.getElementById('fe-body').innerHTML =
+      feRow('Expected Behaviour', fe.behaviour || '—') +
+      feRow('Reassess At',         reassessStr) +
+      (fe.boundaryUpper ? feRow('Upper Boundary',   fe.boundaryUpper) : '') +
+      (fe.boundaryLower ? feRow('Lower Boundary',   fe.boundaryLower) : '') +
+      feRow('Daily Movement',     fe.movement || '—') +
+      feRow('Tradability',         fe.tradability || fe.absorption || '—') +
+      feRow('Confirms Bullish',    fe.confirmsBullish || fe.waitingFor || '—') +
+      feRow('Confirms Bearish',    fe.confirmsBearish || '—') +
+      feRow('Keeps Blocked',       fe.keepsBlocked || '—');
+  }
 
   function feRow(k,v){
     return '<div class="fe-row"><div class="k">'+k+'</div><div class="v">'+escapeHtml(v)+'</div></div>';
   }
 
-  var tm = ctx.triggers;
-  document.getElementById('tm-body').innerHTML =
-    tmBlock('up', 'BULLISH SHIFT', tm.bullish) +
-    tmBlock('dn', 'BEARISH SHIFT', tm.bearish) +
-    '<div class="tm-block">' +
-      '<div class="tm-hd"><span class="arrow no">·</span><span class="ttl">NO-TRADE CONDITION</span></div>' +
-      '<div style="font-size:12px;color:var(--mut2)">'+escapeHtml(tm.noTrade)+'</div>' +
-    '</div>' +
-    '<div class="tm-block">' +
-      '<div class="tm-hd"><span class="arrow no">·</span><span class="ttl">TIMEFRAME NOTE</span></div>' +
-      '<div style="font-size:11px;color:var(--mut2);font-style:italic">'+escapeHtml(tm.timeframeNote)+'</div>' +
-    '</div>';
+  var tm = ctx.triggers || { bullish: null, bearish: null, noTrade: '—', timeframeNote: '—' };
+  var tmWithhold = (ctx.withholdNotes && ctx.withholdNotes.triggerMap);
+  if (tmWithhold) {
+    document.getElementById('tm-body').innerHTML =
+      '<div class="withhold-banner" style="margin:0">' +
+      '<div class="wb-title">TRIGGER MAP WITHHELD</div>' +
+      '<div class="wb-detail">' + escapeHtml(tmWithhold) + '</div>' +
+      '</div>';
+  } else {
+    document.getElementById('tm-body').innerHTML =
+      tmBlock('up', 'BULLISH SHIFT', tm.bullish) +
+      tmBlock('dn', 'BEARISH SHIFT', tm.bearish) +
+      '<div class="tm-block">' +
+        '<div class="tm-hd"><span class="arrow no">·</span><span class="ttl">NO-TRADE CONDITION</span></div>' +
+        '<div style="font-size:12px;color:var(--mut2)">'+escapeHtml(tm.noTrade || '—')+'</div>' +
+      '</div>' +
+      '<div class="tm-block">' +
+        '<div class="tm-hd"><span class="arrow no">·</span><span class="ttl">TIMEFRAME NOTE</span></div>' +
+        '<div style="font-size:11px;color:var(--mut2);font-style:italic">'+escapeHtml(tm.timeframeNote || '—')+'</div>' +
+      '</div>';
+  }
 
   function tmBlock(arrow, title, t){
     if (!t) return '<div class="tm-block"><div class="tm-hd"><span class="arrow '+arrow+'">' + (arrow==='up'?'▲':arrow==='dn'?'▼':'·') + '</span><span class="ttl">'+title+'</span></div><div style="font-size:11px;color:var(--mut2);font-style:italic">Exact shift level unavailable — withheld until Jane provides triggers.</div></div>';
@@ -1233,12 +1257,49 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       src.className = 'src fail';
       srcTxt.textContent = 'DATA · UNAVAILABLE';
     }
+
+    // Source-status row — flip the marketData pill the moment the chart layer
+    // actually loads. The pill stayed on "pending" before because nothing
+    // updated it after the Jane packet first set it.
+    setSourcePill('marketData', liveCount > 0
+      ? (blockedCount === 0 ? 'live' : 'partial: ' + liveCount + '/' + (liveCount + blockedCount))
+      : 'unavailable');
+
+    // Header price fallback — when the Jane packet's lastPrice is null but
+    // /twelvedata returned valid candles, show the most-recent close from the
+    // 1M (or finest available) panel. Never invent a value.
+    var hdPrice = document.getElementById('hd-price');
+    if (hdPrice && (hdPrice.textContent === '—' || hdPrice.textContent === '')){
+      var finest = paneCandles['1M'] || paneCandles['5M'] || paneCandles['15M'] || paneCandles['30M'] || paneCandles['1H'] || paneCandles['4H'] || paneCandles['1D'] || paneCandles['1W'];
+      if (finest && finest.length){
+        var lastBar = finest[finest.length - 1];
+        var p = lastBar.c;
+        var ac = (ctx && ctx.assetClass) ? ctx.assetClass : inferAssetClass(activeSymbol);
+        hdPrice.textContent = (ac === 'fx') ? p.toFixed(5) : '$' + p.toFixed(2);
+        // change %: prefer the difference vs the first bar in the daily set if available
+        var daily = paneCandles['1D'];
+        var chgEl = document.getElementById('hd-chg');
+        if (chgEl && daily && daily.length >= 2){
+          var first = daily[0].c, lastDay = daily[daily.length - 1].c;
+          var pct = first ? ((lastDay - first) / first * 100) : 0;
+          chgEl.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+          chgEl.classList.remove('pos','neg');
+          chgEl.classList.add(pct >= 0 ? 'pos' : 'neg');
+        } else if (chgEl) {
+          chgEl.textContent = 'chg n/a';
+        }
+      }
+    }
+
     // Source footer reflects real data source — never the staged-plan tag.
     var foot = document.getElementById('ses-id');
     if (foot){
-      foot.textContent = (liveCount > 0)
-        ? 'source=twelvedata/live · panels=' + liveCount + '/' + (liveCount + blockedCount)
-        : 'source=unavailable · panels=0/' + (liveCount + blockedCount);
+      var existing = foot.textContent || '';
+      var dataLine = (liveCount > 0)
+        ? 'data=twelvedata/live · panels=' + liveCount + '/' + (liveCount + blockedCount)
+        : 'data=unavailable · panels=0/' + (liveCount + blockedCount);
+      // append data status to whatever the bootstrap set (session id or jane=withheld)
+      foot.textContent = existing.indexOf('data=') >= 0 ? existing.replace(/data=[^·]*(·\s*panels=\S+)?/, dataLine) : (existing + ' · ' + dataLine);
     }
   }
   loadAllPanels();
