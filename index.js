@@ -87,26 +87,29 @@ const server = http.createServer((req, res) => {
           if(!sym){ res.writeHead(400); return res.end(JSON.stringify({ok:false,error:"missing symbol"})); }
           sessionCleanup();
           const session_id = 'ATLAS-' + Date.now() + '-' + sym;
-          const stored = {
-            session_id, symbol:sym,
-            user:     ctx.user     || u.query.user || 'AT',
-            mode:     ctx.mode     || u.query.mode || '',
-            bias:     ctx.bias     || '',
-            conviction: ctx.conviction || '',
-            probability: ctx.probability || '',
-            regime:   ctx.regime   || '',
-            signal_strength: ctx.signal_strength || 0,
-            viability: ctx.viability || '',
-            execution: ctx.execution || null,
-            events:    ctx.events    || [],
-            verdict:  ctx.verdict  || '',
+          // Preserve EVERY field the bot posts. Cherry-picking dropped Jane v3
+          // packet fields (sources, actionState, biasDirection, candidates,
+          // grid, gridEffects, forward, triggers, mechanismDetail, scenarioDetail
+          // etc.) which is why corey/spidey/historical pills were stuck on
+          // "unavailable" despite the bot sending real engine status.
+          const stored = Object.assign({}, ctx, {
+            session_id,
+            symbol: sym,
+            user:   ctx.user || u.query.user || 'AT',
+            mode:   ctx.mode || u.query.mode || '',
             timestamp: new Date().toISOString(),
             _stored: Date.now()
-          };
+          });
           SESSION_STORE.set(session_id, stored);
           latestSymbol = sym;
           broadcast(sym);
+          const fieldCount = Object.keys(ctx).length;
+          // Jane-packet field count — known live decision fields only (excludes legacy + transport keys).
+          const JANE_FIELDS = ['sources','actionState','biasDirection','tradePermission','entry','stopLoss','extendedStopLoss','target','riskDollars','targetDollars','costDollars','cancellation','bullishCandidate','bearishCandidate','grid','gridNotes','gridEffects','forward','triggers','historical','mechanism','mechanismDetail','scenario','scenarioDetail','events','matrix','sourceMissing','withholdNotes'];
+          const janeFieldCount = JANE_FIELDS.filter(k => ctx[k] != null).length;
+          const sourcesPresent = ctx.sources && typeof ctx.sources === 'object' && Object.keys(ctx.sources).length > 0;
           console.log(`[atlas] /load POST -> ${sym} session:${session_id}`);
+          console.log(`[LOAD] packet stored symbol=${sym} keys=${fieldCount} janeFields=${janeFieldCount} sources=${sourcesPresent ? 'present' : 'missing'}`);
           res.setHeader("Content-Type","application/json");
           res.end(JSON.stringify({ok:true, session_id, symbol:sym, t:Date.now()}));
         }catch(e){ res.writeHead(500); res.end(JSON.stringify({ok:false})); }
