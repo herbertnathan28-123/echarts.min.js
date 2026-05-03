@@ -71,14 +71,39 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
 .es-cell.pending .val{color:var(--mut)}
 .es-cell.target .val{color:var(--green)}
 
-.cond-grid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:10px;padding:14px 22px}
-.cond-cell{background:var(--cell);border:1px solid var(--line2);border-radius:4px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.cond-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:14px 22px}
+.cond-cell{background:var(--cell);border:1px solid var(--line2);border-radius:4px;padding:12px;display:flex;flex-direction:column;gap:6px}
 .cond-cell .cl-lbl{font-size:9px;letter-spacing:1.5px;color:var(--mut);text-transform:uppercase;font-weight:600}
+.cond-cell .cl-row{display:flex;align-items:center;gap:8px}
 .cond-cell .cl-dots{display:flex;gap:4px}
-.cond-cell .cl-dots .d{width:14px;height:14px;border-radius:50%;background:var(--grid-empty);border:1px solid #1a1610}
-.cond-cell .cl-dots .d.on{background:var(--grid-fill);border-color:var(--gold-d);box-shadow:0 0 6px rgba(255,214,0,0.55)}
+.cond-cell .cl-dots .d{width:12px;height:12px;border-radius:50%;background:var(--grid-empty);border:1px solid #1a1610}
+.cond-cell .cl-dots .d.on{background:var(--grid-fill);border-color:var(--gold-d);box-shadow:0 0 5px rgba(255,214,0,0.5)}
 .cond-cell .cl-num{font-family:"SF Mono",monospace;font-size:11px;color:var(--mut2);font-weight:600}
-.cond-cell .cl-note{font-size:10px;color:var(--mut2);margin-top:2px}
+.cond-cell .cl-chip{padding:2px 7px;border-radius:3px;font-size:9px;font-weight:800;letter-spacing:1.5px;font-family:"SF Mono",monospace}
+.cond-cell .cl-chip.RED  {background:rgba(255,0,21,0.18);color:var(--red);  border:1px solid var(--red-d)}
+.cond-cell .cl-chip.AMBER{background:rgba(255,145,0,0.18);color:var(--amber);border:1px solid var(--amber-d)}
+.cond-cell .cl-chip.GOLD {background:rgba(255,214,0,0.18);color:var(--gold); border:1px solid var(--gold-d)}
+.cond-cell .cl-chip.GREEN{background:rgba(0,180,80,0.18);color:var(--green);border:1px solid var(--green-d)}
+.cond-cell .cl-state{font-size:11px;color:var(--fg);font-weight:600}
+.cond-cell .cl-effect{font-size:10px;color:var(--mut2);font-style:italic;margin-top:2px}
+
+.candidate-row{margin:14px 22px 0;border:1px dashed var(--amber-d);border-radius:4px;background:linear-gradient(180deg,rgba(255,145,0,0.04) 0%,var(--cell) 100%);padding:14px 16px}
+.candidate-row .cand-hd{display:flex;align-items:center;gap:14px;margin-bottom:10px}
+.candidate-row .cand-title{font-size:11px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;font-weight:800}
+.candidate-row .cand-warning{font-size:10px;letter-spacing:2px;color:var(--amber);text-transform:uppercase;font-weight:700;padding:3px 9px;border:1px solid var(--amber-d);border-radius:3px;background:rgba(255,145,0,0.10)}
+.candidate-row .cand-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cand-card{background:var(--cell);border:1px solid var(--line2);border-radius:3px;padding:12px}
+.cand-card.bull{border-left:3px solid var(--green)}
+.cand-card.bear{border-left:3px solid var(--red)}
+.cand-card .cand-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.cand-card .cand-arrow{font-size:14px;font-weight:900}
+.cand-card.bull .cand-arrow{color:var(--green)}
+.cand-card.bear .cand-arrow{color:var(--red)}
+.cand-card .cand-name{font-size:11px;letter-spacing:2px;color:var(--fg);text-transform:uppercase;font-weight:800}
+.cand-card .cand-fields{display:grid;grid-template-columns:max-content 1fr;gap:5px 12px;font-size:11px}
+.cand-card .cand-fields .k{color:var(--mut);font-size:10px;letter-spacing:1px;text-transform:uppercase;font-weight:600;padding-top:2px}
+.cand-card .cand-fields .v{color:var(--fg);font-family:"SF Mono",monospace;font-size:11px;line-height:1.4}
+.cand-card .cand-req{font-size:10px;color:var(--mut2);font-style:italic;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
 
 .fe-tm{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:14px 22px}
 .fe-card,.tm-card{background:var(--cell);border:1px solid var(--line2);border-radius:4px;padding:16px}
@@ -198,9 +223,10 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         <div class="state" id="action-state">WAIT — NO TRADE</div>
       </div>
       <div class="verdict-strip">
-        <div class="vstrip-item"><div class="vlbl">Direction</div><div class="vval" id="vstrip-dir">—</div></div>
-        <div class="vstrip-item"><div class="vlbl">Validity</div><div class="vval" id="vstrip-val">—</div></div>
-        <div class="vstrip-item"><div class="vlbl">Next Reassess</div><div class="vval" id="vstrip-next">—</div></div>
+        <div class="vstrip-item"><div class="vlbl">Bias Direction</div><div class="vval" id="vstrip-bias">—</div></div>
+        <div class="vstrip-item"><div class="vlbl">Trade Permission</div><div class="vval" id="vstrip-perm">—</div></div>
+        <div class="vstrip-item"><div class="vlbl">Valid Until</div><div class="vval" id="vstrip-val">—</div></div>
+        <div class="vstrip-item"><div class="vlbl">Reassess</div><div class="vval" id="vstrip-next">—</div></div>
       </div>
     </div>
   </div>
@@ -218,6 +244,15 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     <div class="es-cell"        ><div class="lbl">Cancellation Trigger</div><div class="val" id="es-cancel">—</div></div>
     <div class="es-cell"        ><div class="lbl">Next Reassessment</div><div class="val" id="es-next">—</div></div>
     <div class="es-cell"        ><div class="lbl">Asset Class</div>    <div class="val" id="es-assetclass">—</div></div>
+  </div>
+
+  <!-- CANDIDATE LEVELS (NOT ACTIVE) -->
+  <div class="candidate-row" id="candidate-row">
+    <div class="cand-hd">
+      <span class="cand-title">Candidate Levels</span>
+      <span class="cand-warning">NOT ACTIVE — no live order permitted yet</span>
+    </div>
+    <div class="cand-grid" id="cand-grid"></div>
   </div>
 
   <div class="cond-grid" id="cond-grid"></div>
@@ -340,18 +375,31 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       assetClass: 'equity',
       lastPrice: 92.40, lastChangePct: -1.85,
       actionState: 'WAIT — NO TRADE', actionTone: 'red',
+      biasDirection: 'Neutral / Mixed',
+      tradePermission: 'No entry authorised',
+      validityMinutes: 15,
+      reassessMinutes: 60,
       direction: 'No directional permission yet — macro neutral, structure mixed',
-      directionShort: 'NO TRADE',
-      entry: 'Pending',  entrySub: 'no authorised entry',
+      entry: 'Pending', entrySub: 'no live order authorised',
       stopLoss: 'Not authorised',
       extendedStopLoss: 'Not authorised',
       target: 'Not authorised',
-      riskDollars: '—', riskSub: 'no entry / no invalidation',
-      targetDollars: '—',
+      riskDollars: 'Not active', riskSub: 'no entry / no invalidation',
+      targetDollars: 'Not active',
       costDollars: '~$0.05/share spread + commission',
-      validity: 'Until next 15M close',
       cancellation: '15M close > $94.10 reauthorises bullish review · < $90.20 reauthorises bearish review',
-      nextReassessment: 'Next 1H close · or any catalyst inside 2h',
+      bullishCandidate: {
+        candidateEntryArea: '$94.10 – $94.30',
+        candidateTarget:    '$96.40 (next liquidity cluster)',
+        candidateStop:      '$93.20 (15M close back below within 2 candles)',
+        requirement:        'Becomes valid only after a 15M body close above $94.10 with a fresh demand zone retained on the impulse, AND no high-impact event inside next 2h.'
+      },
+      bearishCandidate: {
+        candidateEntryArea: '$90.20 – $90.00',
+        candidateTarget:    '$87.80 (deeper demand)',
+        candidateStop:      '$91.20 (15M close back above within 2 candles)',
+        requirement:        'Becomes valid only after a 15M body close below $90.20 with a fresh supply zone retained on the impulse, AND no high-impact event inside next 2h.'
+      },
       grid: { executionAuthority:1, structure:2, liquidityPressure:3, eventRisk:2, sessionEnergy:2, macroAlignment:2, conviction:1, regime:3 },
       gridNotes: {
         executionAuthority: 'no clean trigger',
@@ -363,12 +411,25 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         conviction:         'no authorised conviction',
         regime:             'transition'
       },
+      gridEffects: {
+        executionAuthority: 'Blocks live entry — no actionable trigger present.',
+        structure:          'Needs a clean 15M / 30M structure break with an imbalance left behind.',
+        liquidityPressure:  'Watch the $94.10 / $90.20 edges — first to break with imbalance retained authorises review.',
+        eventRisk:          'No fresh entry inside 2h of a high-impact catalyst window.',
+        sessionEnergy:      'Late-session drift — expect lower follow-through and more chop.',
+        macroAlignment:     'No directional macro vote — direction must come from structure alone.',
+        conviction:         'No conviction authorisation — system has no clean evidence to risk capital.',
+        regime:             'Transitional regime — false breaks more likely; require closes, not wicks.'
+      },
       forward: {
-        behaviour: 'Range with possible late-session drift — buyers and sellers neither in control.',
-        timing:    'Until next 1H close, then re-check structure. No reliable time estimate beyond that.',
+        behaviour: 'Price is expected to stay trapped between $90.20 and $94.10 until one side closes outside the range on a 15M candle. No live entry yet. A clean move only starts if price closes beyond one edge AND leaves a fresh demand or supply imbalance behind.',
+        boundaryUpper: '$94.10',
+        boundaryLower: '$90.20',
         movement:  'Typical daily move ≈ $2.30/share · seen today ≈ $1.60 · est. remaining ≈ $0.70.',
-        absorption:'Most remaining movement is likely absorbed sideways in the $90.80–$93.10 band; clean continuation requires a 15M close beyond either edge with imbalance left behind.',
-        waitingFor:'A 15M close above $94.10 with a fresh demand zone retained, OR a 15M close below $90.20 with a fresh supply zone retained.'
+        tradability: 'Range absorption — remaining movement most likely wasted in chop between the boundaries unless a 15M close breaks one edge with imbalance retained.',
+        confirmsBullish: '15M body close above $94.10 + fresh demand zone retained on the impulse + no high-impact event inside next 2h.',
+        confirmsBearish: '15M body close below $90.20 + fresh supply zone retained on the impulse + no high-impact event inside next 2h.',
+        keepsBlocked:    'Price held inside $90.20 – $94.10 with no clean displacement, OR a high-impact event scheduled inside ±2h.'
       },
       triggers: {
         bullish: { tf:'15M', level:'$94.10', close:'15M body close above $94.10', supply:'fresh demand zone left behind on the impulse', catalyst:'no high-impact event inside next 2h', invalidation:'15M close back below $93.20 within 2 candles' },
@@ -382,12 +443,24 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         { name:'Q-end rebalance reversal window', stamp:'green', sample:'n=12 quarter-end sessions, large-cap semis 2022-2025', timeframe:'1D', relevance:'Quarter-end can drive sharp last-day reversal', continuation:'58% sharp counter-trend close on quarter-end day', confidence:'medium', supports:'supportive only on a quarter-end calendar match', suggests:'If session falls on quarter-end and structure aligns, expect a sharp reversal candle.', expires:'Outside quarter-end ±1 day window' },
         { name:'Generic "2017 reflation" comparison', stamp:'grey', sample:'unsupported — no clean denominator', timeframe:'unspecified', relevance:'low — different rate regime, different sector composition', continuation:'no audited rate', confidence:'rejected', supports:'neutral — should not influence the desk', suggests:'Disregard. Not a clean analogue.', expires:'n/a — analogue rejected' }
       ],
+      mechanismDetail: {
+        cause: 'Memory-chip pricing softness combined with NVDA earnings overhang weighs on the broader semi sector.',
+        reaction: 'Investors rotate out of memory names into AI-infrastructure leaders (NVDA, AVGO); MU underperforms the semi index.',
+        impact: 'MU equity drifts within a $90.20–$94.10 band as buyers and sellers wait for the NVDA print and the next FOMC speak.',
+        outcome: 'No clean directional move expected until structure breaks one edge with imbalance retained, OR a high-impact catalyst shifts sentiment.',
+        changes: 'Mechanism flips bullish if AI-capex re-acceleration is confirmed (NVDA beats decisively + raises); flips bearish if memory pricing data prints another month of decline.'
+      },
       mechanism: 'Memory pricing softness → margin compression risk → sell-side rerating → MU underperforms semi index. Counterforce: AI capex sustained → demand for HBM / DRAM remains structural → margin floor.',
+      scenarioDetail: {
+        primary:      { name:'Range absorption', prob:42, trigger:'Price respects $90.20–$94.10 with no 15M close beyond either edge.', window:'Next 1H close · or until first edge breaks.' },
+        alternative:  { name:'Bullish breakout', prob:38, trigger:'15M body close above $94.10 with fresh demand zone retained.',     window:'Next 4h.' },
+        invalidation: { name:'Bearish breakdown',prob:20, trigger:'15M body close below $90.20 with fresh supply zone retained.',     window:'Next 4h.' }
+      },
       scenario: { continuation:38, range:42, reversal:20 },
       events: [
-        { when:'Fri 13:30 UTC', what:'US NFP', impact:'high', mechanism:'Strong print → yields up → growth-stock pressure', verdict:'BLOCK new entries inside ±2h window' },
-        { when:'Wed 18:00 UTC', what:'FOMC minutes', impact:'high', mechanism:'Hawkish tone → growth-stock pressure', verdict:'CAUTION — reduce conviction' },
-        { when:'Thu 21:00 UTC', what:'NVDA earnings', impact:'medium-high', mechanism:'Sector sympathy', verdict:'CAUTION — sympathy risk pre/post' }
+        { whenISO:'2026-05-08T13:30:00Z', what:'US NFP',         impact:'high',        channel:'rates → yields → growth-stock valuation', mechanism:'Strong print → yields up → growth-stock pressure', preRule:'No new entries inside ±2h of release.',      postRule:'Wait for fresh 15M structure after the print before any entry.', verdict:'BLOCK new entries inside ±2h window' },
+        { whenISO:'2026-05-06T18:00:00Z', what:'FOMC minutes',   impact:'high',        channel:'policy path → real yields',                mechanism:'Hawkish tone → growth-stock pressure',           preRule:'Reduce conviction inside ±1h.',               postRule:'Reassess after the second 15M close post-release.',              verdict:'CAUTION — reduce conviction' },
+        { whenISO:'2026-05-07T21:00:00Z', what:'NVDA earnings',  impact:'medium-high', channel:'sector sympathy / AI capex',               mechanism:'Sector sympathy — MU often drifts pre / reacts post', preRule:'No long entries T-3 to T-1.',                  postRule:'Wait for first 15M structure after the post-release tape.',     verdict:'CAUTION — sympathy risk pre/post' }
       ],
       matrix: [
         { sym:'NVDA',   px:'124.80', chg:'-2.10%', range:'120.40 – 128.10' },
@@ -402,8 +475,11 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       assetClass: 'fx',
       lastPrice: 1.07820, lastChangePct: 0.18,
       actionState: 'ARMED — WAITING FOR TRIGGER', actionTone: 'gold',
+      biasDirection: 'Bullish',
+      tradePermission: 'Armed — entry not yet authorised',
+      validityMinutes: 15,
+      reassessMinutes: 15,
       direction: 'Mild USD weakness supports upside — buyers gaining control above 1.0780',
-      directionShort: 'BIAS LONG (armed)',
       entry: '1.07900', entrySub: 'on 15M close above session high with retained demand',
       stopLoss: '1.07550',
       extendedStopLoss: '1.07350',
@@ -411,10 +487,30 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       riskDollars: '$350', riskSub: 'per 1.0 standard lot · 35 pips',
       targetDollars: '$700',
       costDollars: '~$8 per 1.0 lot (0.8 pip spread)',
-      validity: 'Active until London close',
       cancellation: '15M close back below 1.07780 inside 2 candles — invalidates demand retention',
-      nextReassessment: 'On the next 15M close OR within 2h pre-NFP',
+      bullishCandidate: {
+        candidateEntryArea: '1.07900 – 1.07950',
+        candidateTarget:    '1.08600 (next liquidity cluster)',
+        candidateStop:      '1.07550 (extended 1.07350)',
+        requirement:        'Active armed setup — fires on 15M body close above session high with fresh demand zone retained on the impulse + no high-impact event inside next 2h.'
+      },
+      bearishCandidate: {
+        candidateEntryArea: '1.07550 – 1.07500',
+        candidateTarget:    '1.07000 (deeper demand)',
+        candidateStop:      '1.07700 (15M close back above within 2 candles)',
+        requirement:        'Activates only if the bullish setup fails — 15M body close below 1.07550 with a fresh supply zone retained on the impulse, AND no high-impact event inside next 2h.'
+      },
       grid: { executionAuthority:3, structure:4, liquidityPressure:3, eventRisk:2, sessionEnergy:4, macroAlignment:3, conviction:3, regime:3 },
+      gridEffects: {
+        executionAuthority:'Armed — fires on the defined trigger; do not pre-empt.',
+        structure:         'HH/HL on 1H supports the long bias.',
+        liquidityPressure: 'Liquidity cluster at 1.0860 magnetises the move once the trigger fires.',
+        eventRisk:         'NFP in ~36h — reduce conviction inside the ±2h window before the print.',
+        sessionEnergy:     'London session active — best window for the trigger to fire cleanly.',
+        macroAlignment:    'USD soft, yields steady — background tailwind for EURUSD long.',
+        conviction:        'B — actionable with discipline; do not size up.',
+        regime:            'Risk-on lean — supports continuation if the trigger fires.'
+      },
       gridNotes: {
         executionAuthority:'armed; awaits trigger',
         structure:         'HH/HL on 1H',
@@ -426,11 +522,14 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         regime:            'risk-on lean'
       },
       forward: {
-        behaviour: 'Continuation higher into liquidity cluster at 1.0860 if the 15M trigger fires.',
-        timing:    'Most likely inside the next 2-4 hours during London session; otherwise re-check after NY open.',
+        behaviour: 'Price is expected to grind upward toward the 1.0860 liquidity cluster IF the 15M trigger above 1.07900 fires with a fresh demand zone left behind. If the trigger does not fire, expect range absorption between 1.07550 and 1.07900 until London close.',
+        boundaryUpper: '1.07900 (trigger) → 1.08600 (target)',
+        boundaryLower: '1.07550 (stop) → 1.07350 (extended)',
         movement:  'ATR(14) ≈ 65 pips · seen today ≈ 22 pips · est. remaining ≈ 43 pips.',
-        absorption:'Remaining movement likely absorbed upward into 1.0860 stops; downside ~1.0755 demand respected.',
-        waitingFor:'A 15M body close above 1.07900 with a fresh demand zone left behind on the breakout impulse.'
+        tradability: 'Tradable upside — if the 15M body close above 1.07900 fires inside the active session, the move into 1.08600 is the working plan. If no trigger fires, remaining movement is absorbed sideways.',
+        confirmsBullish: '15M body close above 1.07900 + fresh demand zone retained on the impulse + no high-impact event inside next 2h.',
+        confirmsBearish: '15M body close below 1.07550 + fresh supply zone retained on the impulse + no high-impact event inside next 2h.',
+        keepsBlocked:    'Price held inside 1.07550 – 1.07900 with no fresh impulse, OR NFP / ECB inside ±2h.'
       },
       triggers: {
         bullish: { tf:'15M', level:'1.07900', close:'15M body close above 1.07900', supply:'fresh demand zone retained on the impulse', catalyst:'no high-impact event inside next 2h', invalidation:'15M close back below 1.07780 within 2 candles' },
@@ -443,12 +542,24 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         { name:'Pre-NFP USD short squeeze (T-1 session)', stamp:'amber', sample:'n=18 NFP windows 2023-2025', timeframe:'1H', relevance:'mixed — outcome depends on prior week price action', continuation:'52% drift continuation pre-print; 48% reversal', confidence:'low-medium', supports:'mixed — do not trade based on this alone', suggests:'Reduce size into NFP window; expect spreads to widen.', expires:'Inside NFP ±2h window' },
         { name:'Yield-curve disinversion phase EURUSD lift', stamp:'cyan', sample:'n=6 macro phases 2019-2025', timeframe:'1D', relevance:'broad context only', continuation:'EURUSD averages +1.4% in 60 days post-disinversion', confidence:'medium', supports:'context — does not authorise an entry', suggests:'Slow background tailwind for EURUSD long bias.', expires:'When yield curve re-inverts' }
       ],
+      mechanismDetail: {
+        cause: 'UUP (DXY proxy) score -0.05 bias Neutral — USD softening on the margin without a strong safe-haven bid.',
+        reaction: 'Mild relief flow into EUR from cross flows; yields steady, so carry is not a blocker.',
+        impact: 'Background lift on EURUSD; primary driver is liquidity at 1.0860 cluster waiting to be tested.',
+        outcome: 'If 15M trigger above 1.07900 fires inside London session, the move into 1.0860 stops is the working plan.',
+        changes: 'Mechanism flips bearish if VIX spikes (full safe-haven flight) or NFP prints decisively strong (USD bid). Mechanism strengthens bullish on a sub-50 ISM print.'
+      },
       mechanism: 'USD softening (UUP score -0.05, bias Neutral) → relief into EUR · VIX elevated but not extreme → no full safe-haven flight · Yield curve normal → carry not a blocker · Net: mild upside fuel until catalyst hits.',
+      scenarioDetail: {
+        primary:      { name:'Bullish breakout', prob:54, trigger:'15M body close above 1.07900 with fresh demand zone retained.', window:'Within active London session.' },
+        alternative:  { name:'Range absorption', prob:30, trigger:'Price held inside 1.07550–1.07900 with no fresh impulse.',     window:'Until London close.' },
+        invalidation: { name:'Bearish breakdown', prob:16, trigger:'15M body close below 1.07550 with fresh supply zone retained.', window:'Within active session.' }
+      },
       scenario: { continuation:54, range:30, reversal:16 },
       events: [
-        { when:'Fri 13:30 UTC', what:'US NFP',           impact:'high',   mechanism:'Strong print → USD bid → EURUSD pressure', verdict:'BLOCK new entries ±2h window' },
-        { when:'Wed 12:45 UTC', what:'ECB Rate Decision',impact:'high',   mechanism:'Hawkish ECB → EUR support; dovish → EUR sell', verdict:'CAUTION — reduce conviction' },
-        { when:'Thu 12:30 UTC', what:'US PPI',           impact:'medium', mechanism:'Inflation read; minor USD impulse',         verdict:'OPEN — minor impact' }
+        { whenISO:'2026-05-08T13:30:00Z', what:'US NFP',            impact:'high',   channel:'rates → USD',          mechanism:'Strong print → USD bid → EURUSD pressure',           preRule:'No new entries inside ±2h of release.',         postRule:'Wait for fresh 15M structure after the print before any entry.', verdict:'BLOCK new entries ±2h window' },
+        { whenISO:'2026-05-06T12:45:00Z', what:'ECB Rate Decision', impact:'high',   channel:'EUR rates / forward guidance', mechanism:'Hawkish ECB → EUR support; dovish → EUR sell', preRule:'Reduce conviction inside ±1h.',                postRule:'Reassess after the press conference at 13:30 UTC.',              verdict:'CAUTION — reduce conviction' },
+        { whenISO:'2026-05-07T12:30:00Z', what:'US PPI',            impact:'medium', channel:'inflation impulse',    mechanism:'Inflation read; minor USD impulse',                  preRule:'Trim size into the print.',                     postRule:'Resume normal entry rules after first 15M close.',               verdict:'OPEN — minor impact' }
       ],
       matrix: [
         { sym:'EURUSD', px:'1.07820', chg:'+0.18%', range:'1.07550 – 1.08000' },
@@ -486,11 +597,49 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   }
   tickClock(); setInterval(tickClock, 1000);
 
+  // ---------- clock helpers (Phase 2) ----------
+  function nextBoundary(stepMin) {
+    var step = stepMin * 60 * 1000;
+    var now = Date.now();
+    return new Date(Math.ceil(now / step) * step);
+  }
+  function fmtClock(d) {
+    var pad = function(n){ return n<10?'0'+n:n; };
+    var utc = pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()) + ' UTC';
+    var local;
+    try {
+      local = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+    } catch (e) { local = pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+    var tz = 'local';
+    try {
+      var parts = new Intl.DateTimeFormat(undefined, { timeZoneName: 'short' }).formatToParts(d);
+      var tzPart = parts.find(function(p){ return p.type === 'timeZoneName'; });
+      if (tzPart && tzPart.value) tz = tzPart.value;
+    } catch (e) {}
+    return utc + ' / ' + local + ' ' + tz;
+  }
+  function countdown(d) {
+    var ms = d.getTime() - Date.now();
+    if (ms < 0) return 'now';
+    var min = Math.floor(ms / 60000);
+    var s = Math.floor((ms % 60000) / 1000);
+    if (min < 60) return min + 'm ' + s + 's';
+    var h = Math.floor(min / 60); min = min % 60;
+    return h + 'h ' + min + 'm';
+  }
+
+  var validityAt   = nextBoundary(ctx.validityMinutes  || 15);
+  var reassessAt   = nextBoundary(ctx.reassessMinutes  || 60);
+  var validityStr  = fmtClock(validityAt)  + ' (in ' + countdown(validityAt)  + ')';
+  var reassessStr  = fmtClock(reassessAt)  + ' (in ' + countdown(reassessAt)  + ')';
+
+  // ---------- action pill (Phase 3 — bias / permission / state split) ----------
   document.getElementById('action-state').textContent = ctx.actionState;
   document.getElementById('action-pill').setAttribute('data-tone', ctx.actionTone);
-  document.getElementById('vstrip-dir').textContent  = ctx.directionShort;
-  document.getElementById('vstrip-val').textContent  = ctx.validity;
-  document.getElementById('vstrip-next').textContent = ctx.nextReassessment;
+  document.getElementById('vstrip-bias').textContent  = ctx.biasDirection || 'Neutral';
+  document.getElementById('vstrip-perm').textContent  = ctx.tradePermission || 'Pending';
+  document.getElementById('vstrip-val').textContent   = validityStr;
+  document.getElementById('vstrip-next').textContent  = reassessStr;
 
   document.getElementById('es-dir').textContent       = ctx.directionShort;
   document.getElementById('es-entry').textContent     = ctx.entry;
@@ -502,10 +651,29 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   document.getElementById('es-risk-sub').textContent  = ctx.riskSub || '';
   document.getElementById('es-tgt-d').textContent     = ctx.targetDollars;
   document.getElementById('es-cost').textContent      = ctx.costDollars;
-  document.getElementById('es-validity').textContent  = ctx.validity;
+  document.getElementById('es-validity').textContent  = validityStr;
   document.getElementById('es-cancel').textContent    = ctx.cancellation;
-  document.getElementById('es-next').textContent      = ctx.nextReassessment;
+  document.getElementById('es-next').textContent      = reassessStr;
   document.getElementById('es-assetclass').textContent= ctx.assetClass.toUpperCase();
+
+  // ---------- candidate-levels (Phase 4) ----------
+  var candGrid = document.getElementById('cand-grid');
+  function candCard(side, name, c){
+    if (!c) return '';
+    var arrow = side === 'bull' ? '▲' : '▼';
+    return '<div class="cand-card ' + side + '">' +
+      '<div class="cand-hdr"><span class="cand-arrow">' + arrow + '</span><span class="cand-name">' + escapeHtml(name) + '</span></div>' +
+      '<div class="cand-fields">' +
+        '<div class="k">Cand. Entry</div><div class="v">' + escapeHtml(c.candidateEntryArea || 'n/a') + '</div>' +
+        '<div class="k">Cand. Target</div><div class="v">' + escapeHtml(c.candidateTarget || 'n/a') + '</div>' +
+        '<div class="k">Cand. Stop</div><div class="v">' + escapeHtml(c.candidateStop || 'n/a') + '</div>' +
+      '</div>' +
+      '<div class="cand-req">' + escapeHtml(c.requirement || '') + '</div>' +
+    '</div>';
+  }
+  candGrid.innerHTML =
+    candCard('bull', 'Bullish candidate', ctx.bullishCandidate) +
+    candCard('bear', 'Bearish candidate', ctx.bearishCandidate);
 
   var GRID_DIMS = [
     ['executionAuthority', 'EXECUTION AUTHORITY'],
@@ -517,11 +685,21 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     ['conviction',         'CONVICTION'],
     ['regime',             'REGIME']
   ];
+  // ---------- condition grid (Phase 5 — state chips + action effect) ----------
+  function chipFor(score){
+    if (score >= 5) return { chip: 'GREEN', state: 'Strong' };
+    if (score === 4) return { chip: 'GOLD',  state: 'Building' };
+    if (score === 3) return { chip: 'GOLD',  state: 'Mixed / developing' };
+    if (score === 2) return { chip: 'AMBER', state: 'Weak' };
+    return { chip: 'RED', state: 'Blocked' };
+  }
   var grid = document.getElementById('cond-grid');
   GRID_DIMS.forEach(function(dim){
     var key = dim[0], label = dim[1];
     var v = ctx.grid[key] || 0;
     var note = (ctx.gridNotes && ctx.gridNotes[key]) || '';
+    var effect = (ctx.gridEffects && ctx.gridEffects[key]) || '';
+    var c = chipFor(v);
     var dotsHtml = '';
     for (var i=1; i<=5; i++){
       dotsHtml += '<span class="d ' + (i<=v ? 'on' : '') + '"></span>';
@@ -530,19 +708,28 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     cell.className = 'cond-cell';
     cell.innerHTML =
       '<div class="cl-lbl">' + label + '</div>' +
-      '<div class="cl-dots">' + dotsHtml + '</div>' +
-      '<div class="cl-num">' + v + ' / 5</div>' +
-      (note ? '<div class="cl-note">' + note + '</div>' : '');
+      '<div class="cl-row">' +
+        '<div class="cl-dots">' + dotsHtml + '</div>' +
+        '<span class="cl-num">' + v + '/5</span>' +
+        '<span class="cl-chip ' + c.chip + '">' + c.chip + '</span>' +
+      '</div>' +
+      '<div class="cl-state">' + c.state + (note ? ' — ' + escapeHtml(note) : '') + '</div>' +
+      (effect ? '<div class="cl-effect">Effect: ' + escapeHtml(effect) + '</div>' : '');
     grid.appendChild(cell);
   });
 
+  // ---------- Forward Expectation (Phase 6 — operational fields) ----------
   var fe = ctx.forward;
   document.getElementById('fe-body').innerHTML =
     feRow('Expected Behaviour', fe.behaviour) +
-    feRow('Expected Timing',    fe.timing) +
+    feRow('Reassess At',         reassessStr) +
+    (fe.boundaryUpper ? feRow('Upper Boundary',   fe.boundaryUpper) : '') +
+    (fe.boundaryLower ? feRow('Lower Boundary',   fe.boundaryLower) : '') +
     feRow('Daily Movement',     fe.movement) +
-    feRow('Absorption',         fe.absorption) +
-    feRow('Waiting For',        fe.waitingFor);
+    feRow('Tradability',         fe.tradability || fe.absorption || '—') +
+    feRow('Confirms Bullish',    fe.confirmsBullish || fe.waitingFor || '—') +
+    feRow('Confirms Bearish',    fe.confirmsBearish || '—') +
+    feRow('Keeps Blocked',       fe.keepsBlocked || '—');
 
   function feRow(k,v){
     return '<div class="fe-row"><div class="k">'+k+'</div><div class="v">'+escapeHtml(v)+'</div></div>';
@@ -720,19 +907,57 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     histGrid.appendChild(card);
   });
 
-  document.getElementById('mech-body').innerHTML =
-    '<div style="font-size:13px;color:var(--fg);background:var(--cell);border:1px solid var(--line2);border-radius:3px;padding:14px">' +
-    escapeHtml(ctx.mechanism) +
-    '</div>';
+  // ---------- Mechanism (Phase 7) ----------
+  var md = ctx.mechanismDetail;
+  if (md){
+    document.getElementById('mech-body').innerHTML =
+      '<div style="background:var(--cell);border:1px solid var(--line2);border-radius:3px;padding:14px;display:grid;grid-template-columns:max-content 1fr;gap:10px 16px;font-size:13px">' +
+        '<div style="color:var(--mut);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding-top:2px">Cause</div>'   + '<div style="color:var(--fg)">' + escapeHtml(md.cause)    + '</div>' +
+        '<div style="color:var(--mut);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding-top:2px">Reaction</div>'+ '<div style="color:var(--fg)">' + escapeHtml(md.reaction) + '</div>' +
+        '<div style="color:var(--mut);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding-top:2px">Impact</div>'  + '<div style="color:var(--fg)">' + escapeHtml(md.impact)   + '</div>' +
+        '<div style="color:var(--mut);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding-top:2px">Outcome</div>' + '<div style="color:var(--gold)">' + escapeHtml(md.outcome) + '</div>' +
+        '<div style="color:var(--mut);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding-top:2px">What Changes It</div>' + '<div style="color:var(--mut2);font-style:italic">' + escapeHtml(md.changes) + '</div>' +
+      '</div>' +
+      '<div style="margin-top:12px;font-size:12px;color:var(--mut2);font-style:italic">Compact summary: ' + escapeHtml(ctx.mechanism || '—') + '</div>';
+  } else {
+    document.getElementById('mech-body').innerHTML =
+      '<div style="font-size:13px;color:var(--fg);background:var(--cell);border:1px solid var(--line2);border-radius:3px;padding:14px">' +
+      escapeHtml(ctx.mechanism || 'Mechanism not yet provided.') +
+      '</div>';
+  }
 
+  // ---------- Scenario (Phase 7) ----------
   var sc = ctx.scenario || { continuation:0, range:0, reversal:0 };
-  document.getElementById('scen-body').innerHTML =
+  var sd = ctx.scenarioDetail;
+  var scenHtml =
     '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">' +
     scenCard('Continuation', sc.continuation, 'Price attempts to keep following the current dominant direction.') +
     scenCard('Range',        sc.range,        'Price moves sideways between nearby liquidity.') +
     scenCard('Reversal',     sc.reversal,     'Price rejects current direction and moves the other way.') +
     '</div>' +
     scenLeading(sc);
+  if (sd){
+    var detailCard = function(label, role, d){
+      var roleBg = role === 'primary' ? 'var(--green)' : role === 'alternative' ? 'var(--gold)' : 'var(--red)';
+      return '<div style="background:var(--cell);border:1px solid var(--line2);border-left:3px solid ' + roleBg + ';border-radius:3px;padding:14px;margin-bottom:8px">' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">' +
+          '<span style="font-size:9px;letter-spacing:2px;color:' + roleBg + ';text-transform:uppercase;font-weight:800">' + label + '</span>' +
+          '<span style="font-size:13px;color:var(--fg);font-weight:700">' + escapeHtml(d.name) + '</span>' +
+          '<span style="margin-left:auto;font-family:\'SF Mono\',monospace;color:var(--gold);font-weight:700">' + d.prob + '%</span>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:max-content 1fr;gap:4px 12px;font-size:12px">' +
+          '<div style="color:var(--mut);font-size:10px;letter-spacing:1px;text-transform:uppercase">Trigger</div><div style="color:var(--fg);font-family:\'SF Mono\',monospace;font-size:11px">' + escapeHtml(d.trigger) + '</div>' +
+          '<div style="color:var(--mut);font-size:10px;letter-spacing:1px;text-transform:uppercase">Window</div><div style="color:var(--mut2);font-size:11px">'  + escapeHtml(d.window)  + '</div>' +
+        '</div>' +
+      '</div>';
+    };
+    scenHtml += '<div style="margin-top:14px">' +
+      detailCard('Primary',      'primary',      sd.primary) +
+      detailCard('Alternative',  'alternative',  sd.alternative) +
+      detailCard('Invalidation', 'invalidation', sd.invalidation) +
+      '</div>';
+  }
+  document.getElementById('scen-body').innerHTML = scenHtml;
 
   function scenCard(name, pct, def){
     return '<div style="background:var(--cell);border:1px solid var(--line2);border-radius:3px;padding:14px">' +
@@ -750,22 +975,34 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     return '<div style="margin-top:14px;font-size:12px;color:var(--mut2);font-style:italic;padding:10px 14px;background:var(--cell);border-left:3px solid '+(gap<5?'var(--amber)':'var(--gold)')+';border-radius:3px">'+escapeHtml(note)+'</div>';
   }
 
+  // ---------- Events (Phase 7 — countdown + pre/post rules) ----------
   var ev = ctx.events || [];
   var evHtml = '<table style="width:100%;border-collapse:collapse;font-size:12px">' +
     '<thead><tr style="text-align:left">' +
-      '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut);font-weight:600;letter-spacing:1px">WHEN</th>' +
+      '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut);font-weight:600;letter-spacing:1px">WHEN (UTC)</th>' +
+      '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut);font-weight:600;letter-spacing:1px">COUNTDOWN</th>' +
       '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut);font-weight:600;letter-spacing:1px">EVENT</th>' +
       '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut);font-weight:600;letter-spacing:1px">IMPACT</th>' +
-      '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut);font-weight:600;letter-spacing:1px">MECHANISM</th>' +
+      '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut);font-weight:600;letter-spacing:1px">CHANNEL</th>' +
+      '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut);font-weight:600;letter-spacing:1px">PRE-EVENT</th>' +
+      '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut);font-weight:600;letter-spacing:1px">POST-EVENT</th>' +
       '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut);font-weight:600;letter-spacing:1px">VERDICT</th>' +
     '</tr></thead><tbody>' +
     ev.map(function(e){
       var color = e.impact==='high' ? 'var(--red)' : e.impact==='medium-high' ? 'var(--amber)' : 'var(--gold)';
+      var when = e.whenISO ? fmtClock(new Date(e.whenISO)) : (e.when || '—');
+      var cd   = e.whenISO ? countdown(new Date(e.whenISO)) : '—';
+      var pre  = e.preRule || '—';
+      var post = e.postRule || '—';
+      var ch   = e.channel || e.mechanism || '—';
       return '<tr>' +
-        '<td style="padding:10px 8px;border-bottom:1px solid var(--line);font-family:\'SF Mono\',monospace;color:var(--fg)">'+escapeHtml(e.when)+'</td>' +
+        '<td style="padding:10px 8px;border-bottom:1px solid var(--line);font-family:\'SF Mono\',monospace;color:var(--fg);font-size:11px">'+escapeHtml(when)+'</td>' +
+        '<td style="padding:10px 8px;border-bottom:1px solid var(--line);font-family:\'SF Mono\',monospace;color:var(--gold);font-size:11px;font-weight:700">'+escapeHtml(cd)+'</td>' +
         '<td style="padding:10px 8px;border-bottom:1px solid var(--line);color:var(--fg);font-weight:600">'+escapeHtml(e.what)+'</td>' +
         '<td style="padding:10px 8px;border-bottom:1px solid var(--line);color:'+color+';font-weight:700;text-transform:uppercase;letter-spacing:1px;font-size:11px">'+escapeHtml(e.impact)+'</td>' +
-        '<td style="padding:10px 8px;border-bottom:1px solid var(--line);color:var(--mut2);font-size:12px">'+escapeHtml(e.mechanism)+'</td>' +
+        '<td style="padding:10px 8px;border-bottom:1px solid var(--line);color:var(--mut2);font-size:11px">'+escapeHtml(ch)+'</td>' +
+        '<td style="padding:10px 8px;border-bottom:1px solid var(--line);color:var(--mut2);font-size:11px;font-style:italic">'+escapeHtml(pre)+'</td>' +
+        '<td style="padding:10px 8px;border-bottom:1px solid var(--line);color:var(--mut2);font-size:11px;font-style:italic">'+escapeHtml(post)+'</td>' +
         '<td style="padding:10px 8px;border-bottom:1px solid var(--line);color:var(--gold);font-family:\'SF Mono\',monospace;font-size:11px;font-weight:700">'+escapeHtml(e.verdict)+'</td>' +
       '</tr>';
     }).join('') +
