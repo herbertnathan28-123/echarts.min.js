@@ -747,15 +747,47 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     return 4;
   }
 
+  // Live-quote fetcher — single global quote per symbol/session.
+  // The CURRENT price box across ALL panes for the same symbol must
+  // share this value. Per-pane last-candle close is no longer used as
+  // CURRENT; if the quote is unavailable the per-pane last close is
+  // shown as TF LAST (a different label, source-tagged separately).
+  //
+  // Server endpoint: GET /quote?symbol=<provSym> -> { ok|error, price,
+  // source:'twelvedata-quote' }. Active runtime caches the result on
+  // window.ATLAS.liveQuote = { symbol, price, source, asOf, fetchedAt }.
+  function fetchLiveQuote(displaySymbol, assetClass){
+    var sym = providerSymbol(displaySymbol, assetClass);
+    var url = '/quote?symbol=' + encodeURIComponent(sym);
+    return fetch(url).then(function(r){ return r.json().then(function(j){ j._http = r.status; return j; }); })
+      .then(function(j){
+        if (!j || j.status === 'error'){
+          return { ok:false, reason: (j && j.message) || ('http ' + (j && j._http)), provSym: sym };
+        }
+        var p = (j && j.price != null) ? parseFloat(j.price) : NaN;
+        if (!isFinite(p)){
+          return { ok:false, reason: 'no_price_in_quote_response', provSym: sym };
+        }
+        return { ok:true, price: p, source: j.source || 'twelvedata-quote', asOf: j.asOf || null, provSym: sym };
+      })
+      .catch(function(e){ return { ok:false, reason: 'fetch_error: '+(e && e.message || e), provSym: sym }; });
+  }
+
   // Per-pane right-side price boxes — LOCKED CLAUDE.md hex colours.
-  // Each pane reads its OWN candles and its OWN visible zoom range
-  // (pane._zoomState). ENTRY price comes from window.ATLAS.ctx.entry
-  // when the dashboard has a Jane packet for THIS symbol; otherwise
-  // the ENTRY box is hidden (not drawn at all — never silent fallback).
+  //
+  // CURRENT doctrine: ONE global value per symbol/session, sourced from
+  // the live-quote layer (window.ATLAS.liveQuote). All panes for the
+  // same symbol render the SAME CURRENT value — no per-pane drift.
+  // If the live quote is unavailable for this symbol, the box label
+  // changes to "TF LAST" with a tf-last source tag, and an integrity
+  // warning is logged. HIGH and LOW remain timeframe-specific because
+  // they reflect this pane's visible window.
   //
   // Per-pane state guarantee: the function takes one pane and one
-  // candles array and never reads from any other pane. Each pane
-  // also stores its own _priceBoxState back on the DOM node.
+  // candles array and never reads from any other pane. The single
+  // global it consults is window.ATLAS.liveQuote (read-only, scoped
+  // by liveQuote.symbol === paneSym). Each pane stores its own
+  // _priceBoxState back on the DOM node.
   function renderPriceBoxes(pane, candles){
     if (!pane || !candles || !candles.length) return;
     var z = pane._zoomState || { start: 0, end: candles.length };
@@ -766,12 +798,33 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       if (slice[i].h > hi) hi = slice[i].h;
       if (slice[i].l < lo) lo = slice[i].l;
     }
-    var cur = slice[slice.length-1].c;
+    var tfLast = slice[slice.length-1].c;            // pane-local fallback
     var paneSym = pane.getAttribute('data-sym');
     var tf = pane.getAttribute('data-tf');
     var dg = digitsForSymbol(paneSym);
 
-    // ENTRY level — read from per-symbol ctx if present.
+    // CURRENT — global quote layer. Used iff the quote is for this
+    // symbol AND has a finite price. Otherwise we fall back to the
+    // pane-local last close, but RELABEL it "TF LAST" so the
+    // dashboard never silently presents a per-pane value as CURRENT.
+    var currentPrice = null;
+    var currentLabel = 'CURRENT';
+    var currentSource = 'tf-last';
+    try {
+      var lq = (window.ATLAS && window.ATLAS.liveQuote) || null;
+      if (lq && lq.symbol === paneSym && isFinite(lq.price)){
+        currentPrice = lq.price;
+        currentLabel = 'CURRENT';
+        currentSource = lq.source || 'quote';
+      }
+    } catch (_eq) { /* defensive */ }
+    if (currentPrice == null){
+      currentPrice = tfLast;
+      currentLabel = 'TF LAST';
+      currentSource = 'tf-last';
+    }
+
+    // ENTRY level — read from per-symbol ctx if present (Jane packet).
     var entry = null;
     try {
       var aCtx = (window.ATLAS && window.ATLAS.ctx) || null;
@@ -782,6 +835,11 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       }
     } catch (_e) { entry = null; }
 
+    // The vertical placement scale uses the PANE's HIGH/LOW (its own
+    // visible window) so each box sits at the correct y-coordinate
+    // for that pane's range — even though CURRENT is a global value.
+    // If CURRENT is outside [lo, hi] (e.g. quote post-dates the
+    // visible window), the box clamps to the top or bottom edge.
     var range = hi - lo;
     var yOf = function(p){
       if (range <= 0) return 50;
@@ -806,19 +864,90 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       el.textContent = lbl + ' ' + (+price).toFixed(dg);
       stack.appendChild(el);
     };
-    make('high',    'HIGH',    hi);
-    make('current', 'CURRENT', cur);
-    make('entry',   'ENTRY',   entry);   // skipped silently when entry is null
-    make('low',     'LOW',     lo);
+    make('high',    'HIGH',                  hi);
+    make('current', currentLabel,            currentPrice);
+    make('entry',   'ENTRY',                 entry);   // skipped silently when entry is null
+    make('low',     'LOW',                   lo);
 
     // Per-pane state lives on the DOM node — never on a shared object.
-    pane._priceBoxState = { hi: hi, current: cur, entry: entry, low: lo, dg: dg };
+    pane._priceBoxState = {
+      hi: hi, low: lo, entry: entry, dg: dg,
+      current: currentPrice,
+      currentLabel: currentLabel,
+      currentSource: currentSource,
+      tfLast: tfLast
+    };
 
-    console.log('[PRICE-BOX] tf=' + tf + ' sym=' + paneSym +
-      ' HIGH=' + hi.toFixed(dg) +
-      ' CURRENT=' + cur.toFixed(dg) +
-      ' ENTRY=' + (entry == null ? 'withheld' : entry.toFixed(dg)) +
-      ' LOW=' + lo.toFixed(dg));
+    console.log('[PRICE-BOX] symbol=' + paneSym + ' tf=' + tf +
+      ' high=' + hi.toFixed(dg) +
+      ' current=' + currentPrice.toFixed(dg) +
+      ' source=' + currentSource +
+      ' tfLast=' + tfLast.toFixed(dg) +
+      ' entry=' + (entry == null ? 'withheld' : entry.toFixed(dg)) +
+      ' low=' + lo.toFixed(dg));
+  }
+
+  // Price-integrity sweep. Runs once after all panes have rendered
+  // their candles. Compares each pane's last-close (the most recent
+  // candle in its FULL candle array, not the visible slice) against
+  // the global live quote. If any pane diverges by more than the
+  // configured tolerance, emits [PRICE-INTEGRITY-FAIL] with the
+  // offending tf + delta + percentage. This catches:
+  //   - stale TwelveData per-timeframe data (e.g. 1W returning
+  //     historical candles whose last close ≠ live price)
+  //   - symbol mapping drift (provider symbol mismatch on one tf)
+  //   - corporate-action/split adjustment errors
+  // The CURRENT price box itself is unaffected — it stays globally
+  // consistent because it sources from the quote, not the candles.
+  function priceIntegritySweep(activeSymbol, paneCandles){
+    var lq = (window.ATLAS && window.ATLAS.liveQuote) || null;
+    if (!lq || lq.symbol !== activeSymbol || !isFinite(lq.price)){
+      console.warn('[PRICE-INTEGRITY] skip — no global quote for ' + activeSymbol);
+      return { ok:false, reason:'no_global_quote' };
+    }
+    var quote = lq.price;
+    // Tolerance:
+    //   FX (5dp)        : 0.5%   — captures stale-tick pairs
+    //   FX (3dp, JPY)   : 0.5%
+    //   equity / index  : 2.0%   — generous because intraday candles
+    //                              can lag the official last quote by
+    //                              minutes on free TwelveData
+    //   commodity       : 2.0%
+    //   default         : 2.0%
+    var tolerancePct = 2.0;
+    if (/^[A-Z]{6}$/.test(activeSymbol)) tolerancePct = 0.5;
+    var ac = inferAssetClass(activeSymbol);
+    var dg = digitsForSymbol(activeSymbol);
+    var fails = [];
+    Object.keys(paneCandles).forEach(function(tf){
+      var arr = paneCandles[tf];
+      if (!arr || !arr.length) return;
+      var lastClose = arr[arr.length - 1].c;
+      if (!isFinite(lastClose)) return;
+      var diff = lastClose - quote;
+      var pct = quote ? Math.abs(diff) / quote * 100 : 0;
+      if (pct > tolerancePct){
+        fails.push({ tf: tf, lastClose: lastClose, diff: diff, pct: pct });
+      }
+    });
+    if (fails.length === 0){
+      console.log('[PRICE-INTEGRITY] pass symbol=' + activeSymbol + ' quote=' + quote.toFixed(dg) +
+        ' tolerance=' + tolerancePct.toFixed(2) + '% panesCompared=' + Object.keys(paneCandles).filter(function(k){ return paneCandles[k]; }).length);
+      return { ok:true, fails: [] };
+    }
+    console.error('[PRICE-INTEGRITY-FAIL] symbol=' + activeSymbol + ' assetClass=' + ac +
+      ' quote=' + quote.toFixed(dg) +
+      ' tolerance=' + tolerancePct.toFixed(2) + '%' +
+      ' fails=' + fails.length + '/' + Object.keys(paneCandles).filter(function(k){return paneCandles[k];}).length);
+    fails.forEach(function(f){
+      console.error('[PRICE-INTEGRITY-FAIL] tf=' + f.tf +
+        ' lastClose=' + f.lastClose.toFixed(dg) +
+        ' quote=' + quote.toFixed(dg) +
+        ' diff=' + (f.diff >= 0 ? '+' : '') + f.diff.toFixed(dg) +
+        ' pct=' + f.pct.toFixed(2) + '%' +
+        ' likely_cause=' + (f.pct > 50 ? 'stale_or_split_adjusted_data' : 'aged_intraday_candle'));
+    });
+    return { ok:false, fails: fails };
   }
 
   // ─────────────────────────────────────────────────────────────────────
@@ -1381,8 +1510,38 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     // Per-pane candle cache (independent — never shared across timeframes)
     var paneCandles = { '1W':null,'1D':null,'4H':null,'1H':null,'30M':null,'15M':null,'5M':null,'1M':null };
 
+    var ac = (ctx && ctx.assetClass) ? ctx.assetClass : inferAssetClass(activeSymbol);
+
+    // Live-quote fetch — global CURRENT source for ALL panes. Run in
+    // parallel with the OHLC jobs; resolves into window.ATLAS.liveQuote
+    // before the renderPriceBoxes calls fire (renderPriceBoxes is
+    // invoked from wirePaneZoom AFTER all OHLC jobs have settled).
+    var quoteJob = fetchLiveQuote(activeSymbol, ac).then(function(q){
+      window.ATLAS = window.ATLAS || {};
+      if (q && q.ok){
+        window.ATLAS.liveQuote = {
+          symbol: activeSymbol,
+          price:  q.price,
+          source: q.source,
+          asOf:   q.asOf,
+          fetchedAt: Date.now()
+        };
+        console.log('[QUOTE] symbol=' + activeSymbol + ' price=' + q.price +
+          ' source=' + q.source + ' asOf=' + (q.asOf || 'n/a') +
+          ' provider=' + q.provSym);
+      } else {
+        window.ATLAS.liveQuote = null;
+        console.warn('[QUOTE] symbol=' + activeSymbol + ' status=fail reason=' + (q && q.reason));
+      }
+      return q;
+    }).catch(function(e){
+      window.ATLAS = window.ATLAS || {};
+      window.ATLAS.liveQuote = null;
+      console.warn('[QUOTE] symbol=' + activeSymbol + ' status=fail reason=exception:' + (e && e.message));
+      return { ok:false, reason: e && e.message };
+    });
+
     var jobs = HTF.concat(LTF).map(function(tf){
-      var ac = (ctx && ctx.assetClass) ? ctx.assetClass : inferAssetClass(activeSymbol);
       return fetchOHLC(activeSymbol, tf, ac).then(function(r){
         if (r.ok){
           paneCandles[tf] = r.candles;
@@ -1404,7 +1563,10 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       });
     });
 
-    await Promise.all(jobs);
+    // Wait for OHLC + the live-quote job. The quote job is part of the
+    // CURRENT box's contract, not a nice-to-have — render must observe
+    // its result before painting boxes.
+    await Promise.all(jobs.concat([quoteJob]));
     document.getElementById('ch-htf-grid').innerHTML = HTF.map(function(t){ return resolvedHtml[t]; }).join('');
     document.getElementById('ch-ltf-grid').innerHTML = LTF.map(function(t){ return resolvedHtml[t]; }).join('');
 
@@ -1416,6 +1578,15 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       var pane = document.querySelector('.chart-pane[data-tf="' + tf + '"][data-sym="' + activeSymbol + '"]');
       if (pane) wirePaneZoom(pane, paneCandles[tf]);
     });
+
+    // Run the price-integrity sweep once AFTER all panes have wired up
+    // and emitted their initial [PRICE-BOX] line. Compares each pane's
+    // most recent candle close (full series, not visible window) vs
+    // the global quote, and emits [PRICE-INTEGRITY-FAIL] for any pane
+    // diverging beyond the asset-class tolerance.
+    try { priceIntegritySweep(activeSymbol, paneCandles); } catch (e) {
+      console.error('[PRICE-INTEGRITY] sweep err', e && e.message);
+    }
 
     // Header badge transitions from LOADING → LIVE / UNAVAILABLE (never MOCK).
     var src = document.getElementById('hd-src');

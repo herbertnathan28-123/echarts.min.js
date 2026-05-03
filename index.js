@@ -214,6 +214,74 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  /* /quote — single-symbol live quote proxy. Returned shape:
+       { status:'ok', symbol, price, source:'twelvedata-quote', timestamp }
+     OR { status:'error', code, message }
+     Used by the chart layer to populate the CURRENT price box from ONE
+     global quote source, instead of deriving CURRENT from each pane's
+     last visible candle (which was producing cross-pane CURRENT
+     divergence — e.g. 1W last-candle ≠ live price). All panes for the
+     same symbol/session must show the same CURRENT value sourced from
+     this endpoint. Per-timeframe last-candle becomes a labelled TF LAST
+     fallback only when this endpoint is unavailable. */
+  if(u.pathname === "/quote"){
+    const symbol = (u.query.symbol||"").toString().trim();
+    res.setHeader("Content-Type","application/json");
+    if(!symbol){
+      res.statusCode = 400;
+      return res.end(JSON.stringify({status:"error", code:400, message:"missing symbol"}));
+    }
+    if(!TWELVE_DATA_API_KEY){
+      res.statusCode = 500;
+      return res.end(JSON.stringify({status:"error", code:500, message:"TWELVE_DATA_API_KEY is not set on the server"}));
+    }
+    const qs =
+      "symbol=" + encodeURIComponent(symbol) +
+      "&format=JSON" +
+      "&apikey=" + encodeURIComponent(TWELVE_DATA_API_KEY);
+    const tdReq = https.get("https://api.twelvedata.com/quote?" + qs, { timeout: 8000 }, (tdRes) => {
+      let body = "";
+      tdRes.setEncoding("utf8");
+      tdRes.on("data", (chunk) => { body += chunk; });
+      tdRes.on("end", () => {
+        try {
+          const j = JSON.parse(body);
+          if (j && (j.status === 'error' || j.code)) {
+            res.statusCode = tdRes.statusCode || 502;
+            return res.end(JSON.stringify({
+              status: 'error',
+              code: j.code || tdRes.statusCode || 502,
+              message: j.message || 'twelvedata error',
+              upstream: j
+            }));
+          }
+          // TwelveData /quote returns { symbol, name, exchange, currency, ..., close, datetime }
+          const price = j && j.close != null ? parseFloat(j.close) : null;
+          const ts = j && j.timestamp != null ? parseInt(j.timestamp, 10) : null;
+          res.statusCode = 200;
+          return res.end(JSON.stringify({
+            status: 'ok',
+            symbol: j.symbol || symbol,
+            price: isFinite(price) ? price : null,
+            source: 'twelvedata-quote',
+            timestamp: ts,
+            asOf: j.datetime || null,
+            upstream: j
+          }));
+        } catch (e) {
+          res.statusCode = 502;
+          res.end(JSON.stringify({status:'error', code:502, message:'twelvedata quote parse: '+(e && e.message || e)}));
+        }
+      });
+    });
+    tdReq.on("timeout", () => { try { tdReq.destroy(new Error("timeout")); } catch(_){} });
+    tdReq.on("error", (e) => {
+      res.statusCode = 502;
+      res.end(JSON.stringify({status:"error", code:502, message:"twelvedata quote fetch failed: "+(e && e.message || e)}));
+    });
+    return;
+  }
+
   if(u.pathname === "/favicon.ico"){
     res.statusCode = 204;
     res.setHeader("Content-Type", "image/x-icon");
