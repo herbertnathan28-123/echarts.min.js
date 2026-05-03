@@ -622,18 +622,31 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     'live':           'ok',     'ok':              'ok',
     'final':          'ok',     'confirms':        'ok',
     '30Y-active':     'ok',
+    // Spec-required fine-grained jane statuses (new):
+    // final:no_trade still counts as a real Jane decision → tone=ok
+    'final:no_trade':         'ok',
+    'final:armed':            'ok',
+    'final:entry_authorised': 'ok',
+    'final:trade_confirmed':  'ok',
+    // withheld:* — Jane could not produce → tone=warn (amber), not fail
+    'withheld':                       'warn',
+    'withheld:source_incomplete':     'warn',
+    'withheld:empty_decision_packet': 'warn',
     'partial':        'partial','15Y-cache':       'partial','5Y-cache':'partial',
-    'sample':         'partial','degraded':        'partial',
+    'sample':         'partial','degraded':        'partial', 'pending':'partial',
     'conflicts':      'warn',   'no-match':        'warn',
-    'unavailable':    'fail',   'withheld':        'fail',  'fail':'fail'
+    'unavailable':    'fail',   'fail':'fail',
+    'unavailable:no_packet': 'fail'
   };
   function setSourcePill(key, value){
     var el = document.getElementById('src-' + key);
     if (!el) return;
     el.querySelector('.pval').textContent = value || 'unavailable';
     el.classList.remove('ok','partial','warn','fail');
-    var headWord = String(value || 'unavailable').split(/[: ]/)[0];
-    el.classList.add(STATUS_TONE[headWord] || 'fail');
+    var v = String(value || 'unavailable');
+    // Try exact match first, then prefix-up-to-colon, then first word.
+    var tone = STATUS_TONE[v] || STATUS_TONE[v.split(':')[0]] || STATUS_TONE[v.split(/[: ]/)[0]];
+    el.classList.add(tone || 'fail');
   }
   function setSourceStatusFromPacket(sources){
     var s = sources || {};
@@ -741,9 +754,35 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         var srcSummary = (ctx.sources && Object.keys(ctx.sources).length) ? Object.keys(ctx.sources).map(function(k){ return k+'='+ctx.sources[k]; }).join(' ') : 'no-sources';
         var gridLit = ctx.grid ? Object.keys(ctx.grid).filter(function(k){ return ctx.grid[k] > 0; }).length : 0;
         var trigState = (ctx.triggers && (ctx.triggers.bullish || ctx.triggers.bearish)) ? 'present' : 'withheld';
-        console.log('[DASHBOARD] jane packet received symbol=' + activeSymbol + ' actionState=' + (ctx.actionState||'?') + ' grid=' + gridLit + ' triggers=' + trigState);
+        var packetKeyCount = jane.packet ? Object.keys(jane.packet).length : 0;
+        console.log('[DASHBOARD] jane packet received symbol=' + activeSymbol + ' keys=' + packetKeyCount + ' actionState=' + (ctx.actionState||'?') + ' grid=' + gridLit + ' triggers=' + trigState);
         console.log('[DASHBOARD] sources: ' + srcSummary);
-        console.log('[DASHBOARD] jane=final session=' + jane.packet.session_id + ' age=' + jane.ageMs + 'ms');
+        var janeStatusVal = (ctx.sources && ctx.sources.jane) || 'final';
+        console.log('[DASHBOARD] jane=' + janeStatusVal + ' session=' + jane.packet.session_id + ' age=' + jane.ageMs + 'ms');
+
+        // Spec: when jane=withheld:empty_decision_packet, surface a diagnostic
+        // banner above the action pill listing the exact missing fields.
+        if (/^withheld:/.test(janeStatusVal) || /^unavailable:/.test(janeStatusVal)) {
+          var missing = (jane.packet.missingDecisionFields || []).join(', ') || 'all decision fields';
+          var headline = janeStatusVal === 'withheld:empty_decision_packet'
+            ? 'JANE WITHHELD — CORE/SPIDEY STATUS PRESENT BUT DECISION PACKET EMPTY'
+            : (janeStatusVal === 'withheld:source_incomplete'
+                ? 'JANE WITHHELD — SOURCE CHAIN INCOMPLETE'
+                : 'JANE DIAGNOSTIC — ' + janeStatusVal.toUpperCase());
+          var diag = document.createElement('div');
+          diag.className = 'withhold-banner';
+          diag.style.borderColor = 'var(--amber-d)';
+          diag.style.background = 'rgba(255,145,0,0.06)';
+          diag.innerHTML = '<div class="wb-title" style="color:var(--amber)">' + headline + '</div>' +
+            '<div class="wb-detail">Jane status: <code>' + janeStatusVal + '</code>. ' +
+            'Source pills above show the upstream chain. The execution-decision packet did not contain enough fields for Jane to issue a real action state.</div>' +
+            '<div class="wb-list"><b>Missing decision fields:</b>' +
+              '<ul>' + (jane.packet.missingDecisionFields || ['actionState','triggerMap','conditionGrid','forwardExpectation','candidates']).map(function(f){ return '<li>' + escapeHtml(f) + '</li>'; }).join('') + '</ul>' +
+            '</div>' +
+            '<div class="wb-detail" style="margin-top:8px"><b>Why this matters:</b> the system shows source statuses present but no Jane decision payload. Re-run <code>!' + activeSymbol.toLowerCase() + ' analyse</code> after the missing engines populate, OR Jane needs to start posting these fields.</div>';
+          var anchor = document.querySelector('.action-row');
+          if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(diag, anchor);
+        }
       } else if (allowFakeMode && STAGED_PLAN[activeSymbol]) {
         ctx = STAGED_PLAN[activeSymbol];
         setSourceStatusFromPacket({ marketData:'live', corey:'sample', coreyClone:'unavailable: not implemented', spidey:'sample', jane:'sample', historical:'sample' });
@@ -1265,31 +1304,84 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       ? (blockedCount === 0 ? 'live' : 'partial: ' + liveCount + '/' + (liveCount + blockedCount))
       : 'unavailable');
 
-    // Header price fallback — when the Jane packet's lastPrice is null but
-    // /twelvedata returned valid candles, show the most-recent close from the
-    // 1M (or finest available) panel. Never invent a value.
-    var hdPrice = document.getElementById('hd-price');
-    if (hdPrice && (hdPrice.textContent === '—' || hdPrice.textContent === '')){
-      var finest = paneCandles['1M'] || paneCandles['5M'] || paneCandles['15M'] || paneCandles['30M'] || paneCandles['1H'] || paneCandles['4H'] || paneCandles['1D'] || paneCandles['1W'];
-      if (finest && finest.length){
-        var lastBar = finest[finest.length - 1];
-        var p = lastBar.c;
-        var ac = (ctx && ctx.assetClass) ? ctx.assetClass : inferAssetClass(activeSymbol);
-        hdPrice.textContent = (ac === 'fx') ? p.toFixed(5) : '$' + p.toFixed(2);
-        // change %: prefer the difference vs the first bar in the daily set if available
-        var daily = paneCandles['1D'];
-        var chgEl = document.getElementById('hd-chg');
-        if (chgEl && daily && daily.length >= 2){
-          var first = daily[0].c, lastDay = daily[daily.length - 1].c;
-          var pct = first ? ((lastDay - first) / first * 100) : 0;
-          chgEl.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
-          chgEl.classList.remove('pos','neg');
-          chgEl.classList.add(pct >= 0 ? 'pos' : 'neg');
-        } else if (chgEl) {
-          chgEl.textContent = 'chg n/a';
+    // PRICE-GUARD — cross-check packet.lastPrice against the latest /twelvedata
+    // OHLC close. If they disagree by > tolerance, REPLACE the header with
+    // "PRICE DATA MISMATCH" and block any decision surface from rendering
+    // execution levels. This is what catches the live $542.21-on-MU bug.
+    (function priceGuard(){
+      var TOLERANCE_PCT = 5;   // 5% — much wider than any real spread; only catches bad sources
+      var ac = (ctx && ctx.assetClass) ? ctx.assetClass : inferAssetClass(activeSymbol);
+      var ohlcLast = null, ohlcTf = null;
+      var TFS = ['1M','5M','15M','30M','1H','4H','1D','1W'];
+      for (var i=0; i<TFS.length; i++) {
+        var k = TFS[i];
+        if (paneCandles[k] && paneCandles[k].length) {
+          ohlcLast = paneCandles[k][paneCandles[k].length - 1].c;
+          ohlcTf = k;
+          break;
         }
       }
-    }
+      var packetPrice = (ctx && Number.isFinite(ctx.lastPrice)) ? ctx.lastPrice : null;
+      var hdPrice = document.getElementById('hd-price');
+      var hdChg = document.getElementById('hd-chg');
+      function fmt(p){ return (ac === 'fx') ? p.toFixed(5) : '$' + p.toFixed(2); }
+
+      var headerVal, source, mismatch = false, raw;
+      if (ohlcLast == null && packetPrice == null) {
+        headerVal = '—'; source = 'none';
+      } else if (ohlcLast == null) {
+        headerVal = fmt(packetPrice); source = 'quote'; raw = packetPrice;
+      } else if (packetPrice == null) {
+        headerVal = fmt(ohlcLast); source = 'ohlc'; raw = ohlcLast;
+      } else {
+        var diff = Math.abs(packetPrice - ohlcLast) / ohlcLast * 100;
+        if (diff > TOLERANCE_PCT) {
+          mismatch = true;
+          console.error('[PRICE-GUARD] fail symbol=' + activeSymbol + ' header=' + packetPrice + ' latestClose=' + ohlcLast + ' tolerance=' + TOLERANCE_PCT + '% diff=' + diff.toFixed(2) + '%');
+          headerVal = 'PRICE DATA MISMATCH';
+          source = 'mismatch';
+        } else {
+          // Prefer OHLC close as the authoritative live price.
+          headerVal = fmt(ohlcLast); source = 'ohlc+quote'; raw = ohlcLast;
+        }
+      }
+
+      console.log('[PRICE] symbol=' + activeSymbol + ' source=' + source + ' timeframe=' + (ohlcTf || 'n/a') + ' rawClose=' + (ohlcLast == null ? 'n/a' : ohlcLast) + ' packetPrice=' + (packetPrice == null ? 'n/a' : packetPrice) + ' headerPrice=' + headerVal + ' status=' + (mismatch ? 'mismatch' : 'ok'));
+
+      if (hdPrice) {
+        hdPrice.textContent = headerVal;
+        if (mismatch) hdPrice.style.color = 'var(--red)';
+      }
+      if (mismatch) {
+        if (hdChg) { hdChg.textContent = 'BLOCKED'; hdChg.classList.remove('pos','neg'); hdChg.classList.add('neg'); }
+        // Stamp the surface so the user knows decisions are blocked.
+        var pill = document.getElementById('action-pill');
+        var state = document.getElementById('action-state');
+        if (pill) pill.setAttribute('data-tone', 'red');
+        if (state) state.textContent = 'PRICE DATA MISMATCH — DECISION BLOCKED';
+        // Add a banner above the action pill
+        var banner = document.createElement('div');
+        banner.className = 'withhold-banner';
+        banner.style.borderColor = 'var(--red)';
+        banner.innerHTML = '<div class="wb-title" style="color:var(--red)">PRICE DATA MISMATCH — DECISION BLOCKED</div>' +
+          '<div class="wb-detail">Packet price <b>' + (packetPrice == null ? 'n/a' : fmt(packetPrice)) + '</b> disagrees with live OHLC close <b>' + (ohlcLast == null ? 'n/a' : fmt(ohlcLast)) + '</b> for ' + activeSymbol + ' (timeframe ' + (ohlcTf||'?') + ') by more than ' + TOLERANCE_PCT + '%. ' +
+          'The dashboard will not render execution levels until the source is reconciled.</div>';
+        var anchor = document.querySelector('.action-row');
+        if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(banner, anchor);
+      } else if (!mismatch && hdChg) {
+        // Compute change % from the 1D series if possible; otherwise label "chg n/a".
+        var daily = paneCandles['1D'];
+        if (daily && daily.length >= 2 && raw != null) {
+          var first = daily[0].c;
+          var pct = first ? ((raw - first) / first * 100) : 0;
+          hdChg.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+          hdChg.classList.remove('pos','neg');
+          hdChg.classList.add(pct >= 0 ? 'pos' : 'neg');
+        } else if (raw != null) {
+          hdChg.textContent = 'chg n/a';
+        }
+      }
+    })();
 
     // Source footer reflects real data source — never the staged-plan tag.
     var foot = document.getElementById('ses-id');
