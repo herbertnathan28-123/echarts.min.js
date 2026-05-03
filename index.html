@@ -747,6 +747,20 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     return 4;
   }
 
+  // Provider-symbol resolver — outer IIFE scope so fetchLiveQuote (also
+  // outer IIFE scope) can see it. Previously nested inside renderFromCtx
+  // which produced ReferenceError: providerSymbol is not defined when
+  // fetchLiveQuote tried to call it from loadAllPanels. The duplicate
+  // declaration that used to live inside renderFromCtx has been removed
+  // so fetchOHLC (still nested) resolves to this single canonical copy
+  // through the closure chain.
+  function providerSymbol(displaySymbol, assetClass){
+    var s = (displaySymbol || '').toUpperCase();
+    if (assetClass === 'fx' && /^[A-Z]{6}$/.test(s)) return s.slice(0,3) + '/' + s.slice(3,6);
+    var override = { 'XAUUSD':'XAU/USD', 'XAGUSD':'XAG/USD', 'NAS100':'NDX', 'US500':'SPX', 'US30':'DJI' };
+    return override[s] || s;
+  }
+
   // Live-quote fetcher — single global quote per symbol/session.
   // The CURRENT price box across ALL panes for the same symbol must
   // share this value. Per-pane last-candle close is no longer used as
@@ -756,8 +770,17 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   // Server endpoint: GET /quote?symbol=<provSym> -> { ok|error, price,
   // source:'twelvedata-quote' }. Active runtime caches the result on
   // window.ATLAS.liveQuote = { symbol, price, source, asOf, fetchedAt }.
+  //
+  // Symbol resolution: requestedSymbol → resolvedSymbol (activeSymbol) →
+  // providerSymbol. If providerSymbol throws or returns falsy, fall back
+  // to the resolved display symbol so a resolver miss never escalates to
+  // a ReferenceError that breaks chart loading.
   function fetchLiveQuote(displaySymbol, assetClass){
-    var sym = providerSymbol(displaySymbol, assetClass);
+    var sym;
+    try {
+      sym = (typeof providerSymbol === 'function') ? providerSymbol(displaySymbol, assetClass) : displaySymbol;
+    } catch (_pse) { sym = displaySymbol; }
+    if (!sym) sym = displaySymbol;
     var url = '/quote?symbol=' + encodeURIComponent(sym);
     return fetch(url).then(function(r){ return r.json().then(function(j){ j._http = r.status; return j; }); })
       .then(function(j){
@@ -1024,18 +1047,36 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         document.getElementById('ses-id').textContent = 'sample-mode (?fake=1)';
         console.log('[DASHBOARD] jane=sample (fake mode active)');
       } else {
-        var reason = jane && jane.error ? jane.error : ('http ' + (jane && jane._status));
-        setSourceStatusUnavailable(reason);
+        // Server returns a structured 200 degraded reply with status,
+        // reason, sourceReason, sessionsTotal, sessionsForSymbol and
+        // storedSymbols when no packet matches. Surface the precise
+        // reason (degraded-with-specific-source-reason or
+        // withheld-with-specific-source-reason) — never silent.
+        var janeStatus = (jane && jane.status) || 'degraded';
+        var reasonCode = (jane && jane.reason) || (jane && jane.error) || ('http ' + (jane && jane._status));
+        var sourceReasonCode = (jane && jane.sourceReason) || 'unknown';
+        var diag = (jane && typeof jane.sessionsTotal === 'number')
+          ? (' sessionsTotal=' + jane.sessionsTotal +
+             ' sessionsForSymbol=' + (jane.sessionsForSymbol || 0) +
+             ' storedSymbols=[' + ((jane.storedSymbols||[]).join(',') || 'none') + ']')
+          : '';
+        var displayReason = reasonCode + ' (sourceReason=' + sourceReasonCode + ')';
+        setSourceStatusUnavailable(displayReason);
         // Hide the surface FIRST, then renderFromCtx(stub) populates the
         // (now-hidden) DOM nodes and ALSO fires the chart loader. The user
         // sees: source-status row + withhold banner + live candlestick charts.
-        renderWithheldExecutionSurface(reason);
+        renderWithheldExecutionSurface(displayReason);
         ctx = withholdStub();
         window.ATLAS = window.ATLAS || {};
         window.ATLAS.ctx = ctx;
         window.ATLAS.activeSymbol = activeSymbol;
         renderFromCtx(ctx);
-        document.getElementById('ses-id').textContent = 'jane=withheld';
+        document.getElementById('ses-id').textContent =
+          'jane=' + janeStatus + ' reason=' + reasonCode + ' sourceReason=' + sourceReasonCode;
+        console.warn('[DASHBOARD] jane=' + janeStatus +
+          ' symbol=' + activeSymbol +
+          ' reason=' + reasonCode +
+          ' sourceReason=' + sourceReasonCode + diag);
       }
       // Live OHLC charts attempt is fired from inside renderFromCtx() above.
       // In withhold mode, renderFromCtx(stub) still fires the chart loader
@@ -1324,12 +1365,9 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   var OUTPUT_SIZE = 120;
   var MIN_CANDLES = 20;
 
-  function providerSymbol(displaySymbol, assetClass){
-    var s = (displaySymbol || '').toUpperCase();
-    if (assetClass === 'fx' && /^[A-Z]{6}$/.test(s)) return s.slice(0,3) + '/' + s.slice(3,6);
-    var override = { 'XAUUSD':'XAU/USD', 'XAGUSD':'XAG/USD', 'NAS100':'NDX', 'US500':'SPX', 'US30':'DJI' };
-    return override[s] || s;
-  }
+  // providerSymbol() is defined at outer-IIFE scope (above) so both
+  // fetchLiveQuote (outer scope) and fetchOHLC (this nested scope) share
+  // the same resolver. Do not re-declare here.
 
   function fetchOHLC(displaySymbol, tf, assetClass){
     var sym = providerSymbol(displaySymbol, assetClass);

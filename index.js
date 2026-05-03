@@ -126,21 +126,62 @@ const server = http.createServer((req, res) => {
   }
 
   // Latest Jane packet for a given symbol — scans SESSION_STORE for the
-  // most recent entry whose .symbol matches the requested symbol. Returns
-  // 404 with a clear "no jane packet" body when nothing has been posted.
-  // Dashboard uses this to either render or withhold the execution surface.
+  // most recent entry whose .symbol matches the requested symbol. When
+  // nothing matches, returns a STRUCTURED 200 DEGRADED response (not a
+  // raw 404) carrying status, exact reason, total stored sessions, and
+  // the list of stored symbols so the dashboard can either render the
+  // packet, surface a packet-loaded view, or display a withheld /
+  // degraded view with a specific source-reason. The dashboard never
+  // sees a silent network failure for /jane — every reply has a status
+  // and a reason field the UI can render directly.
   if(u.pathname === "/jane"){
     res.setHeader("Content-Type","application/json");
     const sym = sanitizeSymbol(u.query.symbol);
-    if(!sym){ res.statusCode = 400; return res.end(JSON.stringify({ok:false,error:"missing or invalid symbol"})); }
+    if(!sym){
+      res.statusCode = 200;
+      return res.end(JSON.stringify({
+        ok:false,
+        status:"degraded",
+        reason:"missing_or_invalid_symbol",
+        symbol: u.query.symbol || null
+      }));
+    }
     sessionCleanup();
     let latest = null;
+    const storedSymbols = new Set();
+    let totalSessions = 0;
     for(const ctx of SESSION_STORE.values()){
+      totalSessions++;
+      if(ctx.symbol) storedSymbols.add(ctx.symbol);
       if(ctx.symbol === sym && (!latest || ctx._stored > latest._stored)) latest = ctx;
     }
-    if(!latest){ res.statusCode = 404; return res.end(JSON.stringify({ok:false, symbol:sym, error:"no_jane_packet_for_symbol"})); }
+    if(!latest){
+      // Structured degraded reply — 200 with explicit status/reason.
+      // Includes diagnostic context so the dashboard can show "withheld
+      // — no packet for MU; 0 of 3 stored sessions matched (stored
+      // symbols: NVDA, EURUSD, BTCUSDT)" rather than silently failing.
+      res.statusCode = 200;
+      return res.end(JSON.stringify({
+        ok: false,
+        status: "degraded",
+        symbol: sym,
+        reason: "no_jane_packet_for_symbol",
+        sourceReason: "lookup_returned_no_match",
+        sessionsTotal: totalSessions,
+        sessionsForSymbol: 0,
+        storedSymbols: Array.from(storedSymbols).sort()
+      }));
+    }
     const {_stored, ...safe} = latest;
-    return res.end(JSON.stringify({ok:true, symbol:sym, packet:safe, ageMs: Date.now() - _stored}));
+    return res.end(JSON.stringify({
+      ok: true,
+      status: "packet-loaded",
+      symbol: sym,
+      packet: safe,
+      ageMs: Date.now() - _stored,
+      sessionsTotal: totalSessions,
+      sessionsForSymbol: Array.from(SESSION_STORE.values()).filter(c => c.symbol === sym).length
+    }));
   }
 
   if(u.pathname.startsWith("/session/")){
