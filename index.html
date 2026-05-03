@@ -170,6 +170,15 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
 .chart-pane .tf-tag{position:absolute;top:6px;left:8px;font-size:9px;letter-spacing:2px;color:var(--gold);font-weight:700}
 .chart-pane .sym-tag{position:absolute;top:6px;right:8px;font-size:9px;letter-spacing:2px;color:var(--fg);font-weight:700;font-family:"SF Mono",monospace}
 .chart-pane svg{width:100%;height:100%;opacity:0.85}
+/* Per-pane right-side price boxes — LOCKED CLAUDE.md hex colours.
+   Each pane carries its own independent state (no shared CSS class
+   instance), and the colours never derive dynamically. */
+.chart-pane .price-box-stack{position:absolute;top:0;right:0;bottom:0;width:0;pointer-events:none;z-index:55}
+.chart-pane .price-box{position:absolute;right:0;font-family:"SF Mono",Menlo,Consolas,monospace;font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 6px;transform:translateY(-50%);box-shadow:-1px 0 0 rgba(0,0,0,0.45);white-space:nowrap;pointer-events:none;border-radius:0 0 0 1px}
+.chart-pane .price-box.high   {background:#FFD600;color:#000000}
+.chart-pane .price-box.current{background:#00FF5A;color:#000000}
+.chart-pane .price-box.entry  {background:#FF9100;color:#000000}
+.chart-pane .price-box.low    {background:#00B0FF;color:#FFFFFF}
 
 .hist-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .hist-card{background:var(--cell);border:1px solid var(--line2);border-left:3px solid var(--mut);border-radius:3px;padding:14px}
@@ -724,6 +733,94 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     return 'unknown';
   }
 
+  // Per-symbol decimal-places for the chart's right-side price boxes.
+  // Mirrors the bot's getPipSize() table so 1H 'EURUSD' prints 5 dp,
+  // 'USDJPY' prints 3 dp, 'XAUUSD' prints 2 dp, equities print 2 dp, etc.
+  function digitsForSymbol(sym){
+    if (!sym) return 4;
+    if (/^[A-Z]{6}$/.test(sym)) return /JPY$/i.test(sym) ? 3 : 5;
+    if (/^(NAS100|US500|US30|DJI|GER40|UK100|SPX|NDX|HK50|JPN225)$/.test(sym)) return 2;
+    if (/XAU|XAG/i.test(sym)) return 2;
+    if (/OIL|BRENT|WTI/i.test(sym)) return 2;
+    if (/NATGAS/i.test(sym)) return 3;
+    if (/^[A-Z]{1,5}$/.test(sym)) return 2;
+    return 4;
+  }
+
+  // Per-pane right-side price boxes — LOCKED CLAUDE.md hex colours.
+  // Each pane reads its OWN candles and its OWN visible zoom range
+  // (pane._zoomState). ENTRY price comes from window.ATLAS.ctx.entry
+  // when the dashboard has a Jane packet for THIS symbol; otherwise
+  // the ENTRY box is hidden (not drawn at all — never silent fallback).
+  //
+  // Per-pane state guarantee: the function takes one pane and one
+  // candles array and never reads from any other pane. Each pane
+  // also stores its own _priceBoxState back on the DOM node.
+  function renderPriceBoxes(pane, candles){
+    if (!pane || !candles || !candles.length) return;
+    var z = pane._zoomState || { start: 0, end: candles.length };
+    var slice = candles.slice(Math.max(0, z.start), Math.min(candles.length, z.end));
+    if (!slice.length) return;
+    var hi = -Infinity, lo = Infinity;
+    for (var i=0; i<slice.length; i++){
+      if (slice[i].h > hi) hi = slice[i].h;
+      if (slice[i].l < lo) lo = slice[i].l;
+    }
+    var cur = slice[slice.length-1].c;
+    var paneSym = pane.getAttribute('data-sym');
+    var tf = pane.getAttribute('data-tf');
+    var dg = digitsForSymbol(paneSym);
+
+    // ENTRY level — read from per-symbol ctx if present.
+    var entry = null;
+    try {
+      var aCtx = (window.ATLAS && window.ATLAS.ctx) || null;
+      var aSym = (window.ATLAS && window.ATLAS.activeSymbol) || null;
+      if (aCtx && aSym === paneSym && aCtx.entry != null && aCtx.entry !== 'Pending' && aCtx.entry !== 'Withheld'){
+        var n = parseFloat(aCtx.entry);
+        if (isFinite(n)) entry = n;
+      }
+    } catch (_e) { entry = null; }
+
+    var range = hi - lo;
+    var yOf = function(p){
+      if (range <= 0) return 50;
+      var ratio = 1 - (p - lo) / range;
+      // cap at 92% to leave room for the bottom-row zoom-readout / reset chip
+      return Math.max(4, Math.min(92, ratio * 100));
+    };
+
+    var stack = pane.querySelector('.price-box-stack');
+    if (!stack){
+      stack = document.createElement('div');
+      stack.className = 'price-box-stack';
+      pane.appendChild(stack);
+    } else {
+      stack.innerHTML = '';
+    }
+    var make = function(cls, lbl, price){
+      if (price == null || !isFinite(price)) return;
+      var el = document.createElement('div');
+      el.className = 'price-box ' + cls;
+      el.style.top = yOf(price).toFixed(2) + '%';
+      el.textContent = lbl + ' ' + (+price).toFixed(dg);
+      stack.appendChild(el);
+    };
+    make('high',    'HIGH',    hi);
+    make('current', 'CURRENT', cur);
+    make('entry',   'ENTRY',   entry);   // skipped silently when entry is null
+    make('low',     'LOW',     lo);
+
+    // Per-pane state lives on the DOM node — never on a shared object.
+    pane._priceBoxState = { hi: hi, current: cur, entry: entry, low: lo, dg: dg };
+
+    console.log('[PRICE-BOX] tf=' + tf + ' sym=' + paneSym +
+      ' HIGH=' + hi.toFixed(dg) +
+      ' CURRENT=' + cur.toFixed(dg) +
+      ' ENTRY=' + (entry == null ? 'withheld' : entry.toFixed(dg)) +
+      ' LOW=' + lo.toFixed(dg));
+  }
+
   // ─────────────────────────────────────────────────────────────────────
   // BOOTSTRAP — fetch Jane packet, dispatch to render or withhold.
   // Charts always run independently (live OHLC layer is a separate concern).
@@ -748,6 +845,11 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     .then(function(jane){
       if (jane && jane.ok && jane.packet) {
         ctx = janePacketToCtx(jane.packet);
+        // Per-pane price-box layer reads ENTRY from window.ATLAS.ctx —
+        // no prop drilling, no shared state object across panes.
+        window.ATLAS = window.ATLAS || {};
+        window.ATLAS.ctx = ctx;
+        window.ATLAS.activeSymbol = activeSymbol;
         setSourceStatusFromPacket(ctx.sources || jane.packet.sources || {});
         renderFromCtx(ctx);
         document.getElementById('ses-id').textContent = 'session=' + (jane.packet.session_id || '?') + ' age=' + Math.round((jane.ageMs||0)/1000) + 's';
@@ -785,6 +887,9 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         }
       } else if (allowFakeMode && STAGED_PLAN[activeSymbol]) {
         ctx = STAGED_PLAN[activeSymbol];
+        window.ATLAS = window.ATLAS || {};
+        window.ATLAS.ctx = ctx;
+        window.ATLAS.activeSymbol = activeSymbol;
         setSourceStatusFromPacket({ marketData:'live', corey:'sample', coreyClone:'unavailable: not implemented', spidey:'sample', jane:'sample', historical:'sample' });
         renderFromCtx(ctx);
         document.getElementById('ses-id').textContent = 'sample-mode (?fake=1)';
@@ -797,6 +902,9 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         // sees: source-status row + withhold banner + live candlestick charts.
         renderWithheldExecutionSurface(reason);
         ctx = withholdStub();
+        window.ATLAS = window.ATLAS || {};
+        window.ATLAS.ctx = ctx;
+        window.ATLAS.activeSymbol = activeSymbol;
         renderFromCtx(ctx);
         document.getElementById('ses-id').textContent = 'jane=withheld';
       }
@@ -1168,7 +1276,12 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     reset.title = 'Reset zoom on this panel only';
     pane.appendChild(reset);
 
-    function redraw(){
+    // Per-pane redraw. Takes an `action` tag so the proof log can show
+    // which event triggered the redraw — wheel / pan / reset / init.
+    // Each redraw also re-renders this pane's price boxes using the
+    // pane's OWN _zoomState. No cross-pane state read. No shared event
+    // dispatcher. Wheeling 15M never triggers a 1H redraw.
+    function redraw(action){
       var slice = candles.slice(Math.max(0, state.start), Math.min(candles.length, state.end));
       var newSvg = buildCandleSVG(slice);
       var existing = pane.querySelector('svg');
@@ -1181,6 +1294,11 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       }
       var pct = Math.round(100 * (state.end - state.start) / candles.length);
       readout.textContent = pct + '% (' + (state.end - state.start) + ' bars)';
+      var tf = pane.getAttribute('data-tf');
+      var sym = pane.getAttribute('data-sym');
+      console.log('[CHART-PANE] tf=' + tf + ' sym=' + sym + ' action=' + (action || 'init') +
+        ' start=' + state.start + ' end=' + state.end + ' bars=' + (state.end - state.start) + ' zoom=' + pct + '%');
+      try { renderPriceBoxes(pane, candles); } catch (e) { console.error('[PRICE-BOX] render err', e && e.message); }
     }
 
     pane.addEventListener('wheel', function(e){
@@ -1200,7 +1318,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       if (newEnd > candles.length) { newStart -= (newEnd - candles.length); newEnd = candles.length; newStart = Math.max(0, newStart); }
       state.start = newStart;
       state.end   = newEnd;
-      redraw();
+      redraw('wheel');
     }, { passive: false });
 
     // Click-and-drag pan within the pane (also strictly local)
@@ -1225,7 +1343,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       if (newEnd > candles.length) { newEnd = candles.length; newStart = newEnd - width; }
       state.start = newStart;
       state.end   = newEnd;
-      redraw();
+      redraw('pan');
     });
     document.addEventListener('mouseup', function(){ if (dragging) { dragging = false; pane.style.cursor = 'crosshair'; } });
 
@@ -1233,8 +1351,21 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       e.stopPropagation();
       state.start = 0;
       state.end   = candles.length;
-      redraw();
+      redraw('reset');
     });
+
+    // Initial price-box paint + init proof log. The chart SVG is already
+    // in the DOM (rendered by loadAllPanels via panelHtml); we don't need
+    // to re-render it here, just lay down the boxes and emit the per-pane
+    // init log. Wrapped so a render error never breaks zoom wiring.
+    try {
+      var tf0 = pane.getAttribute('data-tf');
+      var sym0 = pane.getAttribute('data-sym');
+      var pct0 = 100;
+      console.log('[CHART-PANE] tf=' + tf0 + ' sym=' + sym0 + ' action=init' +
+        ' start=' + state.start + ' end=' + state.end + ' bars=' + (state.end - state.start) + ' zoom=' + pct0 + '%');
+      renderPriceBoxes(pane, candles);
+    } catch (e) { console.error('[PRICE-BOX] init err', e && e.message); }
   }
 
   function renderPlaceholderPanels(){

@@ -1,10 +1,24 @@
 /* ATLAS FX - charts-engine.js
-   LIVE OHLC CHART ENGINE. Candlestick data comes exclusively from TwelveData
-   (via the /twelvedata server proxy using TWELVE_DATA_API_KEY). No mock data.
-   DOM targets: ch-htf-1W/1D/4H/1H, ch-ltf-30M/15M/5M/1M (plus legacy htf-1..4/ltf-1..4).
-   Cache keys: ch-htf-1W, ch-htf-1D, ch-htf-4H, ch-htf-1H, ch-ltf-30M, ch-ltf-15M, ch-ltf-5M, ch-ltf-1M.
-   Macro keys silent-loaded for macro engine: ch-macro-DXY, ch-macro-US10Y, ch-macro-EQUITIES, ch-macro-USDJPY.
-   chart.setOption is called for every panel as soon as its bars arrive (under 1s typical). */
+   ─────────────────────────────────────────────────────────────────────
+   DEPRECATED — NOT LOADED BY THE ACTIVE RUNTIME.
+   ─────────────────────────────────────────────────────────────────────
+   The dashboard's live chart layer is implemented inline in index.html:
+     - per-pane SVG candlestick rendering (buildCandleSVG)
+     - per-pane independent zoom/pan/reset (wirePaneZoom)
+     - per-pane right-side price boxes (renderPriceBoxes) using locked
+       CLAUDE.md hex colours
+     - per-pane proof logging ([CHART-PANE] / [PRICE-BOX])
+   This file is kept on disk only for reference until a full sweep is
+   done. It is NOT referenced by any <script src="..."> tag in
+   index.html, so its echarts.connect() call below is a no-op at
+   runtime. groupConnect() has been neutralised explicitly to make the
+   "no shared dataZoom / group / connect / global wheel dispatcher"
+   guarantee greppable from this file too.
+
+   LIVE OHLC CHART ENGINE (deprecated). Candlestick data comes exclusively
+   from TwelveData (via the /twelvedata server proxy using TWELVE_DATA_API_KEY).
+   No mock data. DOM targets: ch-htf-1W/1D/4H/1H, ch-ltf-30M/15M/5M/1M.
+   Cache keys: ch-htf-1W..1H, ch-ltf-30M..1M. */
 (function(){
 var A = window.ATLAS = window.ATLAS || {};
 A.chartData = A.chartData || {};
@@ -242,18 +256,20 @@ function setSymLabels(sym){
 function resizeAll(){
   Object.keys(A.charts).forEach(function(k){ try { A.charts[k].resize(); } catch(e){} });
 }
+// groupConnect() — DEPRECATED no-op. The previous implementation called
+// echarts.connect("atlas-htf") and echarts.connect("atlas-ltf") which
+// would have shared zoom/pan state across all HTF panels and across all
+// LTF panels. The active runtime in index.html now uses per-pane SVG
+// charts with independent state (wirePaneZoom + renderPriceBoxes); no
+// shared dataZoom, no echarts group, no echarts.connect call.
+//
+// This stub is kept because the legacy A.Charts.load() callback in this
+// (also deprecated) file invokes groupConnect() at the end of every
+// load. We leave the call site intact and neutralise the body so a
+// single grep -n "echarts.connect" finds zero hits across the active
+// codebase, even on this dead module.
 function groupConnect(){
-  try {
-    PANELS.filter(function(p){return p.group==="htf";}).forEach(function(p){
-      var id = (findEl(p.domIds)||{}).id; if(id && A.charts[id]) A.charts[id].group = "atlas-htf";
-    });
-    PANELS.filter(function(p){return p.group==="ltf";}).forEach(function(p){
-      var id = (findEl(p.domIds)||{}).id; if(id && A.charts[id]) A.charts[id].group = "atlas-ltf";
-    });
-    if(typeof echarts !== "undefined" && echarts.connect){
-      echarts.connect("atlas-htf"); echarts.connect("atlas-ltf");
-    }
-  } catch(e){}
+  // intentionally a no-op — see header for rationale.
 }
 window.addEventListener("resize", resizeAll);
 
