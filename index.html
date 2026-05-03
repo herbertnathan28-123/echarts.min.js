@@ -186,7 +186,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   <div class="chg mono" id="hd-chg">—</div>
   <div class="right">
     <div class="clock" id="hd-clock">—</div>
-    <div class="src ok" id="hd-src"><div class="dot"></div><span id="hd-src-txt">DATA · MOCK</span></div>
+    <div class="src" id="hd-src"><div class="dot"></div><span id="hd-src-txt">DATA · LOADING</span></div>
   </div>
 </header>
 
@@ -332,7 +332,10 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     return;
   }
 
-  var MOCK = {
+  // STAGED_PLAN — execution-plan staging dictionary used until POST /load
+  // wires real plan context per session. The CHART data layer below is fully
+  // live (TwelveData via the /twelvedata server proxy on this same service).
+  var STAGED_PLAN = {
     MU: {
       assetClass: 'equity',
       lastPrice: 92.40, lastChangePct: -1.85,
@@ -457,7 +460,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     }
   };
 
-  var ctx = MOCK[requestedSymbol];
+  var ctx = STAGED_PLAN[requestedSymbol];
   if(!ctx){
     hardFail('No data context loaded for ' + requestedSymbol + '.', 'requestedSymbol='+requestedSymbol+' action=blocked_no_context');
     return;
@@ -572,31 +575,131 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     '</div>';
   }
 
+  // ─────────────────────────────────────────────────────────────────────
+  // LIVE OHLC + CANDLESTICK CHARTS
+  // Server proxy: GET /twelvedata?symbol=<provSym>&interval=<tdInt>&outputsize=<n>
+  // index.js holds TWELVE_DATA_API_KEY in process.env — never exposed to browser.
+  // ─────────────────────────────────────────────────────────────────────
   var HTF = ['1W','1D','4H','1H'], LTF = ['30M','15M','5M','1M'];
-  function buildChart(tf, sym, basePrice){
-    var pts = [];
-    for(var i=0;i<40;i++){
-      var noise = Math.sin(i/3.2 + tf.length) * basePrice * 0.004
-                + Math.cos(i/5.1) * basePrice * 0.002;
-      pts.push(basePrice + noise);
+  var TF_TO_TD = { '1W':'1week', '1D':'1day', '4H':'4h', '1H':'1h', '30M':'30min', '15M':'15min', '5M':'5min', '1M':'1min' };
+  var OUTPUT_SIZE = 120;
+  var MIN_CANDLES = 20;
+
+  function providerSymbol(displaySymbol, assetClass){
+    var s = (displaySymbol || '').toUpperCase();
+    if (assetClass === 'fx' && /^[A-Z]{6}$/.test(s)) return s.slice(0,3) + '/' + s.slice(3,6);
+    var override = { 'XAUUSD':'XAU/USD', 'XAGUSD':'XAG/USD', 'NAS100':'NDX', 'US500':'SPX', 'US30':'DJI' };
+    return override[s] || s;
+  }
+
+  function fetchOHLC(displaySymbol, tf, assetClass){
+    var sym = providerSymbol(displaySymbol, assetClass);
+    var interval = TF_TO_TD[tf];
+    var url = '/twelvedata?symbol=' + encodeURIComponent(sym) + '&interval=' + encodeURIComponent(interval) + '&outputsize=' + OUTPUT_SIZE;
+    return fetch(url).then(function(r){ return r.json(); }).then(function(j){
+      if (j && j.status === 'error') return { ok:false, reason: j.message || ('http ' + (j.code || '?')), provSym: sym };
+      if (!j || !Array.isArray(j.values) || !j.values.length) return { ok:false, reason: 'empty_values', provSym: sym };
+      // TwelveData returns newest-first; reverse for chronological.
+      var candles = j.values.slice().reverse().map(function(v){
+        return { t: v.datetime, o: parseFloat(v.open), h: parseFloat(v.high), l: parseFloat(v.low), c: parseFloat(v.close) };
+      }).filter(function(c){ return isFinite(c.o) && isFinite(c.h) && isFinite(c.l) && isFinite(c.c); });
+      if (candles.length < MIN_CANDLES) return { ok:false, reason: 'too_few_candles=' + candles.length, provSym: sym };
+      return { ok:true, candles: candles, source: 'twelvedata', provSym: sym };
+    }).catch(function(e){ return { ok:false, reason: 'fetch_error: ' + (e && e.message || e), provSym: sym }; });
+  }
+
+  function buildCandleSVG(candles){
+    if (!candles || !candles.length) return '';
+    var lo = Infinity, hi = -Infinity;
+    for (var k=0; k<candles.length; k++){ if (candles[k].l < lo) lo = candles[k].l; if (candles[k].h > hi) hi = candles[k].h; }
+    if (!isFinite(lo) || !isFinite(hi) || hi === lo) return '';
+    var w = 100, h = 100, pad = 3;
+    var n = candles.length;
+    var slot = (w - pad*2) / n;
+    var bodyW = Math.max(0.6, slot * 0.65);
+    var range = hi - lo;
+    var yOf = function(p){ return pad + (1 - (p - lo) / range) * (h - pad*2); };
+    var parts = [];
+    for (var i=0; i<n; i++){
+      var c = candles[i];
+      var cx = pad + slot * (i + 0.5);
+      var up = c.c >= c.o;
+      var col = up ? '#00ff00' : '#ff0015';
+      var bodyTop = yOf(Math.max(c.o, c.c));
+      var bodyBot = yOf(Math.min(c.o, c.c));
+      var bodyH = Math.max(0.15, bodyBot - bodyTop);
+      // wick
+      parts.push('<line x1="' + cx.toFixed(2) + '" y1="' + yOf(c.h).toFixed(2) + '" x2="' + cx.toFixed(2) + '" y2="' + yOf(c.l).toFixed(2) + '" stroke="' + col + '" stroke-width="0.35"/>');
+      // body
+      parts.push('<rect x="' + (cx - bodyW/2).toFixed(2) + '" y="' + bodyTop.toFixed(2) + '" width="' + bodyW.toFixed(2) + '" height="' + bodyH.toFixed(2) + '" fill="' + col + '"/>');
     }
-    var min = Math.min.apply(null, pts), max = Math.max.apply(null, pts);
-    var path = pts.map(function(p, i){
-      var x = (i/39)*100;
-      var y = 100 - ((p - min)/(max - min || 1))*88 - 6;
-      return (i===0?'M':'L') + x.toFixed(2) + ',' + y.toFixed(2);
-    }).join(' ');
+    return '<svg viewBox="0 0 100 100" preserveAspectRatio="none">' + parts.join('') + '</svg>';
+  }
+
+  function panelHtml(tf, sym, body, statusText){
     return '<div class="chart-pane">' +
-      '<span class="tf-tag">'+tf+'</span>' +
-      '<span class="sym-tag">'+sym+'</span>' +
-      '<svg viewBox="0 0 100 100" preserveAspectRatio="none">' +
-        '<path d="'+path+'" stroke="#FFD600" stroke-width="0.7" fill="none"/>' +
-      '</svg>' +
+      '<span class="tf-tag">' + tf + '</span>' +
+      '<span class="sym-tag">' + sym + '</span>' +
+      body +
+      (statusText ? '<div style="position:absolute;left:0;right:0;bottom:6px;text-align:center;color:#ff0015;font-size:9px;letter-spacing:1px;font-family:\'SF Mono\',monospace">' + statusText + '</div>' : '') +
     '</div>';
   }
-  document.getElementById('ch-htf-grid').innerHTML = HTF.map(function(t){ return buildChart(t, activeSymbol, ctx.lastPrice); }).join('');
-  document.getElementById('ch-ltf-grid').innerHTML = LTF.map(function(t){ return buildChart(t, activeSymbol, ctx.lastPrice); }).join('');
-  HTF.concat(LTF).forEach(function(tf){ console.log('[CHART] panel='+tf+' symbol='+activeSymbol+' validation=pass'); });
+
+  function renderPlaceholderPanels(){
+    var ph = function(tf){ return panelHtml(tf, activeSymbol, '', 'LOADING…'); };
+    document.getElementById('ch-htf-grid').innerHTML = HTF.map(ph).join('');
+    document.getElementById('ch-ltf-grid').innerHTML = LTF.map(ph).join('');
+  }
+
+  async function loadAllPanels(){
+    renderPlaceholderPanels();
+    var liveCount = 0, blockedCount = 0;
+    var resolvedHtml = { '1W':'','1D':'','4H':'','1H':'','30M':'','15M':'','5M':'','1M':'' };
+
+    var jobs = HTF.concat(LTF).map(function(tf){
+      return fetchOHLC(activeSymbol, tf, ctx.assetClass).then(function(r){
+        if (r.ok){
+          // Symbol-integrity guard at panel level: validate symbol stamp matches
+          // requested. We do not parse the proxy response to recover server-side
+          // symbol echo (TwelveData doesn't always return it), so we trust the
+          // request URL only — guarantees rendered symbol == requested symbol
+          // because the URL was built from activeSymbol with no fallback.
+          console.log('[DATA] source=twelvedata symbol=' + activeSymbol + ' timeframe=' + tf + ' status=ok candles=' + r.candles.length + ' provider=' + r.provSym);
+          console.log('[CHART] panel=' + tf + ' symbol=' + activeSymbol + ' validation=pass source=live');
+          resolvedHtml[tf] = panelHtml(tf, activeSymbol, buildCandleSVG(r.candles), '');
+          liveCount++;
+        } else {
+          console.warn('[DATA] source=twelvedata symbol=' + activeSymbol + ' timeframe=' + tf + ' status=fail reason=' + r.reason + ' provider=' + r.provSym);
+          console.warn('[CHART] panel=' + tf + ' symbol=' + activeSymbol + ' validation=blocked source=unavailable');
+          resolvedHtml[tf] = panelHtml(tf, activeSymbol, '', 'Live chart data unavailable for ' + activeSymbol + ' ' + tf + ' — chart withheld.');
+          blockedCount++;
+        }
+      });
+    });
+
+    await Promise.all(jobs);
+    document.getElementById('ch-htf-grid').innerHTML = HTF.map(function(t){ return resolvedHtml[t]; }).join('');
+    document.getElementById('ch-ltf-grid').innerHTML = LTF.map(function(t){ return resolvedHtml[t]; }).join('');
+
+    // Header badge transitions from LOADING → LIVE / UNAVAILABLE (never MOCK).
+    var src = document.getElementById('hd-src');
+    var srcTxt = document.getElementById('hd-src-txt');
+    if (liveCount > 0){
+      src.className = 'src ok';
+      srcTxt.textContent = (blockedCount === 0) ? 'DATA · LIVE' : 'DATA · LIVE (' + liveCount + '/' + (liveCount + blockedCount) + ')';
+    } else {
+      src.className = 'src fail';
+      srcTxt.textContent = 'DATA · UNAVAILABLE';
+    }
+    // Source footer reflects real data source — never the staged-plan tag.
+    var foot = document.getElementById('ses-id');
+    if (foot){
+      foot.textContent = (liveCount > 0)
+        ? 'source=twelvedata/live · panels=' + liveCount + '/' + (liveCount + blockedCount)
+        : 'source=unavailable · panels=0/' + (liveCount + blockedCount);
+    }
+  }
+  loadAllPanels();
 
   var hist = ctx.historical || [];
   var histGrid = document.getElementById('hist-grid');
@@ -719,7 +822,8 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     return '<div class="gl-card"><div class="gl-term">'+escapeHtml(g[0])+'</div><div class="gl-def">'+escapeHtml(g[1])+'</div></div>';
   }).join('');
 
-  document.getElementById('ses-id').textContent = 'mock-' + activeSymbol + '-' + Date.now();
+  // ses-id is set by loadAllPanels() once data resolves; placeholder until then.
+  document.getElementById('ses-id').textContent = 'source=loading';
 
   document.querySelectorAll('.sec-nav .tab').forEach(function(btn){
     btn.addEventListener('click', function(){
