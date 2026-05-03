@@ -1,1043 +1,745 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ATLAS FX - Macro Dashboard</title>
+<title>ATLAS FX — Execution / Live Plan</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{background:#000000;color:#d7dde3;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.35}
-a{color:#00B0FF;text-decoration:none}a:hover{text-decoration:underline}
-.mono{font-family:"SF Mono",Menlo,Consolas,monospace}
-.up{color:#07f911}.dn{color:#ff0015}.mut{color:#6c7a89}
-.hi{color:#FFD600}.or{color:#FF9100}.bl{color:#00B0FF}.gn{color:#00FF5A}
-
-/* TOP NAV */
-#term-nav{position:sticky;top:0;z-index:200;background:#000;border-bottom:1px solid #1a1a1a;padding:6px 10px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:11px}
-#term-nav .brand{color:#FFD600;font-weight:700;letter-spacing:1px;margin-right:10px}
-#term-nav a{color:#6c7a89}
-#term-nav a:hover{color:#00B0FF}
-#term-nav .sep{color:#1a1a1a}
-#term-nav .src{margin-left:auto;color:#6c7a89;font-size:10px}
-#term-nav .src b{color:#00FF5A}
-.st-dot{display:inline-block;width:6px;height:6px;background:#6c7a89;margin-right:4px;vertical-align:middle}
-.st-dot.ok{background:#07f911}.st-dot.warn{background:#FFD600}.st-dot.err{background:#ff0015}
-
-/* SECTION BASE */
-.sec{border-bottom:1px solid #1a1a1a}
-.sec-hd{display:flex;align-items:center;gap:10px;padding:7px 10px;background:#050a10;border-bottom:1px solid #1a1a1a}
-.sec-hd h3{font-size:11px;letter-spacing:2px;color:#FFD600;font-weight:600}
-.sec-hd .sub{color:#6c7a89;font-size:10px}
-.sec-body{padding:8px 10px}
-
-/* CHART MATRIX (HTF + LTF) */
-.matrix-wrap{border-bottom:1px solid #1a1a1a}
-.matrix-hd{display:flex;align-items:center;gap:10px;padding:6px 10px;background:#050a10;border-bottom:1px solid #1a1a1a}
-.matrix-hd h3{font-size:11px;letter-spacing:2px;color:#FFD600;font-weight:600}
-.matrix-hd .sub{color:#6c7a89;font-size:10px}
-.matrix-hd .sym-label{color:#00FF5A;font-weight:700;letter-spacing:1px;margin-left:4px}
-.matrix-grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1px;background:#1a1a1a;height:58vh;min-height:480px}
-.chart-panel{position:relative;background:#000;overflow:hidden}
-.panel-hdr{position:absolute;top:0;left:0;right:0;z-index:5;display:flex;align-items:center;gap:8px;padding:4px 8px;background:rgba(0,0,0,0.75);font-size:11px;pointer-events:none;border-bottom:1px solid #1a1a1a}
-.panel-hdr .sym{color:#FFD600;font-weight:700;letter-spacing:1px}
-.panel-hdr .tf{color:#6c7a89;font-size:10px}
-.panel-hdr .last{color:#fff;font-weight:700;font-family:"SF Mono",Menlo,Consolas,monospace}
-.panel-hdr .chg{font-size:10px;font-family:"SF Mono",Menlo,Consolas,monospace}
-.panel-hdr .quotes{margin-left:auto;display:flex;gap:1px}
-.panel-hdr .quotes .q{background:#050a10;border:1px solid #1a1a1a;padding:2px 6px;font-size:9px;letter-spacing:1px;font-family:"SF Mono",Menlo,Consolas,monospace;text-align:center}
-.panel-hdr .quotes .q .l{display:block;color:#6c7a89;font-size:8px}
-.panel-hdr .quotes .q .v{display:block;color:#fff;font-weight:700}
-.panel-hdr .quotes .sell .l{color:#ffee58}
-.panel-hdr .quotes .buy  .l{color:#b22833}
-.panel-hdr .quotes .spread .l{color:#6c7a89}
-.chart{position:absolute;top:0;left:0;right:0;bottom:0}
-
-/* EXECUTION MAP - 60/40 */
-#exec-wrap{display:grid;grid-template-columns:60% 40%;gap:1px;background:#1a1a1a}
-#exec-grid{background:#000}
-#exec-context{background:#000;padding:10px 12px}
-.exec-tbl{width:100%;border-collapse:collapse;font-family:"SF Mono",Menlo,Consolas,monospace;background:#000}
-.exec-tbl th,.exec-tbl td{padding:14px 12px;border-bottom:1px solid #1a1a1a;font-size:13px;vertical-align:middle;text-align:left;line-height:1.35}
-.exec-tbl thead th{background:#050a10;color:#6c7a89;font-weight:500;font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:8px 12px}
-.exec-tbl .xr-bar{display:inline-block;width:6px;height:22px;background:#00B0FF;margin-right:10px;vertical-align:middle}
-.exec-tbl .xr-sub{color:#6c7a89;margin-left:10px;font-size:10px;letter-spacing:1px;text-transform:none;font-weight:normal}
-.exec-tbl td.xr-l{width:60%}
-.exec-tbl td.xr-r{width:40%;text-align:right;letter-spacing:0.5px}
-.exec-tbl .xr-lab{display:inline-block;letter-spacing:1.5px;font-size:12px;font-weight:700;vertical-align:middle}
-.exec-tbl .xr-rec{display:inline-block;margin-left:14px;font-weight:700;font-size:14px;vertical-align:middle}
-.exec-tbl tr.xc-entry .xr-bar,.exec-tbl tr.xc-entry .xr-lab,.exec-tbl tr.xc-entry .xr-rec,.exec-tbl tr.xc-entry .xr-r{color:#07f911}
-.exec-tbl tr.xc-entry .xr-bar{background:#07f911}
-.exec-tbl tr.xc-ext   .xr-bar,.exec-tbl tr.xc-ext   .xr-lab,.exec-tbl tr.xc-ext   .xr-rec,.exec-tbl tr.xc-ext   .xr-r{color:#FF9100}
-.exec-tbl tr.xc-ext   .xr-bar{background:#FF9100}
-.exec-tbl tr.xc-exit  .xr-bar,.exec-tbl tr.xc-exit  .xr-lab,.exec-tbl tr.xc-exit  .xr-rec,.exec-tbl tr.xc-exit  .xr-r{color:#ff0015}
-.exec-tbl tr.xc-exit  .xr-bar{background:#ff0015}
-.exec-tbl tr.xc-trend .xr-bar,.exec-tbl tr.xc-trend .xr-lab,.exec-tbl tr.xc-trend .xr-r{color:#FFD600}
-.exec-tbl tr.xc-trend .xr-bar{background:#FFD600}
-.exec-tbl tr.xc-neu   .xr-bar,.exec-tbl tr.xc-neu   .xr-lab,.exec-tbl tr.xc-neu   .xr-r{color:#6c7a89}
-.exec-tbl tr.xc-neu   .xr-bar{background:#6c7a89}
-.exec-tbl tr.xc-stop  .xr-bar,.exec-tbl tr.xc-stop  .xr-lab,.exec-tbl tr.xc-stop  .xr-rec,.exec-tbl tr.xc-stop  .xr-r{color:#ff0015}
-.exec-tbl tr.xc-stop  .xr-bar{background:#ff0015}
-.exec-tbl tr.xc-warn td{color:#FFD600;font-weight:700;letter-spacing:2px;text-align:left;background:#050a10;border-top:1px solid #1a1a1a}
-.exec-tbl tr.xc-warn .xr-bar{background:#FFD600}
-.ctx-sec{margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #1a1a1a}
-.ctx-sec:last-child{border-bottom:none;margin-bottom:0}
-.ctx-k{color:#6c7a89;font-size:10px;letter-spacing:2px;font-weight:600;margin-bottom:4px}
-.ctx-hd{font-size:14px;font-weight:700;letter-spacing:1px;margin-bottom:4px}
-.ctx-body{font-size:12px;color:#d7dde3;line-height:1.5}
-.ctx-list{margin:6px 0 0 16px;padding:0}
-.ctx-list li{font-size:12px;color:#d7dde3;line-height:1.5;margin-bottom:4px}
-.exec-gh-hd{color:#FFD600;font-size:11px;letter-spacing:2px;font-weight:700;margin-top:12px;padding:8px 10px;background:#050a10;border-top:1px solid #1a1a1a;border-bottom:1px solid #1a1a1a}
-.exec-gh-body{padding:8px 10px}
-.exec-gh-row{display:flex;gap:12px;padding:6px 0;border-bottom:1px solid #1a1a1a;font-size:11px}
-.exec-gh-row:last-child{border-bottom:none}
-.exec-gh-lbl{flex:0 0 240px;color:#FFD600;font-weight:600;letter-spacing:1px;font-size:10px}
-.exec-gh-txt{flex:1;color:#d7dde3;line-height:1.5}
-
-/* TRADE STATUS */
-#trade-status{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:#1a1a1a}
-#trade-status .cell{background:#000;padding:8px 10px}
-#trade-status .cell .k{color:#6c7a89;font-size:10px;letter-spacing:1px}
-#trade-status .cell .v{font-size:14px;font-weight:600;margin-top:2px}
-
-/* HISTORICAL CONTEXT - "WHY THIS TRADE IS MOVING" 2x2 driver cards */
-#hist-grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto;gap:1px;background:#1a1a1a}
-.hc-block{margin-top:10px;padding:10px 12px;background:#000;border-left:3px solid #1a1a1a}
-.hc-block .blk-k{font-size:11px;letter-spacing:1.8px;color:#FFD600;font-weight:700;margin-bottom:4px}
-.hc-block .blk-v{font-size:13px;line-height:1.7;color:#d7dde3}
-.hc-block.what{border-left-color:#00B0FF}
-.hc-block.why{border-left-color:#FFD600}
-.hc-block.means{border-left-color:#07f911}
-.hc-block.means.dn{border-left-color:#ff0015}
-.hc-block.means.wh{border-left-color:#ffffff}
-@media(max-width:900px){#hist-grid{grid-template-columns:1fr}}
-.hist-col{background:#000;padding:8px 10px}
-.hc-k{color:#FFD600;font-size:10px;letter-spacing:2px;font-weight:700;margin-bottom:4px}
-.hc-role{color:#d7dde3;font-size:11px;line-height:1.5;margin-bottom:6px}
-.hc-stats{margin-bottom:6px}
-.hc-row{display:flex;justify-content:space-between;font-family:"SF Mono",Menlo,Consolas,monospace;font-size:11px;padding:2px 0}
-.hc-lbl{color:#6c7a89;letter-spacing:1px}
-.hc-mean,.hc-conc{font-size:11px;line-height:1.5;margin-top:6px;color:#d7dde3}
-.hc-mean b,.hc-conc b{color:#FFD600;letter-spacing:1px;font-size:10px}
-#hist-narrative,#hist-why{background:#000;padding:10px;margin-top:1px;border-top:1px solid #1a1a1a;font-size:12px;line-height:1.5}
-.hist-take,.hist-why-wrap{}
-
-/* MECHANISM CHAIN */
-#mech-chain{display:flex;flex-wrap:wrap;gap:1px;background:#1a1a1a}
-.chain-box{flex:1;min-width:220px;background:#000;padding:10px}
-.cb-step{color:#6c7a89;font-size:9px;letter-spacing:2px}
-.cb-lbl{color:#FFD600;font-size:11px;letter-spacing:2px;font-weight:700;margin:3px 0}
-.cb-body{font-size:11px;line-height:1.5;color:#d7dde3;margin-bottom:6px}
-.cb-gh{font-size:11px;line-height:1.5;color:#6c7a89;font-style:italic}
-.chain-box.up .cb-lbl{color:#07f911}
-.chain-box.dn .cb-lbl{color:#ff0015}
-.chain-box.hi .cb-lbl{color:#FFD600}
-.chain-box.gn .cb-lbl{color:#00FF5A}
-
-/* SCENARIO */
-#scen-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#1a1a1a}
-.scen-col{background:#000;padding:10px}
-.sc-k{color:#6c7a89;font-size:10px;letter-spacing:2px;font-weight:600;margin-bottom:4px}
-.sc-hd{font-size:13px;font-weight:700;letter-spacing:1px;margin-bottom:6px}
-.sc-t{font-size:11px;line-height:1.5;color:#d7dde3;margin-bottom:6px}
-.sc-gh{font-size:11px;line-height:1.5;color:#6c7a89}
-.sc-gh b{color:#FFD600;letter-spacing:1px;font-size:10px}
-
-/* EVENTS */
-#ev-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1px;background:#1a1a1a}
-.ev{background:#000;padding:6px 8px;font-size:11px;border-left:2px solid #1a1a1a}
-.ev.h{border-left-color:#ff0015}
-.ev.m{border-left-color:#FF9100}
-.ev.l{border-left-color:#6c7a89}
-.ev .ev-top{display:flex;justify-content:space-between;color:#6c7a89;font-size:10px;letter-spacing:1px}
-.ev .ev-tt{font-weight:600;color:#d7dde3;margin-top:2px}
-.ev .ev-ft{color:#6c7a89;font-size:10px;margin-top:2px;font-family:"SF Mono",Menlo,Consolas,monospace}
-.ev-fallback{background:#000;padding:14px 16px;border-left:2px solid #FFD600;font-size:12px;line-height:1.6;grid-column:1/-1}
-.evf-hd{color:#FFD600;font-size:13px;font-weight:700;letter-spacing:1px;margin-bottom:8px}
-.evf-sub{color:#d7dde3;margin-bottom:4px}
-.evf-list{margin:4px 0 8px 18px}
-.evf-list li{color:#d7dde3;margin-bottom:2px}
-.evf-interp{color:#d7dde3;margin-top:4px}
-.evf-interp b{color:#FFD600;letter-spacing:1px}
-
-/* PRICE MATRIX */
-#price-matrix{position:relative}
-#pm-search{display:flex;gap:6px;padding:6px 10px;background:#050a10;border-bottom:1px solid #1a1a1a;align-items:center}
-#pm-search input{background:#000;border:1px solid #1a1a1a;color:#d7dde3;font-family:"SF Mono",Menlo,Consolas,monospace;font-size:11px;padding:4px 8px;width:180px;letter-spacing:1px;text-transform:uppercase;outline:none}
-#pm-search input:focus{border-color:#FFD600}
-#pm-search button{background:#FFD600;color:#000;border:none;font-family:inherit;font-size:10px;padding:4px 10px;letter-spacing:1px;cursor:pointer;font-weight:700}
-#pm-search button:hover{background:#fff}
-#pm-search .hint{color:#6c7a89;font-size:10px;letter-spacing:1px;margin-left:4px}
-#price-matrix table{width:100%;border-collapse:collapse;font-family:"SF Mono",Menlo,Consolas,monospace}
-#price-matrix th,#price-matrix td{padding:6px 10px;text-align:right;border-bottom:1px solid #1a1a1a;font-size:11px}
-#price-matrix th{color:#6c7a89;font-weight:500;font-size:10px;letter-spacing:1px;background:#050a10}
-#price-matrix th:first-child,#price-matrix td:first-child{text-align:left;color:#FFD600;font-weight:600}
-#price-matrix tr.pm-row{cursor:pointer;transition:background 0.08s}
-#price-matrix tr.pm-row:hover td{background:#0a1420}
-#price-matrix tr.pm-row.active td{background:rgba(255,214,0,0.10);color:#FFD600;font-weight:700}
-#price-matrix tr.pm-row.active td:first-child{color:#FFD600}
-
-/* TERMINOLOGY */
-#terms-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1px;background:#1a1a1a}
-.term{background:#000;padding:8px 10px;font-size:11px}
-.term .tt{color:#FFD600;font-weight:700;font-size:11px;letter-spacing:1px}
-.term .td{color:#d7dde3;margin-top:3px;line-height:1.5}
-
-/* FOOTER */
-#footer{padding:8px 10px;color:#6c7a89;font-size:10px;border-top:1px solid #1a1a1a;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-#footer .pill{background:#050a10;border:1px solid #1a1a1a;padding:2px 6px}
-
-@media(max-width:900px){
-.matrix-grid{grid-template-columns:1fr;grid-template-rows:repeat(4,40vh);height:auto}
-#trade-status{grid-template-columns:repeat(2,1fr)}
-#exec-wrap{grid-template-columns:1fr}
-#hist-grid,#scen-grid{grid-template-columns:1fr}
-.exec-gh-lbl{flex:0 0 160px}
+:root{
+  --bg:#08090b; --bg2:#0e1014; --line:#1c1f25; --line2:#262a31;
+  --fg:#f4f5f7; --mut:#7a818c; --mut2:#9aa2ad;
+  --gold:#FFD600; --gold-d:#b89800;
+  --green:#00b450; --green-d:#006d31;
+  --red:#ff0015; --red-d:#7a0009;
+  --amber:#FF9100; --amber-d:#7a4500;
+  --cyan:#00B0FF;
+  --cell:#13161b; --cell-hi:#1a1d23;
+  --grid-empty:#2a2520; --grid-fill:#FFD600;
 }
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--fg);font-family:Inter,-apple-system,Segoe UI,Roboto,sans-serif;font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+body{min-height:100vh}
+.mono{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace}
+a{color:var(--gold);text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:inherit}
 
-/* TAB SYSTEM */
-.hidden{display:none!important}
-#term-nav{padding:12px 14px;gap:8px;font-size:12px}
-#term-nav .brand{color:#FFD600;font-weight:900;font-size:17px;letter-spacing:2px;margin-right:14px}
-#term-nav .tab{background:#000;color:#ffffff;border:1px solid #1a1a1a;padding:10px 16px;font-family:inherit;font-size:13px;font-weight:700;letter-spacing:1.5px;cursor:pointer;text-transform:uppercase;transition:background .15s,color .15s,border-color .15s,box-shadow .15s}
-#term-nav .tab:hover{background:#0a1420;border-color:#FFD600;color:#FFD600}
-#term-nav .tab.active{background:#FFD600;color:#000;border-color:#FFD600;box-shadow:0 0 0 1px #FFD600 inset}
-#term-nav .src{margin-left:auto;color:#6c7a89;font-size:11px}
+.atlas-hd{display:flex;align-items:center;gap:18px;padding:14px 22px;background:linear-gradient(180deg,#0c0e12 0%,#08090b 100%);border-bottom:1px solid var(--line2)}
+.atlas-hd .brand{display:flex;align-items:center;gap:10px}
+.atlas-hd .logo-dot{width:10px;height:10px;background:var(--gold);border-radius:2px}
+.atlas-hd .brand-name{font-weight:900;letter-spacing:3px;font-size:15px;color:var(--gold)}
+.atlas-hd .brand-sub{font-size:10px;color:var(--mut);letter-spacing:2px;margin-left:6px}
+.atlas-hd .sep{width:1px;height:22px;background:var(--line2)}
+.atlas-hd .sym-block{display:flex;align-items:baseline;gap:8px}
+.atlas-hd .sym{font-size:22px;font-weight:900;letter-spacing:2px;color:var(--fg)}
+.atlas-hd .sym-class{font-size:10px;color:var(--mut);letter-spacing:2px;text-transform:uppercase;padding:3px 7px;border:1px solid var(--line2);border-radius:3px}
+.atlas-hd .price{font-family:"SF Mono",monospace;font-size:18px;font-weight:700;color:var(--fg)}
+.atlas-hd .chg{font-family:"SF Mono",monospace;font-size:12px;font-weight:600}
+.atlas-hd .chg.pos{color:var(--green)}
+.atlas-hd .chg.neg{color:var(--red)}
+.atlas-hd .right{margin-left:auto;display:flex;align-items:center;gap:14px}
+.atlas-hd .clock{font-family:"SF Mono",monospace;color:var(--mut);font-size:11px;letter-spacing:1px}
+.atlas-hd .src{display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:1px;color:var(--mut)}
+.atlas-hd .src .dot{width:8px;height:8px;border-radius:50%;background:var(--mut)}
+.atlas-hd .src.ok .dot{background:var(--green)}
+.atlas-hd .src.warn .dot{background:var(--amber)}
+.atlas-hd .src.fail .dot{background:var(--red)}
 
-/* HTF / LTF SECTION CONTAINMENT - panels are scoped strictly to their
-   parent matrix-wrap; HTF holds 1W/1D/4H/1H, LTF holds 30M/15M/5M/1M.
-   Each tab opens only its own section and never mixes the two grids. */
-#sec-htf .matrix-grid,#sec-ltf .matrix-grid{contain:layout paint;overflow:hidden}
-#sec-htf,#sec-ltf{isolation:isolate}
+.action-row{padding:18px 22px 8px}
+.action-pill{display:flex;align-items:center;gap:14px;padding:18px 22px;border-radius:6px;border:1px solid var(--line2);background:var(--cell)}
+.action-pill .label{font-size:10px;letter-spacing:3px;color:var(--mut);text-transform:uppercase}
+.action-pill .state{font-size:28px;font-weight:900;letter-spacing:2px;font-family:"SF Mono",monospace;flex:1}
+.action-pill .verdict-strip{display:flex;align-items:center;gap:14px;margin-left:auto}
+.action-pill .vstrip-item{display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-size:10px;letter-spacing:1.5px;text-transform:uppercase}
+.action-pill .vstrip-item .vlbl{color:var(--mut)}
+.action-pill .vstrip-item .vval{color:var(--fg);font-weight:700;font-family:"SF Mono",monospace;font-size:11px}
+.action-pill[data-tone="green"]{border-color:var(--green-d);background:linear-gradient(90deg,rgba(0,180,80,0.12) 0%,var(--cell) 60%)}
+.action-pill[data-tone="green"] .state{color:var(--green)}
+.action-pill[data-tone="gold"]{border-color:var(--gold-d);background:linear-gradient(90deg,rgba(255,214,0,0.10) 0%,var(--cell) 60%)}
+.action-pill[data-tone="gold"] .state{color:var(--gold)}
+.action-pill[data-tone="amber"]{border-color:var(--amber-d);background:linear-gradient(90deg,rgba(255,145,0,0.10) 0%,var(--cell) 60%)}
+.action-pill[data-tone="amber"] .state{color:var(--amber)}
+.action-pill[data-tone="red"]{border-color:var(--red-d);background:linear-gradient(90deg,rgba(255,0,21,0.12) 0%,var(--cell) 60%)}
+.action-pill[data-tone="red"] .state{color:var(--red)}
 
-/* STATUS SECTION - plain-english summary, condition, signal strength,
-   per-category dot system, expandable colour key, validity card. */
-#status-root{display:flex;flex-direction:column;gap:18px}
-.sx-summary{padding:18px 22px;background:#050a10;border:1px solid #1a1a1a;border-left:4px solid #FFD600;font-size:16px;line-height:1.75;color:#fff}
-.sx-summary b{color:#FFD600}
-.sx-condrow{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.sx-cond{padding:16px 20px;background:#050a10;border:1px solid #1a1a1a;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.sx-cond .lbl{font-size:11px;letter-spacing:2px;color:#6c7a89;font-weight:700}
-.sx-cond .val{font-size:22px;font-weight:900;letter-spacing:1.5px;color:#fff}
-.sx-cond.fav .val{color:#07f911}
-.sx-cond.cau .val{color:#FFD600}
-.sx-cond.unf .val{color:#ff0015}
-.sx-strength .meter{flex:1 1 160px;height:14px;background:#000;border:1px solid #1a1a1a;position:relative;min-width:160px}
-.sx-strength .meter .fill{position:absolute;left:0;top:0;bottom:0;background:#07f911;transition:width .25s ease}
-.sx-cats{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.sx-cat{padding:16px 20px;background:#050a10;border:1px solid #1a1a1a}
-.sx-cat .ck{font-size:11px;letter-spacing:2px;color:#6c7a89;font-weight:700;margin-bottom:6px}
-.sx-cat .cv{font-size:15px;font-weight:700;color:#fff;margin-bottom:10px;letter-spacing:1px}
-.sx-cat .dots{display:flex;gap:8px;margin-bottom:10px}
-.sx-cat .dot{width:14px;height:14px;border-radius:50%;background:#000;border:1.5px solid #2a2f36}
-.sx-cat .dot.gn{background:#07f911;border-color:#07f911;box-shadow:0 0 6px rgba(7,249,17,0.5)}
-.sx-cat .dot.dn{background:#ff0015;border-color:#ff0015;box-shadow:0 0 6px rgba(255,0,21,0.5)}
-.sx-cat .dot.wh{background:#ffffff;border-color:#ffffff;box-shadow:0 0 6px rgba(255,255,255,0.4)}
-.sx-cat .cx{font-size:13px;line-height:1.7;color:#d7dde3}
-.sx-key{padding:14px 20px;background:#050a10;border:1px solid #1a1a1a}
-.sx-key summary{cursor:pointer;font-size:13px;font-weight:700;letter-spacing:1.8px;color:#FFD600;outline:none;text-transform:uppercase}
-.sx-key summary::-webkit-details-marker{color:#FFD600}
-.sx-key .key-body{margin-top:12px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.7;color:#d7dde3}
-.sx-key .key-body .row{display:flex;gap:12px;align-items:flex-start}
-.sx-key .swatch{display:inline-block;width:14px;height:14px;border-radius:50%;flex:0 0 14px;margin-top:4px}
-.sx-key .swatch.gn{background:#07f911}
-.sx-key .swatch.dn{background:#ff0015}
-.sx-key .swatch.wh{background:#ffffff}
-.sx-key .swatch.empty{background:#000;border:1.5px solid #2a2f36;width:11px;height:11px;flex:0 0 11px}
-.sx-key b{color:#fff;letter-spacing:.5px}
-.sx-validity{padding:16px 20px;background:#050a10;border:1px solid #1a1a1a;border-left:4px solid #07f911;font-size:14px;line-height:1.75;color:#d7dde3}
-.sx-validity .vk{font-size:11px;letter-spacing:2px;color:#FFD600;font-weight:700;display:block;margin-bottom:6px}
-.sx-validity b{color:#fff}
-@media(max-width:900px){.sx-condrow,.sx-cats{grid-template-columns:1fr}}
+.exec-strip{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:1px;background:var(--line);margin:14px 22px 0;border:1px solid var(--line2);border-radius:4px;overflow:hidden}
+.es-cell{background:var(--cell);padding:12px 14px;display:flex;flex-direction:column;gap:4px;min-height:62px}
+.es-cell .lbl{font-size:9px;letter-spacing:2px;color:var(--mut);text-transform:uppercase;font-weight:600}
+.es-cell .val{font-family:"SF Mono",monospace;font-size:14px;font-weight:700;color:var(--fg)}
+.es-cell .sub{font-size:10px;color:var(--mut2);font-style:italic}
+.es-cell.dollar .val{color:var(--gold)}
+.es-cell.danger .val{color:var(--red)}
+.es-cell.pending .val{color:var(--mut)}
+.es-cell.target .val{color:var(--green)}
 
-/* EXECUTION - colour-matched HOW TO READ labels (per spec rule 5).
-   Neutral row colour bumped from grey to white (per spec rule 13). */
-.exec-gh-lbl.gh-grn{color:#07f911}
-.exec-gh-lbl.gh-orn{color:#FF9100}
-.exec-gh-lbl.gh-red{color:#ff0015}
-.exec-gh-lbl.gh-yel{color:#FFD600}
-.exec-gh-lbl.gh-wht{color:#ffffff}
-.exec-tbl tr.xc-neu .xr-bar,.exec-tbl tr.xc-neu .xr-lab,.exec-tbl tr.xc-neu .xr-r{color:#ffffff}
-.exec-tbl tr.xc-neu .xr-bar{background:#ffffff}
-.wh{color:#ffffff}
+.cond-grid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:10px;padding:14px 22px}
+.cond-cell{background:var(--cell);border:1px solid var(--line2);border-radius:4px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.cond-cell .cl-lbl{font-size:9px;letter-spacing:1.5px;color:var(--mut);text-transform:uppercase;font-weight:600}
+.cond-cell .cl-dots{display:flex;gap:4px}
+.cond-cell .cl-dots .d{width:14px;height:14px;border-radius:50%;background:var(--grid-empty);border:1px solid #1a1610}
+.cond-cell .cl-dots .d.on{background:var(--grid-fill);border-color:var(--gold-d);box-shadow:0 0 6px rgba(255,214,0,0.55)}
+.cond-cell .cl-num{font-family:"SF Mono",monospace;font-size:11px;color:var(--mut2);font-weight:600}
+.cond-cell .cl-note{font-size:10px;color:var(--mut2);margin-top:2px}
 
-/* TYPOGRAPHY UPGRADE - readable at a glance on desktop, no micro fonts */
-html,body{font-size:14px;line-height:1.55}
-.sec-hd{padding:14px 16px}
-.sec-hd h3{font-size:14px;letter-spacing:2.2px}
-.sec-hd .sub{font-size:12px}
-.sec-body{padding:14px 16px}
-.matrix-hd{padding:12px 14px}
-.matrix-hd h3{font-size:14px;letter-spacing:2.2px}
-.matrix-hd .sub{font-size:12px}
-.matrix-hd .sym-label{font-size:13px}
-/* Status cells (pre-rebuild typography baseline) */
-#trade-status .cell{padding:14px 16px}
-#trade-status .cell .k{font-size:12px;letter-spacing:1.5px}
-#trade-status .cell .v{font-size:18px;margin-top:6px;font-weight:700}
-/* Historical columns */
-.hist-col{padding:14px 16px}
-.hc-k{font-size:12px;margin-bottom:6px;letter-spacing:2.2px}
-.hc-role{font-size:13px;line-height:1.65;margin-bottom:10px}
-.hc-row{font-size:13px;padding:3px 0}
-.hc-mean,.hc-conc{font-size:13px;line-height:1.7;margin-top:8px}
-.hc-mean b,.hc-conc b{font-size:11px;letter-spacing:1.5px}
-#hist-narrative,#hist-why{padding:14px 16px;font-size:13px;line-height:1.7}
-/* Mechanism chain */
-.chain-box{padding:14px 16px}
-.cb-step{font-size:11px;letter-spacing:2.2px}
-.cb-lbl{font-size:14px;margin:6px 0;letter-spacing:2.2px}
-.cb-body{font-size:13px;line-height:1.7;margin-bottom:8px}
-.cb-gh{font-size:12px;line-height:1.65}
-/* Scenario columns */
-.scen-col{padding:14px 16px}
-.sc-k{font-size:12px;letter-spacing:2.2px;margin-bottom:6px}
-.sc-hd{font-size:16px;letter-spacing:1.5px;margin-bottom:10px}
-.sc-t{font-size:13px;line-height:1.7;margin-bottom:8px}
-.sc-gh{font-size:12px;line-height:1.65}
-.sc-gh b{font-size:11px;letter-spacing:1.5px}
-/* Execution table */
-.exec-tbl th,.exec-tbl td{padding:16px 14px;font-size:14px;line-height:1.45}
-.exec-tbl thead th{font-size:11px;letter-spacing:2px;padding:10px 14px}
-.exec-tbl .xr-lab{font-size:13px;letter-spacing:2px}
-.exec-tbl .xr-rec{font-size:15px;margin-left:14px}
-.exec-tbl .xr-sub{font-size:11px}
-.ctx-k{font-size:12px;letter-spacing:2.2px;margin-bottom:6px}
-.ctx-hd{font-size:16px;margin-bottom:6px}
-.ctx-body{font-size:13px;line-height:1.7}
-.ctx-list li{font-size:13px;line-height:1.7}
-.exec-gh-hd{font-size:13px;letter-spacing:2.2px;padding:10px 14px}
-.exec-gh-row{padding:8px 0;font-size:12px;gap:14px}
-.exec-gh-lbl{font-size:11px;letter-spacing:1.5px;flex:0 0 280px}
-.exec-gh-txt{font-size:13px;line-height:1.7}
-/* Events */
-.ev{padding:10px 14px;font-size:13px}
-.ev .ev-top{font-size:11px;letter-spacing:1.5px}
-.ev .ev-tt{font-size:13px;line-height:1.5;margin-top:4px}
-.ev .ev-ft{font-size:11px;margin-top:4px}
-.ev .ev-plain{font-size:13px;line-height:1.65;color:#d7dde3;margin-top:8px;padding-top:8px;border-top:1px solid #1a1a1a}
-.ev-fallback{padding:16px 18px;font-size:13px;line-height:1.7}
-.evf-hd{font-size:14px;margin-bottom:10px;letter-spacing:1.5px}
-/* Price matrix */
-#price-matrix th,#price-matrix td{padding:10px 14px;font-size:13px}
-#price-matrix th{font-size:11px;letter-spacing:1.5px}
-#pm-search{padding:10px 14px}
-#pm-search input{font-size:13px;padding:6px 10px;width:220px}
-#pm-search button{font-size:11px;padding:6px 14px}
-/* Glossary */
-.term{padding:12px 14px;font-size:13px}
-.term .tt{font-size:13px;letter-spacing:1.5px}
-.term .td{font-size:12.5px;line-height:1.65;margin-top:4px}
-/* Footer */
-#footer{padding:12px 14px;font-size:11px;gap:14px}
+.fe-tm{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:14px 22px}
+.fe-card,.tm-card{background:var(--cell);border:1px solid var(--line2);border-radius:4px;padding:16px}
+.fe-card h3,.tm-card h3{font-size:10px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--line2)}
+.fe-row{display:flex;gap:14px;padding:8px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+.fe-row:last-child{border-bottom:0}
+.fe-row .k{font-size:10px;letter-spacing:1.5px;color:var(--mut);text-transform:uppercase;font-weight:600;min-width:140px;padding-top:2px}
+.fe-row .v{font-size:13px;color:var(--fg);flex:1}
 
-/* MATRIX QUOTE PANEL (per spec rule 10) - SELL and BUY are the dominant
-   visual on every chart panel header; SPREAD is secondary and smaller.
-   Bull #07f911 and bear #ff0015 are NOT changed - they are reused on the
-   value digits to make the action immediately legible. */
-.panel-hdr{padding:6px 10px;font-size:13px;gap:10px}
-.panel-hdr .sym{font-size:14px;letter-spacing:1.2px}
-.panel-hdr .tf{font-size:11px}
-.panel-hdr .last{font-size:14px}
-.panel-hdr .chg{font-size:11px}
-.panel-hdr .quotes{gap:2px}
-.panel-hdr .quotes .q{padding:5px 12px}
-.panel-hdr .quotes .q.sell .l,.panel-hdr .quotes .q.buy .l{font-size:10px;letter-spacing:1.5px;font-weight:700}
-.panel-hdr .quotes .q.sell .v,.panel-hdr .quotes .q.buy .v{font-size:18px;font-weight:900;letter-spacing:.5px;line-height:1.15}
-.panel-hdr .quotes .q.sell .v{color:#ff0015}
-.panel-hdr .quotes .q.buy  .v{color:#07f911}
-.panel-hdr .quotes .q.spread{padding:4px 8px;background:#000;opacity:.85}
-.panel-hdr .quotes .q.spread .l{font-size:8px;color:#4a525c}
-.panel-hdr .quotes .q.spread .v{font-size:11px;color:#6c7a89;font-weight:600;line-height:1.15}
+.tm-block{padding:12px 0;border-bottom:1px solid var(--line)}
+.tm-block:last-child{border-bottom:0}
+.tm-block .tm-hd{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.tm-block .tm-hd .arrow{font-size:14px;font-weight:900}
+.tm-block .tm-hd .arrow.up{color:var(--green)}
+.tm-block .tm-hd .arrow.dn{color:var(--red)}
+.tm-block .tm-hd .arrow.no{color:var(--mut)}
+.tm-block .tm-hd .ttl{font-size:11px;letter-spacing:2px;color:var(--fg);font-weight:700;text-transform:uppercase}
+.tm-block .tm-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px 14px;font-size:12px}
+.tm-block .tm-grid .k{color:var(--mut);font-size:10px;letter-spacing:1px;text-transform:uppercase;font-weight:600}
+.tm-block .tm-grid .v{color:var(--fg);font-family:"SF Mono",monospace;font-size:12px}
 
-/* GLOSSARY (per spec rule 11) - beginner-readable expandable items, one per
-   row so each definition has room to breathe. Controlled by the Glossary tab. */
-#terms-list{display:flex;flex-direction:column;gap:1px;background:#1a1a1a}
-.term{padding:0;background:#000}
-.term details{padding:0}
-.term details summary{cursor:pointer;padding:14px 18px;list-style:none;outline:none;display:flex;align-items:center;gap:12px;font-size:14px;font-weight:700;letter-spacing:1px;color:#FFD600;transition:background .12s,color .12s}
-.term details summary::-webkit-details-marker{display:none}
-.term details summary::before{content:'+';display:inline-block;width:18px;height:18px;text-align:center;line-height:16px;border:1px solid #1a1a1a;color:#FFD600;font-weight:900;font-size:14px;flex:0 0 18px}
-.term details[open] summary::before{content:'-';background:#FFD600;color:#000;border-color:#FFD600}
-.term details summary:hover{background:#0a1420}
-.term details summary .plain{margin-left:auto;color:#6c7a89;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:none}
-.term details .body{padding:8px 18px 18px 48px;font-size:13px;line-height:1.7;color:#d7dde3;background:#000}
-.astra-chat-btn{display:block;margin-top:16px;padding:12px 18px;font-size:15px;font-weight:bold;background:#111;border:1px solid #00ffcc;color:#00ffcc;cursor:pointer;width:100%;text-align:left;}
-.astra-chat-btn:hover{background:#00ffcc;color:#000;}
+.sec-nav{display:flex;align-items:center;gap:0;padding:0 22px;background:var(--bg2);border-top:1px solid var(--line2);border-bottom:1px solid var(--line2);margin-top:14px;overflow-x:auto}
+.sec-nav .tab{padding:14px 18px;font-size:11px;letter-spacing:2px;color:var(--mut);text-transform:uppercase;font-weight:700;border-bottom:2px solid transparent;white-space:nowrap}
+.sec-nav .tab:hover{color:var(--fg)}
+.sec-nav .tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.sec-nav .badge{margin-left:auto;font-size:10px;color:var(--mut);letter-spacing:1px}
+.sec-nav .badge .n{color:var(--gold);font-weight:700}
 
-/* ATLAS DOCTRINE v1 — precision levels + viability pill */
-.exec-tbl td.xr-r .px-line{font-family:"SF Mono",Menlo,Consolas,monospace;font-weight:700}
-.exec-tbl td.xr-r .px-price{color:#FFD600;font-size:15px}
-.exec-tbl td.xr-r .px-buffer{color:#6c7a89;font-size:12px;font-weight:600}
-.exec-tbl td.xr-r .px-bounds{font-family:"SF Mono",Menlo,Consolas,monospace;color:#9aa4ad;font-size:12px;margin-top:2px}
-.exec-tbl td.xr-r .px-meta{font-family:"SF Mono",Menlo,Consolas,monospace;color:#fff;font-size:12px;margin-top:4px;padding-top:4px;border-top:1px dashed #1a1a1a}
-.exec-tbl td.xr-r .px-dollars{color:#fff;font-weight:700;letter-spacing:.5px}
-.exec-tbl td.xr-r .px-pips{color:#6c7a89;margin-left:8px}
-.vb-pill{display:inline-block;padding:4px 12px;border-radius:2px;font-weight:900;letter-spacing:2px;font-size:12px}
-.vb-valid{background:#07f911;color:#000}
-.vb-marginal{background:#FF9100;color:#000}
-.vb-invalid{background:#ff0015;color:#fff}
+.sec-body{padding:18px 22px}
+.sec-body.hidden{display:none}
+.sec-body .sec-hd{display:flex;align-items:baseline;gap:14px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--line2)}
+.sec-body .sec-hd h2{font-size:13px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;font-weight:800}
+.sec-body .sec-hd .sub{font-size:11px;color:var(--mut)}
 
-/* FORWARD-IMPACT EVENT CARDS */
-.ev .ev-fwd{padding-top:8px;margin-top:8px;border-top:1px solid #1a1a1a;display:flex;flex-direction:column;gap:4px}
-.ev .ev-row{display:flex;gap:10px;font-size:12px;line-height:1.5}
-.ev .ev-k{flex:0 0 140px;color:#6c7a89;letter-spacing:1.2px;font-weight:600;font-size:10px;padding-top:2px}
-.ev .ev-v{flex:1;color:#d7dde3}
+.chart-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.chart-pane{background:#000;border:1px solid var(--line2);border-radius:3px;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:11px;letter-spacing:2px;position:relative;overflow:hidden}
+.chart-pane .tf-tag{position:absolute;top:6px;left:8px;font-size:9px;letter-spacing:2px;color:var(--gold);font-weight:700}
+.chart-pane .sym-tag{position:absolute;top:6px;right:8px;font-size:9px;letter-spacing:2px;color:var(--fg);font-weight:700;font-family:"SF Mono",monospace}
+.chart-pane svg{width:100%;height:100%;opacity:0.85}
 
-/* STATUS VIABILITY ROW (doctrine addition) */
-.sx-viability{padding:16px 20px;background:#050a10;border:1px solid #1a1a1a;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.sx-viability .lbl{font-size:11px;letter-spacing:2px;color:#6c7a89;font-weight:700}
-.sx-viability .ts{margin-left:auto;color:#6c7a89;font-size:11px;letter-spacing:1px;font-family:"SF Mono",Menlo,Consolas,monospace}
+.hist-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.hist-card{background:var(--cell);border:1px solid var(--line2);border-left:3px solid var(--mut);border-radius:3px;padding:14px}
+.hist-card.green{border-left-color:var(--green)}
+.hist-card.red{border-left-color:var(--red)}
+.hist-card.amber{border-left-color:var(--amber)}
+.hist-card.cyan{border-left-color:var(--cyan)}
+.hist-card.grey{border-left-color:var(--mut)}
+.hist-card .h-name{font-size:13px;font-weight:700;color:var(--fg);margin-bottom:4px}
+.hist-card .h-meta{font-size:10px;letter-spacing:1px;color:var(--mut);text-transform:uppercase;margin-bottom:8px}
+.hist-card .h-grid{display:grid;grid-template-columns:max-content 1fr;gap:4px 12px;font-size:11px;margin-bottom:8px}
+.hist-card .h-grid .k{color:var(--mut);font-size:10px;letter-spacing:1px;text-transform:uppercase}
+.hist-card .h-grid .v{color:var(--fg);font-family:"SF Mono",monospace}
+.hist-card .h-suggests{font-size:11px;color:var(--mut2);font-style:italic;margin-top:6px;padding-top:6px;border-top:1px solid var(--line)}
 
-/* GLOSSARY MODAL */
-.term-open{display:flex;align-items:center;gap:12px;width:100%;padding:14px 18px;background:#000;border:none;outline:none;cursor:pointer;font-family:inherit;text-align:left;transition:background .12s}
-.term-open:hover{background:#0a1420}
-.term-code{color:#FFD600;font-weight:700;font-size:14px;letter-spacing:1px;flex:0 0 auto}
-.term-plain{color:#d7dde3;font-size:13px;flex:1}
-.term-more{color:#00B0FF;font-size:10px;letter-spacing:2px;font-weight:700}
-#term-modal{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px}
-#term-modal.open{display:flex}
-#term-modal .tm-card{background:#000;border:1px solid #FFD600;max-width:720px;width:100%;max-height:86vh;overflow-y:auto;box-shadow:0 0 0 1px #FFD600 inset}
-#term-modal .tm-hd{padding:18px 22px;background:#050a10;border-bottom:1px solid #1a1a1a;display:flex;align-items:center;gap:14px}
-#term-modal .tm-code{color:#FFD600;font-size:18px;font-weight:900;letter-spacing:1.5px}
-#term-modal .tm-close{margin-left:auto;background:transparent;border:1px solid #1a1a1a;color:#d7dde3;padding:6px 14px;font-family:inherit;font-size:12px;letter-spacing:1.5px;cursor:pointer}
-#term-modal .tm-close:hover{border-color:#FFD600;color:#FFD600}
-#term-modal .tm-body{padding:6px 0}
-#term-modal .tm-sec{padding:14px 22px;border-bottom:1px solid #1a1a1a}
-#term-modal .tm-sec:last-child{border-bottom:none}
-#term-modal .tm-k{color:#FFD600;font-size:11px;letter-spacing:2px;font-weight:700;margin-bottom:6px}
-#term-modal .tm-v{color:#d7dde3;font-size:13px;line-height:1.7}
-#term-modal .tm-v ul{margin:4px 0 0 18px}
+.glossary-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.gl-card{background:var(--cell);border:1px solid var(--line2);border-radius:3px;padding:12px 14px}
+.gl-card .gl-term{color:var(--gold);font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.gl-card .gl-def{font-size:12px;color:var(--mut2)}
+.colour-key{display:flex;flex-wrap:wrap;gap:14px;padding:14px;background:var(--cell);border:1px solid var(--line2);border-radius:3px;margin-bottom:14px}
+.colour-key .ck{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--mut2)}
+.colour-key .ck .sw{width:14px;height:14px;border-radius:2px}
+.colour-key .ck.green .sw{background:var(--green)}
+.colour-key .ck.red .sw{background:var(--red)}
+.colour-key .ck.amber .sw{background:var(--amber)}
+.colour-key .ck.cyan .sw{background:var(--cyan)}
+.colour-key .ck.grey .sw{background:var(--mut)}
 
-/* PROBABILITY MODEL (under signal strength) */
-.sx-prob{padding:16px 20px;background:#050a10;border:1px solid #1a1a1a;margin-top:14px}
-.sx-prob .prob-hd{font-size:11px;letter-spacing:2px;color:#FFD600;font-weight:700;margin-bottom:10px}
-.sx-prob .prob-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px}
-.sx-prob .prob-cell{text-align:center;padding:8px;background:#000;border:1px solid #1a1a1a}
-.sx-prob .prob-cell .pk{font-size:10px;letter-spacing:1.5px;color:#6c7a89;font-weight:600}
-.sx-prob .prob-cell .pv{font-size:20px;font-weight:900;margin-top:4px}
-.sx-prob .prob-sizing{font-size:14px;line-height:1.7;color:#d7dde3;padding:10px 0;border-top:1px solid #1a1a1a}
-.sx-prob .prob-sizing b{color:#FFD600}
+.final-banner{background:rgba(255,214,0,0.06);border:1px solid var(--gold-d);padding:12px 14px;border-radius:3px;margin-bottom:14px;font-size:11px;color:var(--mut2)}
+.final-banner b{color:var(--gold)}
 
-/* FINAL READ */
-#final-read-root{display:flex;flex-direction:column;gap:14px}
-.fr-verdict{padding:20px 24px;background:#050a10;border:1px solid #1a1a1a;border-left:4px solid #FFD600;font-size:22px;font-weight:900;letter-spacing:1px;color:#fff}
-.fr-row{padding:14px 18px;background:#050a10;border:1px solid #1a1a1a}
-.fr-row .fr-k{font-size:11px;letter-spacing:2px;color:#FFD600;font-weight:700;margin-bottom:6px}
-.fr-row .fr-v{font-size:14px;line-height:1.75;color:#d7dde3}
-.fr-row .fr-v b{color:#fff}
+.sym-err{padding:60px 22px;text-align:center;color:var(--red);font-size:14px}
+.sym-err h1{font-size:18px;letter-spacing:3px;color:var(--red);margin-bottom:8px}
+.sym-err code{font-family:"SF Mono",monospace;background:var(--cell);padding:2px 6px;border-radius:2px;color:var(--gold);font-size:12px}
 
-/* HISTORICAL ANALOG */
-.ha-block{padding:14px 18px;background:#050a10;border:1px solid #1a1a1a;border-left:4px solid #00B0FF;margin-top:10px}
-.ha-block .ha-hd{font-size:11px;letter-spacing:2px;color:#00B0FF;font-weight:700;margin-bottom:8px}
-.ha-block .ha-match{font-size:16px;font-weight:700;color:#fff;margin-bottom:6px}
-.ha-block .ha-desc{font-size:13px;line-height:1.7;color:#d7dde3;margin-bottom:8px}
-.ha-block .ha-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px}
-.ha-block .ha-stat{text-align:center;padding:6px;background:#000;border:1px solid #1a1a1a}
-.ha-block .ha-stat .hsk{font-size:10px;letter-spacing:1.5px;color:#6c7a89}
-.ha-block .ha-stat .hsv{font-size:16px;font-weight:900;margin-top:2px}
-.ha-block .ha-conclusion{font-size:13px;line-height:1.7;color:#d7dde3;padding-top:8px;border-top:1px solid #1a1a1a}
-.ha-block .ha-conclusion b{color:#FFD600}
+.src-footer{padding:14px 22px;border-top:1px solid var(--line2);background:var(--bg2);display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:10px;color:var(--mut)}
+.src-footer .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;background:var(--cell);border:1px solid var(--line2);border-radius:2px;letter-spacing:1px}
+.src-footer .badge .b-dot{width:7px;height:7px;border-radius:50%;background:var(--mut)}
+.src-footer .badge.ok .b-dot{background:var(--green)}
+.src-footer .badge.warn .b-dot{background:var(--amber)}
+.src-footer .badge.fail .b-dot{background:var(--red)}
+
+@media (max-width:1100px){
+  .exec-strip{grid-template-columns:repeat(3,1fr)}
+  .cond-grid{grid-template-columns:repeat(4,1fr)}
+  .fe-tm{grid-template-columns:1fr}
+  .chart-grid{grid-template-columns:repeat(2,1fr)}
+}
 </style>
 </head>
 <body>
 
-<nav id="term-nav">
-<span class="brand">ATLAS FX</span>
-<button type="button" class="tab active" data-target="sec-htf">HTF</button>
-<button type="button" class="tab" data-target="sec-ltf">LTF</button>
-<button type="button" class="tab active" data-target="sec-exec">EXECUTION</button>
-<button type="button" class="tab active" data-target="sec-trade">STATUS</button>
-<button type="button" class="tab" data-target="sec-hist">HISTORICAL</button>
-<button type="button" class="tab" data-target="sec-mech">MECHANISM</button>
-<button type="button" class="tab" data-target="sec-scen">SCENARIO</button>
-<button type="button" class="tab" data-target="sec-events">EVENTS</button>
-<button type="button" class="tab" data-target="sec-final">FINAL READ</button>
-<button type="button" class="tab" data-target="sec-matrix">MATRIX</button>
-<button type="button" class="tab" data-target="sec-terms">GLOSSARY</button>
-<span class="src"><span class="st-dot" id="st-dot"></span><span id="st-txt">INIT</span> . <b id="src-name">-</b> . <span id="src-time">-</span></span>
-</nav>
+<header class="atlas-hd">
+  <div class="brand">
+    <div class="logo-dot"></div>
+    <div class="brand-name">ATLAS FX</div>
+    <div class="brand-sub">EXECUTION DESK</div>
+  </div>
+  <div class="sep"></div>
+  <div class="sym-block">
+    <div class="sym" id="hd-sym">—</div>
+    <div class="sym-class" id="hd-class">—</div>
+  </div>
+  <div class="sep"></div>
+  <div class="price mono" id="hd-price">—</div>
+  <div class="chg mono" id="hd-chg">—</div>
+  <div class="right">
+    <div class="clock" id="hd-clock">—</div>
+    <div class="src ok" id="hd-src"><div class="dot"></div><span id="hd-src-txt">DATA · MOCK</span></div>
+  </div>
+</header>
 
-<!-- 1. HTF CHART MATRIX -->
-<section class="matrix-wrap" id="sec-htf">
-<div class="matrix-hd"><h3>HTF &mdash; HIGHER TIMEFRAMES</h3><span class="sub">Weekly &middot; Daily &middot; 4-Hour &middot; 1-Hour</span><span class="sym-label">EURUSD</span></div>
-<div class="matrix-grid">
-<div class="chart-panel"><div class="panel-hdr"><span class="sym">-</span><span class="tf">1W</span><span class="last">-</span><span class="chg">-</span><div class="quotes"><span class="q sell"><span class="l">SELL</span><span class="v">-</span></span><span class="q spread"><span class="l">SPR</span><span class="v">-</span></span><span class="q buy"><span class="l">BUY</span><span class="v">-</span></span></div></div><div class="chart" id="ch-htf-1W"></div></div>
-<div class="chart-panel"><div class="panel-hdr"><span class="sym">-</span><span class="tf">1D</span><span class="last">-</span><span class="chg">-</span><div class="quotes"><span class="q sell"><span class="l">SELL</span><span class="v">-</span></span><span class="q spread"><span class="l">SPR</span><span class="v">-</span></span><span class="q buy"><span class="l">BUY</span><span class="v">-</span></span></div></div><div class="chart" id="ch-htf-1D"></div></div>
-<div class="chart-panel"><div class="panel-hdr"><span class="sym">-</span><span class="tf">4H</span><span class="last">-</span><span class="chg">-</span><div class="quotes"><span class="q sell"><span class="l">SELL</span><span class="v">-</span></span><span class="q spread"><span class="l">SPR</span><span class="v">-</span></span><span class="q buy"><span class="l">BUY</span><span class="v">-</span></span></div></div><div class="chart" id="ch-htf-4H"></div></div>
-<div class="chart-panel"><div class="panel-hdr"><span class="sym">-</span><span class="tf">1H</span><span class="last">-</span><span class="chg">-</span><div class="quotes"><span class="q sell"><span class="l">SELL</span><span class="v">-</span></span><span class="q spread"><span class="l">SPR</span><span class="v">-</span></span><span class="q buy"><span class="l">BUY</span><span class="v">-</span></span></div></div><div class="chart" id="ch-htf-1H"></div></div>
-</div>
-</section>
-
-<!-- 2. LTF CHART MATRIX -->
-<section class="matrix-wrap hidden" id="sec-ltf">
-<div class="matrix-hd"><h3>LTF &mdash; LOWER TIMEFRAMES</h3><span class="sub">30-Minute &middot; 15-Minute &middot; 5-Minute &middot; 1-Minute</span><span class="sym-label">EURUSD</span></div>
-<div class="matrix-grid">
-<div class="chart-panel"><div class="panel-hdr"><span class="sym">-</span><span class="tf">30M</span><span class="last">-</span><span class="chg">-</span><div class="quotes"><span class="q sell"><span class="l">SELL</span><span class="v">-</span></span><span class="q spread"><span class="l">SPR</span><span class="v">-</span></span><span class="q buy"><span class="l">BUY</span><span class="v">-</span></span></div></div><div class="chart" id="ch-ltf-30M"></div></div>
-<div class="chart-panel"><div class="panel-hdr"><span class="sym">-</span><span class="tf">15M</span><span class="last">-</span><span class="chg">-</span><div class="quotes"><span class="q sell"><span class="l">SELL</span><span class="v">-</span></span><span class="q spread"><span class="l">SPR</span><span class="v">-</span></span><span class="q buy"><span class="l">BUY</span><span class="v">-</span></span></div></div><div class="chart" id="ch-ltf-15M"></div></div>
-<div class="chart-panel"><div class="panel-hdr"><span class="sym">-</span><span class="tf">5M</span><span class="last">-</span><span class="chg">-</span><div class="quotes"><span class="q sell"><span class="l">SELL</span><span class="v">-</span></span><span class="q spread"><span class="l">SPR</span><span class="v">-</span></span><span class="q buy"><span class="l">BUY</span><span class="v">-</span></span></div></div><div class="chart" id="ch-ltf-5M"></div></div>
-<div class="chart-panel"><div class="panel-hdr"><span class="sym">-</span><span class="tf">1M</span><span class="last">-</span><span class="chg">-</span><div class="quotes"><span class="q sell"><span class="l">SELL</span><span class="v">-</span></span><span class="q spread"><span class="l">SPR</span><span class="v">-</span></span><span class="q buy"><span class="l">BUY</span><span class="v">-</span></span></div></div><div class="chart" id="ch-ltf-1M"></div></div>
-</div>
-</section>
-
-<!-- 3. EXECUTION MAP -->
-<section class="sec" id="sec-exec">
-<div class="sec-hd"><h3>EXECUTION MAP</h3><span class="sub">recommended . range / action . context</span></div>
-<div id="exec-wrap">
-<div id="exec-grid"></div>
-<div id="exec-context"></div>
-</div>
-<div id="exec-explainer"></div>
-<button class="astra-chat-btn" onclick="openAstraChat()">💬 Chat with Astra about this trade</button>
-</section>
-
-<!-- 4. STATUS -->
-<section class="sec" id="sec-trade">
-<div class="sec-hd"><h3>STATUS</h3><span class="sub">plain-english system health, signal strength, validity</span></div>
-<div class="sec-body"><div id="status-root">Loading status&hellip;</div></div>
-<button class="astra-chat-btn" onclick="openAstraChat()">💬 Chat with Astra about this trade</button>
-</section>
-
-<!-- 5. HISTORICAL CONTEXT -->
-<section class="sec hidden" id="sec-hist">
-<div class="sec-hd"><h3>WHY THIS TRADE IS MOVING</h3><span class="sub">the four macro drivers behind the price - what is happening, why it matters, what it means for this trade</span></div>
-<div id="hist-grid"></div>
-<div id="hist-narrative"></div>
-<div id="hist-why"></div>
-</section>
-
-<!-- 6. MECHANISM CHAIN -->
-<section class="sec hidden" id="sec-mech">
-<div class="sec-hd"><h3>MECHANISM</h3><span class="sub">cause &rarr; market reaction &rarr; FX impact &rarr; trade outcome</span></div>
-<div id="mech-chain"></div>
-</section>
-
-<!-- 7. SCENARIO -->
-<section class="sec hidden" id="sec-scen">
-<div class="sec-hd"><h3>SCENARIO</h3><span class="sub">three plain-english outlooks - what would need to happen, what that would mean, what becomes more favourable</span></div>
-<div id="scen-grid"></div>
-</section>
-
-<!-- 8. EVENTS -->
-<section class="sec hidden" id="sec-events">
-<div class="sec-hd"><h3>EVENTS</h3><span class="sub">whether scheduled news is moving the trade, in plain english</span></div>
-<div class="sec-body"><div id="ev-list"></div></div>
-</section>
-
-<!-- 8b. ATLAS FINAL READ -->
-<section class="sec hidden" id="sec-final">
-<div class="sec-hd"><h3>ATLAS FINAL READ</h3><span class="sub">system verdict, conviction level, position sizing instruction</span></div>
-<div class="sec-body"><div id="final-read-root">Loading final read&hellip;</div></div>
-</section>
-
-<!-- 9. PRICE MATRIX -->
-<section class="sec hidden" id="sec-matrix">
-<div class="sec-hd"><h3>PRICE MATRIX</h3><span class="sub">last 5 searches . click row to reload</span></div>
-<div id="price-matrix">
-<form id="pm-search" onsubmit="event.preventDefault();var v=document.getElementById('pm-in').value;if(v){window.reloadSymbol(v);document.getElementById('pm-in').value='';}">
-<input id="pm-in" type="text" placeholder="SYMBOL - e.g. EURUSD" maxlength="10" autocomplete="off">
-<button type="submit">LOAD</button>
-<span class="hint">max 5 . deduped . !SYMBOL / $SYMBOL triggers from Discord</span>
-</form>
-<table><thead><tr><th>PAIR</th><th>PRICE</th><th>CHG</th><th>%</th><th>HIGH</th><th>LOW</th><th>RANGE</th><th>BIAS</th></tr></thead><tbody id="pm-body"></tbody></table>
-</div>
-</section>
-
-<!-- 10. TERMINOLOGY -->
-<section class="sec hidden" id="sec-terms">
-<div class="sec-hd"><h3>TERMINOLOGY INDEX</h3><span class="sub">glossary</span></div>
-<div class="sec-body"><div id="terms-list"></div></div>
-</section>
-
-<div id="footer">
-<span class="pill" id="ft-build">BUILD -</span>
-<span class="pill" id="ft-ts">-</span>
-<span class="pill" id="ft-src">SOURCE -</span>
-<span class="pill" id="ft-latency">LATENCY -</span>
-<span class="pill">ATLAS FX MACRO DASHBOARD . PRODUCTION</span>
-</div>
-
-<!-- echarts.min.js in this repo is the ESM build - load it as a module and
-     expose the namespace on window.echarts before DOMContentLoaded fires so
-     charts-engine.js (classic script) can call echarts.init() at boot. -->
-<script type="module">
-  import * as echartsNs from "./echarts.min.js";
-  window.echarts = echartsNs;
-</script>
-<script src="./data-feed.js"></script>
-<script src="./charts-engine.js"></script>
-<script src="./macro-engine.js"></script>
-<script src="./corey-engine.js"></script>
-<script src="./spidey-engine.js"></script>
-<script src="./jane-engine.js"></script>
-<script src="./execution-engine.js"></script>
-<script src="./terms-modal.js"></script>
-<script>
-(function(){
-  var A = window.ATLAS;
-  var t0 = performance.now();
-  var buildId = "ATLAS-" + Math.floor(Date.now()/1000).toString(36).toUpperCase();
-  document.getElementById("ft-build").textContent = "BUILD " + buildId;
-  document.getElementById("ft-ts").textContent = new Date().toISOString().replace("T"," ").replace(/\..*/,"") + " UTC";
-  A.boot = { t0:t0, buildId:buildId };
-  A.status = function(state, name, msg){
-    var dot = document.getElementById("st-dot");
-    var txt = document.getElementById("st-txt");
-    var nm  = document.getElementById("src-name");
-    var tm  = document.getElementById("src-time");
-    if(dot) dot.className = "st-dot " + (state||"");
-    if(txt) txt.textContent = (msg||state||"").toUpperCase();
-    if(name && nm) nm.textContent = name;
-    if(tm) tm.textContent = new Date().toISOString().substr(11,8) + "Z";
-  };
-  A.status("warn","-","BOOT");
-})();
-(function(){
-  try {
-    var p = new URLSearchParams(window.location.search);
-    var s = (p.get('symbol') || '').toUpperCase().replace(/[^A-Z0-9]/g,'');
-    var m = (p.get('mode')   || '').toLowerCase().replace(/[^a-z]/g,'');
-    var u = (p.get('user')   || '').toUpperCase().replace(/[^A-Z]/g,'');
-    if (s) window.currentSymbol = s;
-    if (m) window.ATLAS_MODE = m;
-    window.ATLAS_USER = u || 'AT';
-  } catch (e) {}
-})();
-function initWhenReady(){
-  if(typeof echarts==='undefined'){setTimeout(initWhenReady,50);return;}
-  ChartsEngine.init();
-  ChartsEngine.load(window.currentSymbol||'EURUSD');
-}
-window.addEventListener("DOMContentLoaded", async function(){
-  var A = window.ATLAS, start = performance.now();
-  try {
-    await DataFeed.init();
-    initWhenReady();
-    await MacroEngine.init();
-    await ExecutionEngine.init();
-    await MacroEngine.run();
-    await ExecutionEngine.run();
-    document.getElementById("ft-src").textContent = "SOURCE " + (A.src.provider||"-");
-    document.getElementById("ft-latency").textContent = "LATENCY " + Math.round(performance.now()-start) + "ms";
-  } catch(e){ A.status("err","-","BOOT FAIL"); console.error("ATLAS boot error", e); }
-  try {
-    var host = (location.protocol.indexOf("http")===0 ? location.origin : "http://localhost:3000");
-    var es = new EventSource(host + "/events");
-    es.onmessage = async function(e){
-      try {
-        var data = JSON.parse(e.data);
-        if(data && data.symbol){
-          window.addSearch && window.addSearch(data.symbol);
-          await ChartsEngine.load(data.symbol);
-          await MacroEngine.run(data.symbol);
-          await ExecutionEngine.run(data.symbol);
-        }
-      } catch(err){}
-    };
-    es.onerror = function(){};
-  } catch(e){}
-  setInterval(async function(){
-    try {
-      var s = performance.now();
-      await ChartsEngine.loadAll();
-      await MacroEngine.run();
-      await ExecutionEngine.run();
-      document.getElementById("ft-src").textContent = "SOURCE " + (A.src.provider||"-");
-      document.getElementById("ft-latency").textContent = "LATENCY " + Math.round(performance.now()-s) + "ms";
-    } catch(e){}
-  }, 45000);
-});
-
-/* TAB TOGGLE - dropdown-style section reveal.
-   Click a tab: toggle hidden class on its target section, mirror state on
-   the tab's .active class, smooth-scroll into view on open, and trigger an
-   ECharts resize so panels paint correctly when their container becomes
-   visible for the first time. Multiple sections can be open simultaneously. */
-(function(){
-  function bindTabs(){
-    var tabs = document.querySelectorAll('#term-nav .tab');
-    Array.prototype.forEach.call(tabs, function(btn){
-      btn.addEventListener('click', function(){
-        var id = btn.getAttribute('data-target');
-        var sec = document.getElementById(id);
-        if(!sec) return;
-        var willOpen = sec.classList.contains('hidden');
-        if(willOpen){
-          sec.classList.remove('hidden');
-          btn.classList.add('active');
-          setTimeout(function(){
-            try { sec.scrollIntoView({behavior:'smooth', block:'start'}); }
-            catch(e){ try { sec.scrollIntoView(); } catch(_){} }
-          }, 60);
-          setTimeout(function(){
-            try { window.ATLAS && window.ATLAS.Charts && window.ATLAS.Charts.resizeAll && window.ATLAS.Charts.resizeAll(); } catch(e){}
-            try { window.dispatchEvent(new Event('resize')); } catch(e){}
-          }, 140);
-        } else {
-          sec.classList.add('hidden');
-          btn.classList.remove('active');
-        }
-      });
-    });
-  }
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', bindTabs);
-  } else {
-    bindTabs();
-  }
-})();
-
-/* ---- ADDITION 2: Probability model (under signal strength) ---- */
-function atlasRenderProbability(){
-  var A = window.ATLAS; if(!A || !A.Macro || !A.Macro.state) return;
-  var st = A.Macro.state;
-  var s = st.strength || 0;
-  var PROB = (s>=8) ? {cont:75,range:15,rev:10,sz:'FULL SIZE — all four drivers aligned, high-conviction setup'}
-           : (s>=6) ? {cont:60,range:28,rev:12,sz:'REDUCED SIZE — most drivers agree but conviction is not maximum'}
-           : (s>=4) ? {cont:52,range:34,rev:14,sz:'LIGHT PARTICIPATION ONLY — drivers are mixed, protect capital'}
-           :          {cont:30,range:40,rev:30,sz:'STAND ASIDE — drivers disagree, no edge exists right now'};
-  var m = st.moves || {};
-  var fav = st.favDir || 0;
-  var aligned = 0;
-  if(m.dxy && Math.sign(m.dxy.dir)===Math.sign(fav) && fav!==0) aligned++;
-  if(m.y10 && Math.sign(m.y10.dir)===Math.sign(fav) && fav!==0) aligned++;
-  if(m.eq  && Math.sign(-m.eq.dir)===Math.sign(fav) && fav!==0) aligned++;
-  if(m.jpy && Math.sign(m.jpy.dir)===Math.sign(fav) && fav!==0) aligned++;
-  var el = document.querySelector('.sx-strength');
-  if(!el) return;
-  var existing = document.getElementById('atlas-prob');
-  if(existing) existing.remove();
-  var div = document.createElement('div');
-  div.id = 'atlas-prob';
-  div.className = 'sx-prob';
-  div.innerHTML =
-    '<div class="prob-hd">PROBABILITY MODEL</div>'+
-    '<div class="prob-grid">'+
-      '<div class="prob-cell"><div class="pk">DRIVERS ALIGNED</div><div class="pv hi">'+aligned+' / 4</div></div>'+
-      '<div class="prob-cell"><div class="pk">CONTINUATION</div><div class="pv gn">'+PROB.cont+'%</div></div>'+
-      '<div class="prob-cell"><div class="pk">RANGE</div><div class="pv or">'+PROB.range+'%</div></div>'+
-      '<div class="prob-cell"><div class="pk">REVERSAL</div><div class="pv dn">'+PROB.rev+'%</div></div>'+
-    '</div>'+
-    '<div class="prob-sizing"><b>SIZING:</b> '+PROB.sz+'</div>';
-  el.parentNode.insertBefore(div, el.nextSibling);
-}
-
-/* ---- ADDITION 3: Historical pattern recognition ---- */
-var HIST_ANALOGS = [
-  {year:'2008',label:'GLOBAL DELEVERAGING',dxy:1,vix:'EXTREME',eq:-1,contPct:82,avgMove5:'3.2%',avgMove10:'6.1%',desc:'Dollar surged as global risk assets collapsed. Flight to USD cash dominated all flows.'},
-  {year:'2013',label:'TAPER TANTRUM',dxy:1,vix:'ELEVATED',eq:-1,contPct:68,avgMove5:'1.8%',avgMove10:'3.4%',desc:'Fed signalled rate normalisation. Dollar bid, emerging markets sold, equities volatile.'},
-  {year:'2017',label:'GLOBAL REFLATION',dxy:-1,vix:'LOW',eq:1,contPct:71,avgMove5:'1.4%',avgMove10:'2.8%',desc:'Synchronised global growth weakened the dollar. Risk assets rallied, vol collapsed.'},
-  {year:'2020',label:'POST-COVID STIMULUS',dxy:-1,vix:'ELEVATED',eq:1,contPct:74,avgMove5:'2.1%',avgMove10:'4.0%',desc:'Massive fiscal and monetary stimulus weakened USD. Equities recovered sharply.'},
-  {year:'2022',label:'RATE SHOCK',dxy:1,vix:'ELEVATED',eq:-1,contPct:76,avgMove5:'2.5%',avgMove10:'4.8%',desc:'Aggressive Fed hikes drove dollar higher. Equities and bonds sold off simultaneously.'},
-  {year:'2023',label:'SOFT LANDING',dxy:0,vix:'LOW',eq:1,contPct:63,avgMove5:'0.9%',avgMove10:'1.7%',desc:'Inflation eased without recession. Dollar drifted, equities grinded higher on low vol.'},
-  {year:'2024',label:'USD EXCEPTIONALISM',dxy:1,vix:'LOW',eq:1,contPct:66,avgMove5:'1.1%',avgMove10:'2.2%',desc:'US outperformance attracted global capital. Dollar and equities rose together.'}
-];
-function matchHistoricalAnalog(){
-  var A = window.ATLAS; if(!A || !A.Macro || !A.Macro.state) return null;
-  var st = A.Macro.state;
-  var m = st.moves || {};
-  var curDxy = (m.dxy && m.dxy.dir>0) ? 1 : (m.dxy && m.dxy.dir<0) ? -1 : 0;
-  var curVix = st.volLabel || 'LOW';
-  var curEq  = (m.eq && m.eq.dir>0) ? 1 : (m.eq && m.eq.dir<0) ? -1 : 0;
-  var best = null, bestScore = -1;
-  for(var i=0;i<HIST_ANALOGS.length;i++){
-    var h = HIST_ANALOGS[i];
-    var score = 0;
-    if(h.dxy === curDxy) score += 3;
-    else if(h.dxy === 0 || curDxy === 0) score += 1;
-    var vixMatch = (curVix==='EXTREME'&&h.vix==='EXTREME') || (curVix==='ELEVATED'&&(h.vix==='ELEVATED'||h.vix==='EXTREME')) || (curVix==='LOW'&&h.vix==='LOW') || (curVix==='NORMAL'&&(h.vix==='LOW'||h.vix==='ELEVATED'));
-    if(vixMatch) score += 2;
-    if(h.eq === curEq) score += 2;
-    else if(h.eq === 0 || curEq === 0) score += 1;
-    if(score > bestScore){ bestScore = score; best = h; }
-  }
-  return best;
-}
-function atlasRenderHistoricalAnalog(){
-  var analog = matchHistoricalAnalog();
-  if(!analog) return;
-  var el = document.getElementById('hist-why');
-  if(!el) return;
-  var existing = document.getElementById('atlas-analog');
-  if(existing) existing.remove();
-  var div = document.createElement('div');
-  div.id = 'atlas-analog';
-  div.innerHTML =
-    '<div class="ha-block">'+
-      '<div class="ha-hd">HISTORICAL PATTERN RECOGNITION</div>'+
-      '<div class="ha-match">'+analog.year+' — '+analog.label+'</div>'+
-      '<div class="ha-desc">'+analog.desc+'</div>'+
-      '<div class="ha-stats">'+
-        '<div class="ha-stat"><div class="hsk">CONTINUATION</div><div class="hsv gn">'+analog.contPct+'%</div></div>'+
-        '<div class="ha-stat"><div class="hsk">AVG MOVE (5 SESSIONS)</div><div class="hsv hi">'+analog.avgMove5+'</div></div>'+
-        '<div class="ha-stat"><div class="hsk">AVG MOVE (10 SESSIONS)</div><div class="hsv hi">'+analog.avgMove10+'</div></div>'+
-      '</div>'+
-      '<div class="ha-conclusion"><b>CONCLUSION:</b> Current conditions most closely match the <b>'+analog.year+' '+analog.label+'</b> environment. In that regime, the dominant move continued '+analog.contPct+'% of the time over the following 5–10 sessions.</div>'+
-    '</div>';
-  el.parentNode.insertBefore(div, el.nextSibling);
-}
-
-/* ---- ADDITION 1: ATLAS Final Read ---- */
-function atlasRenderFinalRead(){
-  var A = window.ATLAS; if(!A || !A.Macro || !A.Macro.state) return;
-  var st = A.Macro.state;
-  var s = st.strength || 0;
-  var verdict, verdictBorder;
-  if(s>=8){ verdict='\u2705 HIGH CONVICTION \u2014 TRADE FULL SIZE'; verdictBorder='#07f911'; }
-  else if(s>=6){ verdict='\uD83D\uDFE1 MODERATE \u2014 REDUCED SIZE'; verdictBorder='#FFD600'; }
-  else if(s>=4){ verdict='\u26A0\uFE0F WAIT / LIGHT PARTICIPATION ONLY'; verdictBorder='#FF9100'; }
-  else { verdict='\uD83D\uDD34 STAND ASIDE'; verdictBorder='#ff0015'; }
-  var analog = matchHistoricalAnalog();
-  var analogText = analog ? 'Current environment matches <b>'+analog.year+' '+analog.label+'</b>. In that regime, the dominant move continued '+analog.contPct+'% of the time.' : 'No strong historical analog identified.';
-  var root = document.getElementById('final-read-root');
-  if(!root) return;
-  root.innerHTML =
-    '<div class="fr-verdict" style="border-left-color:'+verdictBorder+'">'+verdict+'</div>'+
-    '<div class="fr-row"><div class="fr-k">CURRENT STATE</div><div class="fr-v">'+
-      'Bias: <b>'+st.bias+'</b> · Condition: <b>'+st.cond+'</b> · Signal Strength: <b>'+s+' / 10</b>'+
-    '</div></div>'+
-    '<div class="fr-row"><div class="fr-k">HISTORICAL ALIGNMENT</div><div class="fr-v">'+analogText+'</div></div>'+
-    '<div class="fr-row"><div class="fr-k">EVENT RISK</div><div class="fr-v">'+
-      (st.volLabel==='EXTREME'||st.volLabel==='ELEVATED' ? 'Volatility is <b>'+st.volLabel+'</b>. Event risk is present — size accordingly and widen stops.' : 'Volatility is <b>'+st.volLabel+'</b>. No elevated event risk detected at this time.')+
-    '</div></div>'+
-    '<div class="fr-row"><div class="fr-k">EXECUTION STANCE</div><div class="fr-v">'+
-      (s>=8 ? 'All systems aligned. Execute at recommended levels with full conviction.' :
-       s>=6 ? 'Most drivers agree. Execute at recommended levels but with reduced size.' :
-       s>=4 ? 'Drivers are mixed. Light participation only — or wait for clearer alignment.' :
-              'Drivers disagree. No position is the best position right now.')+
-    '</div></div>';
-}
-
-/* Hook all three additions into the render cycle */
-var _origMacroRun = window.MacroEngine && window.MacroEngine.run;
-var _origExecRun  = window.ExecutionEngine && window.ExecutionEngine.run;
-function atlasPostUpdate(){
-  setTimeout(function(){
-    try { atlasRenderProbability(); } catch(e){}
-    try { atlasRenderHistoricalAnalog(); } catch(e){}
-    try { atlasRenderFinalRead(); } catch(e){}
-  }, 50);
-}
-if(_origMacroRun){
-  window.MacroEngine.run = async function(){
-    var r = await _origMacroRun.apply(this, arguments);
-    atlasPostUpdate();
-    return r;
-  };
-}
-if(_origExecRun){
-  window.ExecutionEngine.run = async function(){
-    var r = await _origExecRun.apply(this, arguments);
-    atlasPostUpdate();
-    return r;
-  };
-}
-window.addEventListener('DOMContentLoaded', function(){ setTimeout(atlasPostUpdate, 500); });
-
-/* ATLAS DOCTRINE v1 — viability status row injected into #status-root */
-function atlasRenderViability(){
-  var A = window.ATLAS; if(!A || !A.computeViability) return;
-  var v = A.computeViability();
-  var root = document.getElementById('status-root');
-  if(!root) return;
-  var existing = document.getElementById('sx-viability');
-  if(existing) existing.remove();
-  var cls = v.state === 'VALID' ? 'vb-valid' : v.state === 'MARGINAL' ? 'vb-marginal' : 'vb-invalid';
-  var ts = new Date().toISOString().replace('T',' ').slice(0,16) + 'Z';
-  var div = document.createElement('div');
-  div.id = 'sx-viability';
-  div.className = 'sx-viability';
-  div.innerHTML =
-    '<span class="lbl">TRADE VIABILITY</span>' +
-    '<span class="vb-pill ' + cls + '">' + v.state + '</span>' +
-    '<span class="ts">valid @ ' + ts + '</span>';
-  root.appendChild(div);
-}
-var _origAtlasPost = atlasPostUpdate;
-atlasPostUpdate = function(){
-  _origAtlasPost();
-  setTimeout(function(){ try { atlasRenderViability(); } catch(e){} }, 80);
-};
-
-/* Glossary modal control */
-function closeTermModal(){
-  var m = document.getElementById('term-modal');
-  if(m) m.classList.remove('open');
-}
-window.openTermModal = function(key, code){
-  var data = (window.TERM_MODALS && window.TERM_MODALS[key]) || null;
-  var body = document.getElementById('tm-body');
-  var title = document.getElementById('tm-title');
-  var plain = document.getElementById('tm-plain');
-  var modal = document.getElementById('term-modal');
-  if(!body || !modal) return;
-  title.textContent = code || key;
-  plain.textContent = (data && data.plain) || '';
-  if(!data){
-    body.innerHTML = '<div class="tm-sec"><div class="tm-k">DEFINITION</div><div class="tm-v">Definition pending — this term is in the glossary index but full doctrine content has not yet been loaded.</div></div>';
-  } else {
-    var sections = [
-      ['DEFINITION',                data.definition],
-      ['WHAT IT MEANS IN MARKETS',  data.meansInMarkets],
-      ['WHY IT MATTERS',            data.whyMatters],
-      ['HOW TO IDENTIFY IT',        data.howIdentify],
-      ['REAL EXAMPLE',              data.realExample],
-      ['COMMON MISTAKES',           data.commonMistakes],
-      ['ATLAS INTERPRETATION',      data.atlasInterpretation],
-      ['QUICK CHECKLIST',           data.checklist]
-    ];
-    body.innerHTML = sections.map(function(s){
-      return '<div class="tm-sec"><div class="tm-k">' + s[0] + '</div><div class="tm-v">' + (s[1] || '—') + '</div></div>';
-    }).join('');
-  }
-  modal.classList.add('open');
-};
-
-function openAstraChat(){
-  var GUILD_ID = '1430048352568868928';
-  var USER_CHANNELS = {
-    'AT': '1489245537395019908',
-    'NM': '1489248591854702744',
-    'SK': '1489246324552368178',
-    'BR': '1489247239359697067'
-  };
-  var USER_WEBHOOKS = {
-    'AT': 'https://discordapp.com/api/webhooks/1490037445490769951/FLSjm6IlLutkFLCOBj4xcgt-1Dyz7Sq0di8C6gp8AiRior2sWAQvCrAHFzzqv9U8XeA1',
-    'NM': 'https://discordapp.com/api/webhooks/1489248627921522810/JxgvqzM2ROJ0-W2Kf6rN3N48QsdVRKgle6-BPzRBk96g3DlkTGlIdjqoOCD3ppD3RMg0',
-    'SK': 'https://discordapp.com/api/webhooks/1489248136961720370/W8w-mvXwTbReAVZAlYaRm3doxjv8-hoCyFu76ZUB_DnN4Tf80_t84DQfXJupoMgreVj0',
-    'BR': 'https://discordapp.com/api/webhooks/1489247692499452055/SCHGuWHoUn7ZtxotEkaFw6QYgwEyXgbttMJvQs4wfH1gj63rjEQCfC8nLVEQiHK8qMBF'
-  };
-  var user = (window.ATLAS_USER || 'AT').toUpperCase();
-  if (!USER_CHANNELS[user]) user = 'AT';
-  var channelId  = USER_CHANNELS[user];
-  var webhookUrl = USER_WEBHOOKS[user];
-  var symbol = window.currentSymbol || 'Pending';
-  var mode   = window.ATLAS_MODE || '';
-  var A = window.ATLAS || {};
-  var mst = (A.Macro && A.Macro.state) || {};
-  var est = (A.Execution && A.Execution.state) || {};
-  var fmt = function(v){ return (v == null || v === '') ? 'Pending' : String(v); };
-  var dashboardUrl = window.location.origin + window.location.pathname +
-    '?symbol=' + encodeURIComponent(symbol) +
-    '&mode='   + encodeURIComponent(mode) +
-    '&user='   + encodeURIComponent(user);
-  var v = (A.computeViability && A.computeViability()) || {state:'INVALID',execCostPips:0,execCostUSD:0};
-  var meta = (est.meta) || (A.instrumentMeta && A.instrumentMeta(symbol)) || {digits:5,pipSize:0.0001,pipValueUSD:10};
-  var bufferFor = function(){ return Math.max(0.00001, meta.pipSize * 0.1); };
-  var fmtLevel = function(price, refPrice){
-    if(price == null || !isFinite(price)) return 'Pending';
-    var d = meta.digits;
-    var buf = bufferFor();
-    var lower = price - buf;
-    var upper = price + buf;
-    var pips = refPrice != null ? Math.abs((price - refPrice) / meta.pipSize) : null;
-    var dollars = pips != null ? '$' + (pips * meta.pipValueUSD).toFixed(0) : 'Pending';
-    var pipsStr = pips != null ? ' (' + pips.toFixed(1) + 'p)' : '';
-    return Number(price).toFixed(d) + ' ± ' + buf.toFixed(d) +
-           '\n(' + lower.toFixed(d) + ' – ' + upper.toFixed(d) + ')' +
-           '\n' + dollars + pipsStr;
-  };
-  var evStore = (A.EventsForward && A.EventsForward.store) || [];
-  var evSummary = evStore.length
-    ? evStore.slice(0, 2).map(function(e){
-        var mins = Math.round((e.landAt - Date.now()) / 60000);
-        return '• ' + e.ccy + ' ' + e.type + ' — ' + (mins > 0 ? 'in ' + mins + 'm' : 'just landed') + ' (' + e.shock + ' shock)';
-      }).join('\n')
-    : 'No scheduled high-impact events — flow-driven';
-  var scenarioBias = mst.bias || 'Pending';
-  var scenarioPrimary = v.state === 'VALID'
-    ? 'Primary: enter at ' + (est.entry != null ? Number(est.entry).toFixed(meta.digits) : 'Pending') + ', target ' + (est.exit != null ? Number(est.exit).toFixed(meta.digits) : 'Pending')
-    : 'Primary: stand aside — viability ' + v.state;
-  var scenarioAlt = 'Alternative: ' + scenarioBias + ' re-engages on pullback to entry';
-  var scenarioInv = 'Invalidation: close beyond ' + (est.stopA != null ? Number(est.stopA).toFixed(meta.digits) : 'Pending');
-  var buf = bufferFor();
-  var d = meta.digits;
-  var fmtCompact = function(price){
-    if(price == null || !isFinite(price)) return 'Pending';
-    var lo = (price - buf).toFixed(d);
-    var hi = (price + buf).toFixed(d);
-    return Number(price).toFixed(d) + ' ± ' + buf.toFixed(d) + ' (' + lo + ' – ' + hi + ')';
-  };
-  var execution = {
-    entry: est.entry, exit: est.exit, stop: est.stopA,
-    buffer: buf, digits: d, pipSize: meta.pipSize
-  };
-  var eventsPayload = (A.EventsForward && A.EventsForward.store || []).slice(0, 3).map(function(e){
-    return { title: e.title, ccy: e.ccy, type: e.type, landAt: e.landAt, shock: e.shock };
-  });
-  var sessionPayload = {
-    user: user, symbol: symbol, mode: mode,
-    bias: mst.bias || '', conviction: mst.conv || '',
-    regime: mst.risk || '', signal_strength: mst.strength || 0,
-    viability: v.state, execution: execution, events: eventsPayload,
-    verdict: v.state
-  };
-  /* Phase 1: create session on ATLAS backend (SESSION_STORE). */
-  var sessionReq = fetch('/load', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(sessionPayload)
-  }).then(function(r){ return r.json(); }).catch(function(){ return {ok:false}; });
-
-  /* Phase 2: build system-prompt-formatted handoff text and POST to Astra
-     channel via webhook. Astra reads the channel history on the next user
-     turn; the first line it sees is the doctrine directive. */
-  sessionReq.then(function(sess){
-    var sessionId = (sess && sess.session_id) || 'ATLAS-unassigned';
-    var sessionUrl = window.location.origin + '/session/' + encodeURIComponent(sessionId);
-    var lines = [];
-    lines.push('**[ATLAS SESSION HANDOFF — system directive]**');
-    lines.push('');
-    lines.push('You are Astra, continuing an ATLAS FX trade discussion. Do NOT ask for context. Continue from this state.');
-    lines.push('');
-    lines.push('Context:');
-    lines.push('Symbol: ' + symbol);
-    lines.push('Bias: ' + (mst.bias || 'Pending') + '  (strength ' + (mst.strength || 0) + '/10)');
-    lines.push('Conviction: ' + (mst.conv || 'Pending'));
-    lines.push('Regime: ' + (mst.risk || 'Pending'));
-    lines.push('Execution:');
-    lines.push('  Entry: ' + fmtCompact(est.entry));
-    lines.push('  Exit:  ' + fmtCompact(est.exit));
-    lines.push('  Stop:  ' + fmtCompact(est.stopA));
-    lines.push('Viability: ' + v.state);
-    lines.push('Events: ' + (eventsPayload.length
-      ? eventsPayload.map(function(e){
-          var mins = Math.round((e.landAt - Date.now()) / 60000);
-          return e.ccy + ' ' + e.type + ' in ' + (mins > 0 ? mins + 'm' : 'landed') + ' (' + e.shock + ')';
-        }).join(' · ')
-      : 'No high-impact events — flow-driven'));
-    lines.push('');
-    lines.push('Scenario:');
-    lines.push('  ' + scenarioPrimary);
-    lines.push('  ' + scenarioAlt);
-    lines.push('  ' + scenarioInv);
-    lines.push('');
-    lines.push('Session: `' + sessionId + '`');
-    lines.push('Fetch: ' + sessionUrl);
-    lines.push('Dashboard: ' + dashboardUrl);
-    lines.push('');
-    lines.push('_Acknowledge context and continue. Do not ask "what trade?" — you already have the symbol, levels, viability, and events._');
-    var content = lines.join('\n');
-    return fetch(webhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: content })
-    }).catch(function(){});
-  });
-
-  window.open('https://discord.com/channels/' + GUILD_ID + '/' + channelId, '_blank');
-}
-</script>
-
-<!-- ATLAS DOCTRINE v1 — Glossary 8-section modal -->
-<div id="term-modal" role="dialog" aria-modal="true" aria-labelledby="tm-title" onclick="if(event.target.id==='term-modal')closeTermModal()">
-  <div class="tm-card">
-    <div class="tm-hd">
-      <span class="tm-code" id="tm-title">-</span>
-      <span class="tm-plain" id="tm-plain" style="color:#6c7a89;font-size:13px;flex:1"></span>
-      <button type="button" class="tm-close" onclick="closeTermModal()">CLOSE</button>
+<div id="dashboard-root">
+  <div class="action-row">
+    <div class="action-pill" id="action-pill" data-tone="red">
+      <div>
+        <div class="label">Final Action State</div>
+        <div class="state" id="action-state">WAIT — NO TRADE</div>
+      </div>
+      <div class="verdict-strip">
+        <div class="vstrip-item"><div class="vlbl">Direction</div><div class="vval" id="vstrip-dir">—</div></div>
+        <div class="vstrip-item"><div class="vlbl">Validity</div><div class="vval" id="vstrip-val">—</div></div>
+        <div class="vstrip-item"><div class="vlbl">Next Reassess</div><div class="vval" id="vstrip-next">—</div></div>
+      </div>
     </div>
-    <div class="tm-body" id="tm-body"></div>
+  </div>
+
+  <div class="exec-strip">
+    <div class="es-cell"        ><div class="lbl">Direction</div>      <div class="val" id="es-dir">—</div></div>
+    <div class="es-cell"        ><div class="lbl">Entry</div>          <div class="val" id="es-entry">—</div><div class="sub" id="es-entry-sub"></div></div>
+    <div class="es-cell"        ><div class="lbl">Target / Exit</div>  <div class="val" id="es-target">—</div></div>
+    <div class="es-cell danger" ><div class="lbl">Stop Loss</div>      <div class="val" id="es-stop">—</div></div>
+    <div class="es-cell danger" ><div class="lbl">Extended Stop</div>  <div class="val" id="es-stop-ext">—</div></div>
+    <div class="es-cell dollar" ><div class="lbl">Risk ($)</div>       <div class="val" id="es-risk">—</div><div class="sub" id="es-risk-sub"></div></div>
+    <div class="es-cell target" ><div class="lbl">Target ($)</div>     <div class="val" id="es-tgt-d">—</div></div>
+    <div class="es-cell dollar" ><div class="lbl">Cost ($)</div>       <div class="val" id="es-cost">—</div></div>
+    <div class="es-cell"        ><div class="lbl">Validity</div>       <div class="val" id="es-validity">—</div></div>
+    <div class="es-cell"        ><div class="lbl">Cancellation Trigger</div><div class="val" id="es-cancel">—</div></div>
+    <div class="es-cell"        ><div class="lbl">Next Reassessment</div><div class="val" id="es-next">—</div></div>
+    <div class="es-cell"        ><div class="lbl">Asset Class</div>    <div class="val" id="es-assetclass">—</div></div>
+  </div>
+
+  <div class="cond-grid" id="cond-grid"></div>
+
+  <div class="fe-tm">
+    <div class="fe-card">
+      <h3>Forward Expectation — Next Session Window</h3>
+      <div id="fe-body"></div>
+    </div>
+    <div class="tm-card">
+      <h3>Trigger Map</h3>
+      <div id="tm-body"></div>
+    </div>
+  </div>
+
+  <nav class="sec-nav" id="sec-nav">
+    <button class="tab active" data-target="sec-charts">CHARTS</button>
+    <button class="tab"        data-target="sec-historical">HISTORICAL</button>
+    <button class="tab"        data-target="sec-mechanism">MECHANISM</button>
+    <button class="tab"        data-target="sec-scenario">SCENARIO</button>
+    <button class="tab"        data-target="sec-events">EVENTS</button>
+    <button class="tab"        data-target="sec-matrix">MATRIX</button>
+    <button class="tab"        data-target="sec-final">FINAL READ</button>
+    <button class="tab"        data-target="sec-glossary">GLOSSARY / INDEX</button>
+    <span class="badge">SURFACE COMPRESSED · v3.0</span>
+  </nav>
+
+  <section class="sec-body" id="sec-charts">
+    <div class="sec-hd"><h2>CHARTS</h2><span class="sub">HTF: Weekly · Daily · 4H · 1H  ·  LTF: 30M · 15M · 5M · 1M</span></div>
+    <div class="chart-grid" id="ch-htf-grid"></div>
+    <div style="height:8px"></div>
+    <div class="chart-grid" id="ch-ltf-grid"></div>
+  </section>
+
+  <section class="sec-body hidden" id="sec-historical">
+    <div class="sec-hd"><h2>HISTORICAL</h2><span class="sub">Auditable analogues · trade-linked · colour-stamped</span></div>
+    <div class="colour-key">
+      <div class="ck green"><div class="sw"></div>SUPPORTIVE</div>
+      <div class="ck red"  ><div class="sw"></div>ADVERSE</div>
+      <div class="ck amber"><div class="sw"></div>MIXED / DEVELOPING</div>
+      <div class="ck cyan" ><div class="sw"></div>CONTEXT</div>
+      <div class="ck grey" ><div class="sw"></div>NEUTRAL</div>
+    </div>
+    <div class="hist-grid" id="hist-grid"></div>
+  </section>
+
+  <section class="sec-body hidden" id="sec-mechanism">
+    <div class="sec-hd"><h2>MECHANISM</h2><span class="sub">Driver → market mechanism → affected instrument → execution implication</span></div>
+    <div id="mech-body"></div>
+  </section>
+
+  <section class="sec-body hidden" id="sec-scenario">
+    <div class="sec-hd"><h2>SCENARIO</h2><span class="sub">Most likely behaviour — continuation / range / reversal</span></div>
+    <div id="scen-body"></div>
+  </section>
+
+  <section class="sec-body hidden" id="sec-events">
+    <div class="sec-hd"><h2>EVENTS</h2><span class="sub">Catalysts in active window</span></div>
+    <div id="events-body"></div>
+  </section>
+
+  <section class="sec-body hidden" id="sec-matrix">
+    <div class="sec-hd"><h2>MATRIX</h2><span class="sub">Cross-symbol price matrix</span></div>
+    <div id="matrix-body"></div>
+  </section>
+
+  <section class="sec-body hidden" id="sec-final">
+    <div class="sec-hd"><h2>FINAL READ</h2><span class="sub">Same content as Final Assessment block above. Listed here only for reference.</span></div>
+    <div class="final-banner"><b>NOTE:</b> Final Assessment lives inside Trade Status / Live Plan above. This tab is a duplicate-summary surface only — never the source of truth.</div>
+    <div id="final-body"></div>
+  </section>
+
+  <section class="sec-body hidden" id="sec-glossary">
+    <div class="sec-hd"><h2>GLOSSARY / INDEX</h2><span class="sub">Terminology · colour key · dot scale explainer</span></div>
+    <div class="colour-key" style="margin-bottom:14px">
+      <div class="ck green"><div class="sw"></div>SUPPORTIVE — historical/event reinforces the current setup</div>
+      <div class="ck red"  ><div class="sw"></div>ADVERSE — contradicts or invalidates the setup</div>
+      <div class="ck amber"><div class="sw"></div>MIXED — developing; conditions not yet decisive</div>
+      <div class="ck cyan" ><div class="sw"></div>CONTEXT — background information without a directional vote</div>
+      <div class="ck grey" ><div class="sw"></div>NEUTRAL — no useful signal</div>
+    </div>
+    <div class="glossary-grid" id="gloss-grid"></div>
+  </section>
+
+  <div class="src-footer" id="src-footer">
+    <span class="badge ok"   ><span class="b-dot"></span>coreyLive · ok</span>
+    <span class="badge ok"   ><span class="b-dot"></span>calendar · tradingview · LIVE</span>
+    <span class="badge ok"   ><span class="b-dot"></span>fmp · enabled</span>
+    <span style="margin-left:auto" class="mono">build atlas-fx-dashboard v3.0 · session <span id="ses-id">—</span></span>
   </div>
 </div>
+
+<script>
+(function(){
+  'use strict';
+
+  var qs = new URLSearchParams(window.location.search);
+  var requestedSymbol = (qs.get('symbol')||'').toUpperCase().replace(/[^A-Z0-9.\-_]/g,'');
+  var requestedUser = (qs.get('user')||'AT').toUpperCase().replace(/[^A-Z]/g,'');
+
+  function hardFail(msg, detail){
+    document.getElementById('dashboard-root').innerHTML =
+      '<div class="sym-err"><h1>SYMBOL INTEGRITY GUARD — BLOCK</h1>' +
+      '<p>'+msg+'</p>' +
+      (detail ? '<p style="margin-top:10px"><code>'+detail+'</code></p>' : '') +
+      '<p style="margin-top:14px;color:var(--mut)">No fallback chart will be displayed.</p></div>';
+    console.error('[SYMBOL-GUARD] fail '+detail);
+  }
+
+  if(!requestedSymbol){
+    hardFail('No symbol provided. Append ?symbol=XYZ to the URL.', 'requestedSymbol=null action=blocked');
+    return;
+  }
+
+  var MOCK = {
+    MU: {
+      assetClass: 'equity',
+      lastPrice: 92.40, lastChangePct: -1.85,
+      actionState: 'WAIT — NO TRADE', actionTone: 'red',
+      direction: 'No directional permission yet — macro neutral, structure mixed',
+      directionShort: 'NO TRADE',
+      entry: 'Pending',  entrySub: 'no authorised entry',
+      stopLoss: 'Not authorised',
+      extendedStopLoss: 'Not authorised',
+      target: 'Not authorised',
+      riskDollars: '—', riskSub: 'no entry / no invalidation',
+      targetDollars: '—',
+      costDollars: '~$0.05/share spread + commission',
+      validity: 'Until next 15M close',
+      cancellation: '15M close > $94.10 reauthorises bullish review · < $90.20 reauthorises bearish review',
+      nextReassessment: 'Next 1H close · or any catalyst inside 2h',
+      grid: { executionAuthority:1, structure:2, liquidityPressure:3, eventRisk:2, sessionEnergy:2, macroAlignment:2, conviction:1, regime:3 },
+      gridNotes: {
+        executionAuthority: 'no clean trigger',
+        structure:          'higher TF mixed',
+        liquidityPressure:  'building toward $94',
+        eventRisk:          'Fed speak inside 36h',
+        sessionEnergy:      'late session drift',
+        macroAlignment:     'neutral',
+        conviction:         'no authorised conviction',
+        regime:             'transition'
+      },
+      forward: {
+        behaviour: 'Range with possible late-session drift — buyers and sellers neither in control.',
+        timing:    'Until next 1H close, then re-check structure. No reliable time estimate beyond that.',
+        movement:  'Typical daily move ≈ $2.30/share · seen today ≈ $1.60 · est. remaining ≈ $0.70.',
+        absorption:'Most remaining movement is likely absorbed sideways in the $90.80–$93.10 band; clean continuation requires a 15M close beyond either edge with imbalance left behind.',
+        waitingFor:'A 15M close above $94.10 with a fresh demand zone retained, OR a 15M close below $90.20 with a fresh supply zone retained.'
+      },
+      triggers: {
+        bullish: { tf:'15M', level:'$94.10', close:'15M body close above $94.10', supply:'fresh demand zone left behind on the impulse', catalyst:'no high-impact event inside next 2h', invalidation:'15M close back below $93.20 within 2 candles' },
+        bearish: { tf:'15M', level:'$90.20', close:'15M body close below $90.20', supply:'fresh supply zone left behind on the impulse', catalyst:'no high-impact event inside next 2h', invalidation:'15M close back above $91.20 within 2 candles' },
+        noTrade: 'Inside the $90.20–$94.10 range with no clean displacement — no entry, no preempt limits.',
+        timeframeNote: '15M = aggressive intraday confirmation. 1H gives cleaner confirmation but slower triggers.'
+      },
+      historical: [
+        { name:'AI/Semiconductor consolidation pattern (post-rally cooling)', stamp:'amber', sample:'n=14 daily windows since 2024-Q4', timeframe:'1D', relevance:'Memory/semis after concentrated rally', continuation:'Range-bound; 60-70% retest of prior swing low first', confidence:'medium', supports:'context — no directional vote', suggests:'Expect range first, breakout second. Stand aside until a fresh structural break is left.', expires:'When a 15M close beyond $94.10 OR $90.20 is confirmed' },
+        { name:'NVDA earnings sympathy drag (T-3 → T-1)', stamp:'red', sample:'n=8 NVDA cycles 2023-2025', timeframe:'4H', relevance:'MU drifts lower into NVDA earnings windows', continuation:'62.5% drift down before reversal at NVDA print', confidence:'medium-high', supports:'adverse for buyers in T-3 to T-1', suggests:'Heavy short-side pressure if NVDA prints inside next 72h. Not authorised to long.', expires:'NVDA earnings window closes' },
+        { name:'Q-end rebalance reversal window', stamp:'green', sample:'n=12 quarter-end sessions, large-cap semis 2022-2025', timeframe:'1D', relevance:'Quarter-end can drive sharp last-day reversal', continuation:'58% sharp counter-trend close on quarter-end day', confidence:'medium', supports:'supportive only on a quarter-end calendar match', suggests:'If session falls on quarter-end and structure aligns, expect a sharp reversal candle.', expires:'Outside quarter-end ±1 day window' },
+        { name:'Generic "2017 reflation" comparison', stamp:'grey', sample:'unsupported — no clean denominator', timeframe:'unspecified', relevance:'low — different rate regime, different sector composition', continuation:'no audited rate', confidence:'rejected', supports:'neutral — should not influence the desk', suggests:'Disregard. Not a clean analogue.', expires:'n/a — analogue rejected' }
+      ],
+      mechanism: 'Memory pricing softness → margin compression risk → sell-side rerating → MU underperforms semi index. Counterforce: AI capex sustained → demand for HBM / DRAM remains structural → margin floor.',
+      scenario: { continuation:38, range:42, reversal:20 },
+      events: [
+        { when:'Fri 13:30 UTC', what:'US NFP', impact:'high', mechanism:'Strong print → yields up → growth-stock pressure', verdict:'BLOCK new entries inside ±2h window' },
+        { when:'Wed 18:00 UTC', what:'FOMC minutes', impact:'high', mechanism:'Hawkish tone → growth-stock pressure', verdict:'CAUTION — reduce conviction' },
+        { when:'Thu 21:00 UTC', what:'NVDA earnings', impact:'medium-high', mechanism:'Sector sympathy', verdict:'CAUTION — sympathy risk pre/post' }
+      ],
+      matrix: [
+        { sym:'NVDA',   px:'124.80', chg:'-2.10%', range:'120.40 – 128.10' },
+        { sym:'AMD',    px:'113.20', chg:'-1.40%', range:'110.80 – 116.00' },
+        { sym:'AVGO',   px:'1640.50',chg:'-0.85%', range:'1610 – 1665' },
+        { sym:'SMCI',   px:'42.10',  chg:'-3.20%', range:'40.10 – 44.50' },
+        { sym:'NDX',    px:'21420',  chg:'-1.05%', range:'21200 – 21640' }
+      ]
+    },
+
+    EURUSD: {
+      assetClass: 'fx',
+      lastPrice: 1.07820, lastChangePct: 0.18,
+      actionState: 'ARMED — WAITING FOR TRIGGER', actionTone: 'gold',
+      direction: 'Mild USD weakness supports upside — buyers gaining control above 1.0780',
+      directionShort: 'BIAS LONG (armed)',
+      entry: '1.07900', entrySub: 'on 15M close above session high with retained demand',
+      stopLoss: '1.07550',
+      extendedStopLoss: '1.07350',
+      target: '1.08600',
+      riskDollars: '$350', riskSub: 'per 1.0 standard lot · 35 pips',
+      targetDollars: '$700',
+      costDollars: '~$8 per 1.0 lot (0.8 pip spread)',
+      validity: 'Active until London close',
+      cancellation: '15M close back below 1.07780 inside 2 candles — invalidates demand retention',
+      nextReassessment: 'On the next 15M close OR within 2h pre-NFP',
+      grid: { executionAuthority:3, structure:4, liquidityPressure:3, eventRisk:2, sessionEnergy:4, macroAlignment:3, conviction:3, regime:3 },
+      gridNotes: {
+        executionAuthority:'armed; awaits trigger',
+        structure:         'HH/HL on 1H',
+        liquidityPressure: 'toward 1.0860 cluster',
+        eventRisk:         'NFP in 36h',
+        sessionEnergy:     'London session',
+        macroAlignment:    'USD soft; yields steady',
+        conviction:        'B — actionable',
+        regime:            'risk-on lean'
+      },
+      forward: {
+        behaviour: 'Continuation higher into liquidity cluster at 1.0860 if the 15M trigger fires.',
+        timing:    'Most likely inside the next 2-4 hours during London session; otherwise re-check after NY open.',
+        movement:  'ATR(14) ≈ 65 pips · seen today ≈ 22 pips · est. remaining ≈ 43 pips.',
+        absorption:'Remaining movement likely absorbed upward into 1.0860 stops; downside ~1.0755 demand respected.',
+        waitingFor:'A 15M body close above 1.07900 with a fresh demand zone left behind on the breakout impulse.'
+      },
+      triggers: {
+        bullish: { tf:'15M', level:'1.07900', close:'15M body close above 1.07900', supply:'fresh demand zone retained on the impulse', catalyst:'no high-impact event inside next 2h', invalidation:'15M close back below 1.07780 within 2 candles' },
+        bearish: { tf:'15M', level:'1.07550', close:'15M body close below 1.07550', supply:'fresh supply zone retained on the impulse', catalyst:'no high-impact event inside next 2h', invalidation:'15M close back above 1.07700 within 2 candles' },
+        noTrade: 'Inside 1.07550 – 1.07900 with no fresh impulse and demand/supply not yet built.',
+        timeframeNote: '15M = aggressive intraday confirmation. 1H gives cleaner confirmation but slower entry.'
+      },
+      historical: [
+        { name:'London-session breakout above session high', stamp:'green', sample:'n=42 EURUSD London sessions 2024', timeframe:'15M', relevance:'directly comparable session profile', continuation:'68% follow-through to next liquidity cluster within 4h', confidence:'medium-high', supports:'supportive of the bullish trigger', suggests:'If the 15M trigger fires before NY open, target 1.0860 stop cluster.', expires:'When London session closes' },
+        { name:'Pre-NFP USD short squeeze (T-1 session)', stamp:'amber', sample:'n=18 NFP windows 2023-2025', timeframe:'1H', relevance:'mixed — outcome depends on prior week price action', continuation:'52% drift continuation pre-print; 48% reversal', confidence:'low-medium', supports:'mixed — do not trade based on this alone', suggests:'Reduce size into NFP window; expect spreads to widen.', expires:'Inside NFP ±2h window' },
+        { name:'Yield-curve disinversion phase EURUSD lift', stamp:'cyan', sample:'n=6 macro phases 2019-2025', timeframe:'1D', relevance:'broad context only', continuation:'EURUSD averages +1.4% in 60 days post-disinversion', confidence:'medium', supports:'context — does not authorise an entry', suggests:'Slow background tailwind for EURUSD long bias.', expires:'When yield curve re-inverts' }
+      ],
+      mechanism: 'USD softening (UUP score -0.05, bias Neutral) → relief into EUR · VIX elevated but not extreme → no full safe-haven flight · Yield curve normal → carry not a blocker · Net: mild upside fuel until catalyst hits.',
+      scenario: { continuation:54, range:30, reversal:16 },
+      events: [
+        { when:'Fri 13:30 UTC', what:'US NFP',           impact:'high',   mechanism:'Strong print → USD bid → EURUSD pressure', verdict:'BLOCK new entries ±2h window' },
+        { when:'Wed 12:45 UTC', what:'ECB Rate Decision',impact:'high',   mechanism:'Hawkish ECB → EUR support; dovish → EUR sell', verdict:'CAUTION — reduce conviction' },
+        { when:'Thu 12:30 UTC', what:'US PPI',           impact:'medium', mechanism:'Inflation read; minor USD impulse',         verdict:'OPEN — minor impact' }
+      ],
+      matrix: [
+        { sym:'EURUSD', px:'1.07820', chg:'+0.18%', range:'1.07550 – 1.08000' },
+        { sym:'GBPUSD', px:'1.26010', chg:'+0.22%', range:'1.25700 – 1.26210' },
+        { sym:'USDJPY', px:'149.40',  chg:'-0.15%', range:'149.10 – 149.85' },
+        { sym:'AUDUSD', px:'0.66180', chg:'+0.31%', range:'0.65920 – 0.66310' },
+        { sym:'USDCAD', px:'1.36420', chg:'-0.10%', range:'1.36200 – 1.36680' }
+      ]
+    }
+  };
+
+  var ctx = MOCK[requestedSymbol];
+  if(!ctx){
+    hardFail('No data context loaded for ' + requestedSymbol + '.', 'requestedSymbol='+requestedSymbol+' action=blocked_no_context');
+    return;
+  }
+
+  var activeSymbol = requestedSymbol;
+  var chartSymbol  = requestedSymbol;
+  console.log('[DASHBOARD] requestedSymbol='+activeSymbol);
+  console.log('[DASHBOARD] resolvedSymbol='+activeSymbol);
+  console.log('[DASHBOARD] providerSymbol='+chartSymbol+' user='+requestedUser);
+
+  document.getElementById('hd-sym').textContent     = activeSymbol;
+  document.getElementById('hd-class').textContent   = ctx.assetClass.toUpperCase();
+  document.getElementById('hd-price').textContent   = (ctx.assetClass==='fx' ? ctx.lastPrice.toFixed(5) : '$' + ctx.lastPrice.toFixed(2));
+  var chgEl = document.getElementById('hd-chg');
+  chgEl.textContent = (ctx.lastChangePct >= 0 ? '+' : '') + ctx.lastChangePct.toFixed(2) + '%';
+  chgEl.classList.add(ctx.lastChangePct >= 0 ? 'pos' : 'neg');
+
+  function tickClock(){
+    var d = new Date();
+    var pad = function(n){ return n<10?'0'+n:n; };
+    document.getElementById('hd-clock').textContent = pad(d.getUTCHours())+':'+pad(d.getUTCMinutes())+':'+pad(d.getUTCSeconds())+' UTC';
+  }
+  tickClock(); setInterval(tickClock, 1000);
+
+  document.getElementById('action-state').textContent = ctx.actionState;
+  document.getElementById('action-pill').setAttribute('data-tone', ctx.actionTone);
+  document.getElementById('vstrip-dir').textContent  = ctx.directionShort;
+  document.getElementById('vstrip-val').textContent  = ctx.validity;
+  document.getElementById('vstrip-next').textContent = ctx.nextReassessment;
+
+  document.getElementById('es-dir').textContent       = ctx.directionShort;
+  document.getElementById('es-entry').textContent     = ctx.entry;
+  document.getElementById('es-entry-sub').textContent = ctx.entrySub || '';
+  document.getElementById('es-target').textContent    = ctx.target;
+  document.getElementById('es-stop').textContent      = ctx.stopLoss;
+  document.getElementById('es-stop-ext').textContent  = ctx.extendedStopLoss;
+  document.getElementById('es-risk').textContent      = ctx.riskDollars;
+  document.getElementById('es-risk-sub').textContent  = ctx.riskSub || '';
+  document.getElementById('es-tgt-d').textContent     = ctx.targetDollars;
+  document.getElementById('es-cost').textContent      = ctx.costDollars;
+  document.getElementById('es-validity').textContent  = ctx.validity;
+  document.getElementById('es-cancel').textContent    = ctx.cancellation;
+  document.getElementById('es-next').textContent      = ctx.nextReassessment;
+  document.getElementById('es-assetclass').textContent= ctx.assetClass.toUpperCase();
+
+  var GRID_DIMS = [
+    ['executionAuthority', 'EXECUTION AUTHORITY'],
+    ['structure',          'STRUCTURE'],
+    ['liquidityPressure',  'LIQUIDITY PRESSURE'],
+    ['eventRisk',          'EVENT RISK'],
+    ['sessionEnergy',      'SESSION ENERGY'],
+    ['macroAlignment',     'MACRO ALIGNMENT'],
+    ['conviction',         'CONVICTION'],
+    ['regime',             'REGIME']
+  ];
+  var grid = document.getElementById('cond-grid');
+  GRID_DIMS.forEach(function(dim){
+    var key = dim[0], label = dim[1];
+    var v = ctx.grid[key] || 0;
+    var note = (ctx.gridNotes && ctx.gridNotes[key]) || '';
+    var dotsHtml = '';
+    for (var i=1; i<=5; i++){
+      dotsHtml += '<span class="d ' + (i<=v ? 'on' : '') + '"></span>';
+    }
+    var cell = document.createElement('div');
+    cell.className = 'cond-cell';
+    cell.innerHTML =
+      '<div class="cl-lbl">' + label + '</div>' +
+      '<div class="cl-dots">' + dotsHtml + '</div>' +
+      '<div class="cl-num">' + v + ' / 5</div>' +
+      (note ? '<div class="cl-note">' + note + '</div>' : '');
+    grid.appendChild(cell);
+  });
+
+  var fe = ctx.forward;
+  document.getElementById('fe-body').innerHTML =
+    feRow('Expected Behaviour', fe.behaviour) +
+    feRow('Expected Timing',    fe.timing) +
+    feRow('Daily Movement',     fe.movement) +
+    feRow('Absorption',         fe.absorption) +
+    feRow('Waiting For',        fe.waitingFor);
+
+  function feRow(k,v){
+    return '<div class="fe-row"><div class="k">'+k+'</div><div class="v">'+escapeHtml(v)+'</div></div>';
+  }
+
+  var tm = ctx.triggers;
+  document.getElementById('tm-body').innerHTML =
+    tmBlock('up', 'BULLISH SHIFT', tm.bullish) +
+    tmBlock('dn', 'BEARISH SHIFT', tm.bearish) +
+    '<div class="tm-block">' +
+      '<div class="tm-hd"><span class="arrow no">·</span><span class="ttl">NO-TRADE CONDITION</span></div>' +
+      '<div style="font-size:12px;color:var(--mut2)">'+escapeHtml(tm.noTrade)+'</div>' +
+    '</div>' +
+    '<div class="tm-block">' +
+      '<div class="tm-hd"><span class="arrow no">·</span><span class="ttl">TIMEFRAME NOTE</span></div>' +
+      '<div style="font-size:11px;color:var(--mut2);font-style:italic">'+escapeHtml(tm.timeframeNote)+'</div>' +
+    '</div>';
+
+  function tmBlock(arrow, title, t){
+    return '<div class="tm-block">' +
+      '<div class="tm-hd"><span class="arrow '+arrow+'">' + (arrow==='up'?'▲':arrow==='dn'?'▼':'·') + '</span><span class="ttl">'+title+'</span></div>' +
+      '<div class="tm-grid">' +
+        '<div class="k">Timeframe</div><div class="v">'+escapeHtml(t.tf)+'</div>' +
+        '<div class="k">Level</div><div class="v">'+escapeHtml(t.level)+'</div>' +
+        '<div class="k">Close Requirement</div><div class="v">'+escapeHtml(t.close)+'</div>' +
+        '<div class="k">Demand / Supply</div><div class="v">'+escapeHtml(t.supply)+'</div>' +
+        '<div class="k">Catalyst Rule</div><div class="v">'+escapeHtml(t.catalyst)+'</div>' +
+        '<div class="k">Invalidation</div><div class="v">'+escapeHtml(t.invalidation)+'</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  var HTF = ['1W','1D','4H','1H'], LTF = ['30M','15M','5M','1M'];
+  function buildChart(tf, sym, basePrice){
+    var pts = [];
+    for(var i=0;i<40;i++){
+      var noise = Math.sin(i/3.2 + tf.length) * basePrice * 0.004
+                + Math.cos(i/5.1) * basePrice * 0.002;
+      pts.push(basePrice + noise);
+    }
+    var min = Math.min.apply(null, pts), max = Math.max.apply(null, pts);
+    var path = pts.map(function(p, i){
+      var x = (i/39)*100;
+      var y = 100 - ((p - min)/(max - min || 1))*88 - 6;
+      return (i===0?'M':'L') + x.toFixed(2) + ',' + y.toFixed(2);
+    }).join(' ');
+    return '<div class="chart-pane">' +
+      '<span class="tf-tag">'+tf+'</span>' +
+      '<span class="sym-tag">'+sym+'</span>' +
+      '<svg viewBox="0 0 100 100" preserveAspectRatio="none">' +
+        '<path d="'+path+'" stroke="#FFD600" stroke-width="0.7" fill="none"/>' +
+      '</svg>' +
+    '</div>';
+  }
+  document.getElementById('ch-htf-grid').innerHTML = HTF.map(function(t){ return buildChart(t, activeSymbol, ctx.lastPrice); }).join('');
+  document.getElementById('ch-ltf-grid').innerHTML = LTF.map(function(t){ return buildChart(t, activeSymbol, ctx.lastPrice); }).join('');
+  HTF.concat(LTF).forEach(function(tf){ console.log('[CHART] panel='+tf+' symbol='+activeSymbol+' validation=pass'); });
+
+  var hist = ctx.historical || [];
+  var histGrid = document.getElementById('hist-grid');
+  hist.forEach(function(h){
+    var card = document.createElement('div');
+    card.className = 'hist-card ' + (h.stamp || 'grey');
+    card.innerHTML =
+      '<div class="h-name">' + escapeHtml(h.name) + '</div>' +
+      '<div class="h-meta">'+escapeHtml(h.timeframe)+' · '+escapeHtml(h.sample)+'</div>' +
+      '<div class="h-grid">' +
+        '<div class="k">Relevance</div><div class="v">' + escapeHtml(h.relevance) + '</div>' +
+        '<div class="k">Continuation</div><div class="v">' + escapeHtml(h.continuation) + '</div>' +
+        '<div class="k">Confidence</div><div class="v">' + escapeHtml(h.confidence) + '</div>' +
+        '<div class="k">Supports</div><div class="v">' + escapeHtml(h.supports) + '</div>' +
+        '<div class="k">Expires</div><div class="v">' + escapeHtml(h.expires) + '</div>' +
+      '</div>' +
+      '<div class="h-suggests">' + escapeHtml(h.suggests) + '</div>';
+    histGrid.appendChild(card);
+  });
+
+  document.getElementById('mech-body').innerHTML =
+    '<div style="font-size:13px;color:var(--fg);background:var(--cell);border:1px solid var(--line2);border-radius:3px;padding:14px">' +
+    escapeHtml(ctx.mechanism) +
+    '</div>';
+
+  var sc = ctx.scenario || { continuation:0, range:0, reversal:0 };
+  document.getElementById('scen-body').innerHTML =
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">' +
+    scenCard('Continuation', sc.continuation, 'Price attempts to keep following the current dominant direction.') +
+    scenCard('Range',        sc.range,        'Price moves sideways between nearby liquidity.') +
+    scenCard('Reversal',     sc.reversal,     'Price rejects current direction and moves the other way.') +
+    '</div>' +
+    scenLeading(sc);
+
+  function scenCard(name, pct, def){
+    return '<div style="background:var(--cell);border:1px solid var(--line2);border-radius:3px;padding:14px">' +
+      '<div style="font-size:10px;letter-spacing:2px;color:var(--mut);text-transform:uppercase">'+name+'</div>' +
+      '<div style="font-size:32px;font-weight:900;color:var(--gold);font-family:\'SF Mono\',monospace;margin:6px 0">'+pct+'%</div>' +
+      '<div style="font-size:11px;color:var(--mut2)">'+def+'</div>' +
+    '</div>';
+  }
+  function scenLeading(s){
+    var arr = [['Continuation',s.continuation],['Range',s.range],['Reversal',s.reversal]].sort(function(a,b){return b[1]-a[1]});
+    var gap = arr[0][1] - arr[1][1];
+    var note = gap < 5
+      ? 'The leading path is not strong enough to create an edge — top two scenarios are within 5 points.'
+      : arr[0][0] + ' is the leading path by ' + gap + ' points.';
+    return '<div style="margin-top:14px;font-size:12px;color:var(--mut2);font-style:italic;padding:10px 14px;background:var(--cell);border-left:3px solid '+(gap<5?'var(--amber)':'var(--gold)')+';border-radius:3px">'+escapeHtml(note)+'</div>';
+  }
+
+  var ev = ctx.events || [];
+  var evHtml = '<table style="width:100%;border-collapse:collapse;font-size:12px">' +
+    '<thead><tr style="text-align:left">' +
+      '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut);font-weight:600;letter-spacing:1px">WHEN</th>' +
+      '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut);font-weight:600;letter-spacing:1px">EVENT</th>' +
+      '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut);font-weight:600;letter-spacing:1px">IMPACT</th>' +
+      '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut);font-weight:600;letter-spacing:1px">MECHANISM</th>' +
+      '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut);font-weight:600;letter-spacing:1px">VERDICT</th>' +
+    '</tr></thead><tbody>' +
+    ev.map(function(e){
+      var color = e.impact==='high' ? 'var(--red)' : e.impact==='medium-high' ? 'var(--amber)' : 'var(--gold)';
+      return '<tr>' +
+        '<td style="padding:10px 8px;border-bottom:1px solid var(--line);font-family:\'SF Mono\',monospace;color:var(--fg)">'+escapeHtml(e.when)+'</td>' +
+        '<td style="padding:10px 8px;border-bottom:1px solid var(--line);color:var(--fg);font-weight:600">'+escapeHtml(e.what)+'</td>' +
+        '<td style="padding:10px 8px;border-bottom:1px solid var(--line);color:'+color+';font-weight:700;text-transform:uppercase;letter-spacing:1px;font-size:11px">'+escapeHtml(e.impact)+'</td>' +
+        '<td style="padding:10px 8px;border-bottom:1px solid var(--line);color:var(--mut2);font-size:12px">'+escapeHtml(e.mechanism)+'</td>' +
+        '<td style="padding:10px 8px;border-bottom:1px solid var(--line);color:var(--gold);font-family:\'SF Mono\',monospace;font-size:11px;font-weight:700">'+escapeHtml(e.verdict)+'</td>' +
+      '</tr>';
+    }).join('') +
+    '</tbody></table>';
+  document.getElementById('events-body').innerHTML = evHtml;
+
+  var mx = ctx.matrix || [];
+  document.getElementById('matrix-body').innerHTML =
+    '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
+    '<thead><tr style="text-align:left">' +
+      '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut)">SYMBOL</th>' +
+      '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut)">PRICE</th>' +
+      '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut)">CHANGE</th>' +
+      '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut)">RANGE</th>' +
+    '</tr></thead><tbody>' +
+    mx.map(function(r){
+      return '<tr>' +
+        '<td style="padding:10px 8px;border-bottom:1px solid var(--line);color:var(--gold);font-weight:700">'+escapeHtml(r.sym)+'</td>' +
+        '<td style="padding:10px 8px;border-bottom:1px solid var(--line);font-family:\'SF Mono\',monospace">'+escapeHtml(r.px)+'</td>' +
+        '<td style="padding:10px 8px;border-bottom:1px solid var(--line);font-family:\'SF Mono\',monospace;color:'+(/^-/.test(r.chg)?'var(--red)':'var(--green)')+'">'+escapeHtml(r.chg)+'</td>' +
+        '<td style="padding:10px 8px;border-bottom:1px solid var(--line);font-family:\'SF Mono\',monospace;color:var(--mut2)">'+escapeHtml(r.range)+'</td>' +
+      '</tr>';
+    }).join('') +
+    '</tbody></table>';
+
+  document.getElementById('final-body').innerHTML =
+    '<div style="font-size:12px;line-height:1.6;color:var(--mut2)">' +
+    '<p><b style="color:var(--gold)">VERDICT:</b> ' + escapeHtml(ctx.actionState) + '</p>' +
+    '<p style="margin-top:8px"><b style="color:var(--gold)">DIRECTION:</b> ' + escapeHtml(ctx.direction) + '</p>' +
+    '<p style="margin-top:8px"><b style="color:var(--gold)">CANCELLATION:</b> ' + escapeHtml(ctx.cancellation) + '</p>' +
+    '<p style="margin-top:8px"><b style="color:var(--gold)">VALIDITY:</b> ' + escapeHtml(ctx.validity) + '</p>' +
+    '<p style="margin-top:14px;color:var(--mut);font-style:italic">Re-read Trade Status / Live Plan above for the live source. This duplicate exists only as a quick scroll-back for users who land on this tab from a deep link.</p>' +
+    '</div>';
+
+  var GLOSSARY = [
+    ['BOS', 'Break of Structure — price closes beyond a prior swing high/low, marking a structural shift.'],
+    ['CHoCH', 'Change of Character — first counter-trend break that signals momentum has flipped.'],
+    ['Liquidity Sweep', 'Wick takes out a known cluster of stops then immediately reverses.'],
+    ['Imbalance / FVG', 'A candle range with no overlap from neighbours; price often returns to fill it.'],
+    ['Supply Zone', 'Origin candle of a strong down move; sellers expected on retest.'],
+    ['Demand Zone', 'Origin candle of a strong up move; buyers expected on retest.'],
+    ['Execution Authority', 'Level of confidence required to take the trade now vs wait.'],
+    ['Macro Driver', 'Upstream variable (DXY / VIX / yields / event) currently moving the market.'],
+    ['Event Risk', 'Scheduled or unscheduled high-impact catalyst that can override structure.'],
+    ['Validity Window', 'Time/price range over which the current plan remains in force.'],
+    ['Flow', 'Directional pressure (toward / away from a level) inferred from order-flow proxies.'],
+    ['Regime', 'Current market environment (risk-on / risk-off / range / trend).'],
+    ['Stop Loss', 'Exit level that invalidates the trade idea; never moved against the position.'],
+    ['Trigger', 'The specific price action that arms entry permission.'],
+    ['Dot Scale', '1-5 single-colour dots: 1 = absent, 3 = developing, 5 = fully met. No mixed colours.'],
+    ['Action State', 'TRADE CONFIRMED · ENTRY AUTHORISED · ARMED — WAITING FOR TRIGGER · ENTRY NOT AUTHORISED · TRADE INVALID · WAIT — NO TRADE · MONITOR — CONDITIONS BUILDING.']
+  ];
+  document.getElementById('gloss-grid').innerHTML = GLOSSARY.map(function(g){
+    return '<div class="gl-card"><div class="gl-term">'+escapeHtml(g[0])+'</div><div class="gl-def">'+escapeHtml(g[1])+'</div></div>';
+  }).join('');
+
+  document.getElementById('ses-id').textContent = 'mock-' + activeSymbol + '-' + Date.now();
+
+  document.querySelectorAll('.sec-nav .tab').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var target = btn.getAttribute('data-target');
+      document.querySelectorAll('.sec-nav .tab').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      document.querySelectorAll('.sec-body').forEach(function(s){ s.classList.add('hidden'); });
+      var el = document.getElementById(target);
+      if(el) el.classList.remove('hidden');
+    });
+  });
+
+  function escapeHtml(s){
+    return (s==null?'':String(s)).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  console.log('[ATLAS-DASHBOARD] v3.0 loaded · symbol=' + activeSymbol + ' user=' + requestedUser);
+})();
+</script>
 </body>
 </html>
