@@ -55,19 +55,26 @@ function sessionCleanup(){
    longer translates to 8 × N upstream calls. Emits [TD-PROXY] hit/miss per
    request and [TD-USAGE] every minute (and on /td-usage). */
 const TD_CACHE = new Map();
+// Server-side TD proxy TTLs — operational doctrine:
+//   1M/5M: 30-60s   (intraday tick-fresh)
+//   15M/30M: 60-120s (intraday but slower)
+//   1H/4H/1D/1W: longer TTL acceptable
+//   /quote: 30-60s  (one global value per session; conservation matters more
+//                    than millisecond freshness for the CURRENT box)
+// Mirrors the client-side TTLs in index.html so both layers conserve quota.
 const TD_TTL_MS = {
   "1min":   30 * 1000,
   "5min":   60 * 1000,
-  "15min":  2 * 60 * 1000,
-  "30min":  5 * 60 * 1000,
-  "45min":  5 * 60 * 1000,
+  "15min":  90 * 1000,
+  "30min":  2 * 60 * 1000,
+  "45min":  2 * 60 * 1000,
   "1h":     10 * 60 * 1000,
   "2h":     15 * 60 * 1000,
   "4h":     15 * 60 * 1000,
   "1day":   60 * 60 * 1000,
   "1week":  60 * 60 * 1000,
   "1month": 60 * 60 * 1000,
-  "_quote": 15 * 1000   // /quote — 15s; live ticks expected
+  "_quote": 45 * 1000
 };
 const TD_USAGE = { hits: 0, misses: 0, fetches: 0, errors: 0, started: Date.now() };
 function tdCacheGet(key){
