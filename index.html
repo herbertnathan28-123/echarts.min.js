@@ -67,6 +67,52 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
 .withhold-banner .wb-detail{font-size:12px;color:var(--mut2)}
 .withhold-banner .wb-list{margin-top:10px;font-size:11px;color:var(--mut2)}
 .withhold-banner .wb-list li{margin:4px 0 4px 20px;list-style:disc}
+/* Pending variant — used for ATLAS ANALYSIS PENDING (market data live,
+   Jane decision layer not yet generated). Amber, never red. */
+.withhold-banner.pending{border-color:var(--amber-d);background:rgba(255,145,0,0.06)}
+.withhold-banner.pending .wb-title{color:var(--amber)}
+/* INCOREGO bucket cards — IN (Internal) / CO (Country) /
+   RE (Regional) / GO (Global). Locked colours so each layer
+   reads the same anywhere on the desk. */
+.inco-bucket{background:var(--bg2);border:1px solid var(--line2);border-left:3px solid var(--mut);border-radius:3px;padding:10px 12px}
+.inco-bucket .ib-hd{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}
+.inco-bucket .ib-key{font-size:11px;letter-spacing:2px;font-weight:900;font-family:"SF Mono",monospace}
+.inco-bucket .ib-name{font-size:9px;letter-spacing:1.5px;color:var(--mut);text-transform:uppercase;font-weight:600}
+.inco-bucket .ib-text{font-size:12px;color:var(--fg);line-height:1.5}
+.inco-bucket.IN{border-left-color:var(--cyan)}
+.inco-bucket.IN .ib-key{color:var(--cyan)}
+.inco-bucket.CO{border-left-color:var(--gold)}
+.inco-bucket.CO .ib-key{color:var(--gold)}
+.inco-bucket.RE{border-left-color:var(--amber)}
+.inco-bucket.RE .ib-key{color:var(--amber)}
+.inco-bucket.GO{border-left-color:#B16BFF}
+.inco-bucket.GO .ib-key{color:#B16BFF}
+/* Corey Impact + Clone visual states */
+.corey-impact{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;font-size:12px}
+.corey-impact .k{color:var(--mut);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding-top:2px}
+.corey-impact .v{color:var(--fg);line-height:1.5}
+.corey-impact .v.support  {color:var(--green)}
+.corey-impact .v.weaken   {color:var(--red)}
+.corey-impact .v.neutral  {color:var(--mut2);font-style:italic}
+.clone-state{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:3px;font-size:11px;letter-spacing:1.5px;font-weight:700;text-transform:uppercase;margin-bottom:8px}
+.clone-state.active{background:rgba(0,180,80,0.10);border:1px solid var(--green-d);color:var(--green)}
+.clone-state.partial{background:rgba(255,214,0,0.10);border:1px solid var(--gold-d);color:var(--gold)}
+.clone-state.conflict{background:rgba(255,0,21,0.10);border:1px solid var(--red-d);color:var(--red)}
+.clone-state.off{background:rgba(122,129,140,0.10);border:1px solid var(--line2);color:var(--mut2)}
+/* Concept-colour key used in the Spidey + Glossary surfaces. Locked
+   colours so BOS / pullback / liquidity / imbalance / event /
+   invalidation always read as the same colour anywhere they appear. */
+.concept-key{display:flex;flex-wrap:wrap;gap:10px;padding:12px;background:var(--cell);border:1px solid var(--line2);border-radius:3px;margin-bottom:14px}
+.concept-key .ck-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:3px;border:1px solid var(--line2);background:var(--bg2);font-size:10px;letter-spacing:1.5px;font-weight:700;text-transform:uppercase;color:var(--fg)}
+.concept-key .ck-pill .sw{width:10px;height:10px;border-radius:2px}
+.concept-key .ck-pill[data-c="bos"]         .sw{background:var(--gold)}
+.concept-key .ck-pill[data-c="pullback"]    .sw{background:var(--cyan)}
+.concept-key .ck-pill[data-c="liquidity"]   .sw{background:#B16BFF}
+.concept-key .ck-pill[data-c="imbalance"]   .sw{background:var(--amber)}
+.concept-key .ck-pill[data-c="event"]       .sw{background:var(--red)}
+.concept-key .ck-pill[data-c="invalidation"].sw{background:var(--red)}
+.concept-key .ck-pill[data-c="invalidation"] .sw{background:var(--red)}
+.concept-key .ck-pill[data-c="confirm"]     .sw{background:var(--green)}
 
 .action-row{padding:18px 22px 8px}
 .action-pill{display:flex;align-items:center;gap:14px;padding:18px 22px;border-radius:6px;border:1px solid var(--line2);background:var(--cell)}
@@ -268,17 +314,57 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   </div>
 
   <div class="action-row">
-    <div class="action-pill" id="action-pill" data-tone="red">
+    <div class="action-pill" id="action-pill" data-tone="amber">
       <div>
-        <div class="label">Final Action State</div>
-        <div class="state" id="action-state">WAIT — NO TRADE</div>
+        <div class="label">ATLAS Action State</div>
+        <div class="state" id="action-state">ATLAS ANALYSIS PENDING</div>
       </div>
       <div class="verdict-strip">
         <div class="vstrip-item"><div class="vlbl">Bias Direction</div><div class="vval" id="vstrip-bias">—</div></div>
-        <div class="vstrip-item"><div class="vlbl">Trade Permission</div><div class="vval" id="vstrip-perm">—</div></div>
+        <div class="vstrip-item"><div class="vlbl">Bias Momentum</div><div class="vval" id="vstrip-momentum">—</div></div>
+        <div class="vstrip-item"><div class="vlbl">Trade Probability</div><div class="vval" id="vstrip-prob">—</div></div>
+        <div class="vstrip-item"><div class="vlbl">Trade Status</div><div class="vval" id="vstrip-perm">—</div></div>
         <div class="vstrip-item"><div class="vlbl">Valid Until</div><div class="vval" id="vstrip-val">—</div></div>
         <div class="vstrip-item"><div class="vlbl">Reassess</div><div class="vval" id="vstrip-next">—</div></div>
       </div>
+    </div>
+  </div>
+
+  <!-- MARKET READ + FORWARD WATCH (advisory teaching layer) -->
+  <div class="advisory-row" id="market-read-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:14px 22px 0">
+    <div class="fe-card" id="market-read-card">
+      <h3>Market Read</h3>
+      <div id="market-read-body" style="font-size:12px;color:var(--mut2);line-height:1.55">Pending — run <code>!<span class="mr-sym"></span> analyse</code> to generate the Jane packet.</div>
+    </div>
+    <div class="fe-card" id="forward-watch-card">
+      <h3>Forward Watch — Price · Time · Bias · Confidence</h3>
+      <div id="forward-watch-body" style="font-size:12px;color:var(--mut2);line-height:1.55">Pending — Jane will publish the watchlist (price level · time window · bias context · confidence rating) once analysis fires.</div>
+    </div>
+  </div>
+
+  <!-- COREY · INCOREGO contribution (IN / CO / RE / GO) +
+       COREY IMPACT ON JANE +
+       COREY CLONE (second-pass validation; explicit active or unavailable)
+       Corey is a load-bearing input — never a cosmetic OK pill. The
+       renderers in renderFromCtx will downgrade the COREY pill if no
+       contribution is provided, and force the Clone surface to read
+       "unavailable / not implemented" unless the packet explicitly
+       wires Clone validation. -->
+  <div class="advisory-row" id="incorego-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:6px 22px 0">
+    <div class="fe-card" id="incorego-card">
+      <h3>Corey · INCOREGO Contribution</h3>
+      <div id="incorego-summary" style="font-size:12px;color:var(--mut2);line-height:1.55;margin-bottom:10px"></div>
+      <div id="incorego-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+    </div>
+    <div class="fe-card" id="corey-impact-card">
+      <h3>Corey Impact on Jane</h3>
+      <div id="corey-impact-body" style="font-size:12px;color:var(--mut2);line-height:1.55"></div>
+    </div>
+  </div>
+  <div class="advisory-row" id="corey-clone-row" style="display:grid;grid-template-columns:1fr;gap:12px;padding:6px 22px 0">
+    <div class="fe-card" id="corey-clone-card">
+      <h3>Corey Clone — Second-Pass Validation</h3>
+      <div id="corey-clone-body" style="font-size:12px;color:var(--mut2);line-height:1.55"></div>
     </div>
   </div>
 
@@ -395,13 +481,25 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   </section>
 
   <section class="sec-body hidden" id="sec-glossary">
-    <div class="sec-hd"><h2>GLOSSARY / INDEX</h2><span class="sub">Terminology · colour key · dot scale explainer</span></div>
+    <div class="sec-hd"><h2>GLOSSARY / INDEX</h2><span class="sub">Terminology · concept colours · dot scale</span></div>
     <div class="colour-key" style="margin-bottom:14px">
       <div class="ck green"><div class="sw"></div>SUPPORTIVE — historical/event reinforces the current setup</div>
       <div class="ck red"  ><div class="sw"></div>ADVERSE — contradicts or invalidates the setup</div>
       <div class="ck amber"><div class="sw"></div>MIXED — developing; conditions not yet decisive</div>
       <div class="ck cyan" ><div class="sw"></div>CONTEXT — background information without a directional vote</div>
       <div class="ck grey" ><div class="sw"></div>NEUTRAL — no useful signal</div>
+    </div>
+    <!-- Concept-colour fixed language. Locked colours so BOS / pullback /
+         liquidity / imbalance / event / invalidation always read as the
+         same colour anywhere they appear on the desk. -->
+    <div class="concept-key" style="margin-bottom:14px">
+      <span class="ck-pill" data-c="bos"         ><span class="sw"></span>BOS — break of structure</span>
+      <span class="ck-pill" data-c="pullback"    ><span class="sw"></span>Pullback — counter-trend retrace</span>
+      <span class="ck-pill" data-c="liquidity"   ><span class="sw"></span>Liquidity — pools / sweeps</span>
+      <span class="ck-pill" data-c="imbalance"   ><span class="sw"></span>Imbalance — FVG / unfilled range</span>
+      <span class="ck-pill" data-c="event"       ><span class="sw"></span>Event — catalyst window</span>
+      <span class="ck-pill" data-c="invalidation"><span class="sw"></span>Invalidation — voids the idea</span>
+      <span class="ck-pill" data-c="confirm"     ><span class="sw"></span>Confirm — activates the idea</span>
     </div>
     <div class="glossary-grid" id="gloss-grid"></div>
   </section>
@@ -443,20 +541,23 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     MU: {
       assetClass: 'equity',
       lastPrice: 92.40, lastChangePct: -1.85,
-      actionState: 'WAIT — NO TRADE', actionTone: 'red',
+      actionState: 'HOLD — NO ACTIVE TRADE', actionTone: 'amber',
       biasDirection: 'Neutral / Mixed',
-      tradePermission: 'No entry authorised',
+      biasMomentum: 'Flat',
+      tradeProbability: 1,
+      tradeStatus: 'No active trade signal',
+      tradePermission: 'No active trade signal',
       validityMinutes: 15,
       reassessMinutes: 60,
-      direction: 'No directional permission yet — macro neutral, structure mixed',
-      entry: 'Pending', entrySub: 'no live order authorised',
-      stopLoss: 'Not authorised',
-      extendedStopLoss: 'Not authorised',
-      target: 'Not authorised',
-      riskDollars: 'Not active', riskSub: 'no entry / no invalidation',
-      targetDollars: 'Not active',
+      direction: 'No directional read yet — macro neutral, structure mixed',
+      entry: 'Pending', entrySub: 'no active order',
+      stopLoss: 'Not yet defined',
+      extendedStopLoss: 'Not yet defined',
+      target: 'Not yet defined',
+      riskDollars: 'No active trade', riskSub: 'no entry / no invalidation',
+      targetDollars: 'No active trade',
       costDollars: '~$0.05/share spread + commission',
-      cancellation: '15M close > $94.10 reauthorises bullish review · < $90.20 reauthorises bearish review',
+      cancellation: '15M close > $94.10 confirms bullish path · < $90.20 confirms bearish path',
       bullishCandidate: {
         candidateEntryArea: '$94.10 – $94.30',
         candidateTarget:    '$96.40 (next liquidity cluster)',
@@ -545,7 +646,10 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       lastPrice: 1.07820, lastChangePct: 0.18,
       actionState: 'ARMED — WAITING FOR TRIGGER', actionTone: 'gold',
       biasDirection: 'Bullish',
-      tradePermission: 'Armed — entry not yet authorised',
+      biasMomentum: 'Building',
+      tradeProbability: 4,
+      tradeStatus: 'Armed — waiting for confirmation',
+      tradePermission: 'Armed — waiting for confirmation',
       validityMinutes: 15,
       reassessMinutes: 15,
       direction: 'Mild USD weakness supports upside — buyers gaining control above 1.0780',
@@ -654,18 +758,25 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     'live':           'ok',     'ok':              'ok',
     'final':          'ok',     'confirms':        'ok',
     '30Y-active':     'ok',
-    // Spec-required fine-grained jane statuses (new):
-    // final:no_trade still counts as a real Jane decision → tone=ok
+    // Fine-grained jane statuses — advisory states (no longer use "authorised"
+    // language). final:no_trade still counts as a real Jane decision → tone=ok
     'final:no_trade':         'ok',
     'final:armed':            'ok',
+    'final:hold':             'ok',
+    'final:observe':          'ok',
+    'final:engage':           'ok',
     'final:entry_authorised': 'ok',
     'final:trade_confirmed':  'ok',
     // withheld:* — Jane could not produce → tone=warn (amber), not fail
     'withheld':                       'warn',
     'withheld:source_incomplete':     'warn',
     'withheld:empty_decision_packet': 'warn',
+    // pending — analysis layer not yet generated → amber (not red)
+    'pending':                'warn',
+    'analysis_pending':       'warn',
+    'awaiting_analysis':      'warn',
     'partial':        'partial','15Y-cache':       'partial','5Y-cache':'partial',
-    'sample':         'partial','degraded':        'partial', 'pending':'partial',
+    'sample':         'partial','degraded':        'partial',
     'conflicts':      'warn',   'no-match':        'warn',
     'unavailable':    'fail',   'fail':'fail',
     'unavailable:no_packet': 'fail'
@@ -696,6 +807,19 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     setSourcePill('spidey',     'unavailable: ' + reason);
     setSourcePill('jane',       'unavailable: ' + reason);
     setSourcePill('historical', 'unavailable: ' + reason);
+  }
+  // ANALYSIS PENDING source-status setter — used when the symbol has live
+  // market data + charts loading, but no Jane packet has been generated
+  // yet. The decision-layer pills read 'pending' (amber), NEVER red. This
+  // is the difference between "the analysis layer hasn't fired yet" and
+  // "the system has actually failed".
+  function setSourceStatusPendingAnalysis(){
+    setSourcePill('marketData', 'pending');
+    setSourcePill('corey',      'pending');
+    setSourcePill('coreyClone', 'unavailable: not implemented');
+    setSourcePill('spidey',     'pending');
+    setSourcePill('jane',       'pending');
+    setSourcePill('historical', 'pending');
   }
 
   // ─────────────────────────────────────────────────────────────────────
@@ -749,6 +873,50 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     });
 
     console.warn('[DASHBOARD] jane=withheld reason=' + reason + ' symbol=' + activeSymbol);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // ATLAS ANALYSIS PENDING — when market data is live and charts are
+  // rendering, but no Jane packet has been generated for this symbol yet,
+  // we render an AMBER "analysis pending" surface instead of the red
+  // "withheld" wall. The action pill stays visible (amber, ATLAS ANALYSIS
+  // PENDING). The deeper execution surface (entry/stop/target/grid/forward
+  // /triggers) is hidden because Jane has not produced those numbers yet.
+  // Charts, header price, source-status row, and audit tab remain visible.
+  // ─────────────────────────────────────────────────────────────────────
+  function renderAnalysisPendingSurface(reason){
+    var hide = function(sel){ document.querySelectorAll(sel).forEach(function(el){ el.style.display = 'none'; }); };
+    // Keep .action-row visible — the action pill carries the amber
+    // ANALYSIS PENDING state and the bias / probability / status strip.
+    hide('.exec-strip');
+    hide('.candidate-row');
+    hide('.cond-grid');
+    hide('.fe-tm');
+
+    var banner = document.createElement('div');
+    banner.className = 'withhold-banner pending';
+    banner.innerHTML =
+      '<div class="wb-title">ATLAS ANALYSIS PENDING</div>' +
+      '<div class="wb-detail">Market data is live and charts are ready. The decision layer has not been generated for this symbol yet.</div>' +
+      '<div class="wb-detail" style="margin-top:8px"><b>Next step:</b> Run <code>!' + activeSymbol.toLowerCase() + ' analyse</code> in Discord to generate the Corey + Spidey + Jane packet.</div>' +
+      '<div class="wb-detail" style="margin-top:8px;color:var(--mut)">Reason: ' + escapeHtml(reason || 'no_jane_packet_for_symbol') + '</div>';
+    var anchor = document.querySelector('.action-row');
+    if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(banner, anchor.nextSibling);
+    else document.getElementById('dashboard-root').insertBefore(banner, document.getElementById('dashboard-root').firstChild);
+
+    // Hide the Jane / Corey / Spidey / Historical / Mechanism / Scenario
+    // / Events tabs until the packet exists. Charts + Audit + Glossary
+    // tabs stay visible so the user can still inspect live OHLC and the
+    // diagnostic source-state surface.
+    ['sec-historical','sec-mechanism','sec-scenario','sec-events','sec-final','sec-corey','sec-spidey'].forEach(function(secId){
+      var navBtn = document.querySelector('.sec-nav .tab[data-target="' + secId + '"]');
+      if (navBtn) navBtn.style.display = 'none';
+      var sec = document.getElementById(secId);
+      if (sec) sec.classList.add('hidden');
+    });
+
+    console.warn('[DASHBOARD-STATE] symbol=' + activeSymbol + ' marketData=live janePacket=missing state=analysis_pending');
+    console.warn('[DASHBOARD-STATE] redFailure=false reason=no_jane_packet_but_market_live');
   }
 
   // Asset-class inference for the chart layer (works without a Jane packet,
@@ -1081,6 +1249,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         window.ATLAS = window.ATLAS || {};
         window.ATLAS.ctx = ctx;
         window.ATLAS.activeSymbol = activeSymbol;
+        window.ATLAS.dashboardState = 'jane_present';
         setSourceStatusFromPacket(ctx.sources || jane.packet.sources || {});
         renderFromCtx(ctx);
         document.getElementById('ses-id').textContent = 'session=' + (jane.packet.session_id || '?') + ' age=' + Math.round((jane.ageMs||0)/1000) + 's';
@@ -1128,9 +1297,16 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       } else {
         // Server returns a structured 200 degraded reply with status,
         // reason, sourceReason, sessionsTotal, sessionsForSymbol and
-        // storedSymbols when no packet matches. Surface the precise
-        // reason (degraded-with-specific-source-reason or
-        // withheld-with-specific-source-reason) — never silent.
+        // storedSymbols when no packet matches. Two states branch from
+        // here:
+        //   1. ANALYSIS PENDING — reason=no_jane_packet_for_symbol.
+        //      Market data + charts will render independently; the Jane
+        //      decision layer simply hasn't been generated yet. Render
+        //      AMBER, not red. Source pills go to "pending", action
+        //      pill goes to amber "ATLAS ANALYSIS PENDING".
+        //   2. TRUE FAILURE — any other reason (network/HTTP error, missing
+        //      symbol from server, parse failure, etc.). Render RED, the
+        //      existing withheld-execution surface.
         var janeStatus = (jane && jane.status) || 'degraded';
         var reasonCode = (jane && jane.reason) || (jane && jane.error) || ('http ' + (jane && jane._status));
         var sourceReasonCode = (jane && jane.sourceReason) || 'unknown';
@@ -1139,23 +1315,45 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
              ' sessionsForSymbol=' + (jane.sessionsForSymbol || 0) +
              ' storedSymbols=[' + ((jane.storedSymbols||[]).join(',') || 'none') + ']')
           : '';
-        var displayReason = reasonCode + ' (sourceReason=' + sourceReasonCode + ')';
-        setSourceStatusUnavailable(displayReason);
-        // Hide the surface FIRST, then renderFromCtx(stub) populates the
-        // (now-hidden) DOM nodes and ALSO fires the chart loader. The user
-        // sees: source-status row + withhold banner + live candlestick charts.
-        renderWithheldExecutionSurface(displayReason);
-        ctx = withholdStub();
-        window.ATLAS = window.ATLAS || {};
-        window.ATLAS.ctx = ctx;
-        window.ATLAS.activeSymbol = activeSymbol;
-        renderFromCtx(ctx);
-        document.getElementById('ses-id').textContent =
-          'jane=' + janeStatus + ' reason=' + reasonCode + ' sourceReason=' + sourceReasonCode;
-        console.warn('[DASHBOARD] jane=' + janeStatus +
-          ' symbol=' + activeSymbol +
-          ' reason=' + reasonCode +
-          ' sourceReason=' + sourceReasonCode + diag);
+
+        var isAnalysisPending = (jane && jane.status === 'degraded' && reasonCode === 'no_jane_packet_for_symbol');
+
+        if (isAnalysisPending) {
+          // AMBER state — market data live, decision layer not yet generated.
+          setSourceStatusPendingAnalysis();
+          renderAnalysisPendingSurface(reasonCode);
+          ctx = pendingStub();
+          window.ATLAS = window.ATLAS || {};
+          window.ATLAS.ctx = ctx;
+          window.ATLAS.activeSymbol = activeSymbol;
+          window.ATLAS.dashboardState = 'analysis_pending';
+          renderFromCtx(ctx);
+          document.getElementById('ses-id').textContent =
+            'state=analysis_pending reason=' + reasonCode + ' sourceReason=' + sourceReasonCode;
+          console.log('[DASHBOARD-STATE] symbol=' + activeSymbol +
+            ' marketData=live janePacket=missing state=analysis_pending');
+          console.log('[DASHBOARD-STATE] redFailure=false reason=no_jane_packet_but_market_live' + diag);
+        } else {
+          // RED state — true data/provider/runtime/network failure.
+          var displayReason = reasonCode + ' (sourceReason=' + sourceReasonCode + ')';
+          setSourceStatusUnavailable(displayReason);
+          renderWithheldExecutionSurface(displayReason);
+          ctx = withholdStub();
+          window.ATLAS = window.ATLAS || {};
+          window.ATLAS.ctx = ctx;
+          window.ATLAS.activeSymbol = activeSymbol;
+          window.ATLAS.dashboardState = 'true_failure';
+          renderFromCtx(ctx);
+          document.getElementById('ses-id').textContent =
+            'jane=' + janeStatus + ' reason=' + reasonCode + ' sourceReason=' + sourceReasonCode;
+          console.warn('[DASHBOARD-STATE] symbol=' + activeSymbol +
+            ' state=true_failure redFailure=true reason=' + reasonCode +
+            ' sourceReason=' + sourceReasonCode + diag);
+          console.warn('[DASHBOARD] jane=' + janeStatus +
+            ' symbol=' + activeSymbol +
+            ' reason=' + reasonCode +
+            ' sourceReason=' + sourceReasonCode + diag);
+        }
       }
       // Live OHLC charts attempt is fired from inside renderFromCtx() above.
       // In withhold mode, renderFromCtx(stub) still fires the chart loader
@@ -1170,7 +1368,9 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       assetClass: inferAssetClass(activeSymbol),
       lastPrice: null, lastChangePct: 0,
       actionState: 'WITHHELD', actionTone: 'red',
-      biasDirection: 'Withheld', tradePermission: 'Withheld — no Jane packet',
+      biasDirection: 'Withheld', biasMomentum: 'Withheld',
+      tradeProbability: 0, tradeStatus: 'Withheld — no Jane packet',
+      tradePermission: 'Withheld — no Jane packet',
       validityMinutes: 15, reassessMinutes: 60,
       direction: 'Withheld',
       entry: 'Withheld', entrySub: 'no Jane packet',
@@ -1189,29 +1389,93 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     };
   }
 
+  // Pending stub — used when state=analysis_pending. Action pill stays
+  // amber with text "ATLAS ANALYSIS PENDING". The deep execution surface
+  // is hidden by renderAnalysisPendingSurface; renderFromCtx still runs
+  // so the chart layer fires + populates the (hidden) DOM nodes safely.
+  function pendingStub(){
+    return {
+      assetClass: inferAssetClass(activeSymbol),
+      lastPrice: null, lastChangePct: 0,
+      actionState: 'ATLAS ANALYSIS PENDING', actionTone: 'amber',
+      biasDirection: 'Pending analysis',
+      biasMomentum: 'Pending analysis',
+      tradeProbability: 0,
+      tradeStatus: 'Awaiting Jane packet',
+      tradePermission: 'Awaiting Jane packet',
+      validityMinutes: 15, reassessMinutes: 60,
+      direction: 'Pending — run !' + activeSymbol.toLowerCase() + ' analyse to generate the Jane packet',
+      entry: 'Pending', entrySub: 'no Jane packet generated yet',
+      stopLoss: 'Pending', extendedStopLoss: 'Pending', target: 'Pending',
+      riskDollars: 'Pending', riskSub: '', targetDollars: 'Pending',
+      costDollars: 'Pending', cancellation: 'Pending',
+      bullishCandidate: null, bearishCandidate: null,
+      grid: { executionAuthority:0, structure:0, liquidityPressure:0, eventRisk:0, sessionEnergy:0, macroAlignment:0, conviction:0, regime:0 },
+      gridNotes: {}, gridEffects: {},
+      forward: { behaviour:'Decision layer pending. Charts and live market data are streaming.' },
+      triggers: { bullish:null, bearish:null, noTrade:'Pending', timeframeNote:'Pending' },
+      historical: [], mechanism: '', mechanismDetail: null,
+      scenario: { continuation:0, range:0, reversal:0 }, scenarioDetail: null,
+      events: [], matrix: [],
+      sources: { jane:'pending', corey:'pending', spidey:'pending', historical:'pending', coreyClone:'unavailable: not implemented' }
+    };
+  }
+
   // Adapter: Jane packet (server shape) → ctx (renderer shape).
   // Tolerates partial packets — missing fields fall through to the existing
   // renderer's own null-safe handling.
+  //
+  // Wording standard:
+  //   - No "authorised" / "permission" language. Replaced with advisory
+  //     wording (HOLD / OBSERVE / ENGAGE / TRIGGER / NO ENTRY / etc.).
+  //   - Trade Probability is a 1–5 integer scale (0 = withheld).
+  //   - Bias Direction + Bias Momentum are independent fields.
+  //   - Market Read summarises the current condition; Forward Watch lists
+  //     the price/time/bias/confidence triggers to watch next.
+  function remapAdvisory(state){
+    if (!state) return 'HOLD — NO ACTIVE TRADE';
+    var s = String(state);
+    // Backward-compat remap of legacy "authorised" wording.
+    s = s.replace(/ENTRY AUTHORISED/gi, 'ENTRY TRIGGERED')
+         .replace(/AUTHORISED/gi, 'TRIGGERED')
+         .replace(/NOT AUTHORISED/gi, 'NO ENTRY')
+         .replace(/WAIT\s*[—-]\s*NO TRADE/gi, 'HOLD — NO ACTIVE TRADE')
+         .replace(/PERMISSION/gi, 'STATUS');
+    return s;
+  }
   function janePacketToCtx(p){
+    var rawAction = p.actionState || p.verdict || 'HOLD — NO ACTIVE TRADE';
+    var actionState = remapAdvisory(rawAction);
     return {
       assetClass: p.assetClass || inferAssetClass(activeSymbol),
       lastPrice:  p.lastPrice  != null ? p.lastPrice  : null,
       lastChangePct: p.lastChangePct != null ? p.lastChangePct : 0,
-      actionState: p.actionState || p.verdict || 'WAIT — NO TRADE',
-      actionTone:  p.actionTone  || (p.actionState && /AUTHORISED|CONFIRMED/i.test(p.actionState) ? 'green' : /ARMED/i.test(p.actionState||'') ? 'gold' : 'red'),
+      actionState: actionState,
+      actionTone:  p.actionTone  || (
+        /TRIGGERED|CONFIRMED|ENGAGE/i.test(actionState) ? 'green'
+        : /ARMED|TRIGGER|OBSERV/i.test(actionState) ? 'gold'
+        : /HOLD|PENDING/i.test(actionState) ? 'amber'
+        : 'red'),
       biasDirection: p.biasDirection || p.bias || 'Neutral',
-      tradePermission: p.tradePermission || 'No entry authorised',
+      biasMomentum:  p.biasMomentum  || 'Steady',
+      tradeProbability: (p.tradeProbability != null) ? Math.max(0, Math.min(5, parseInt(p.tradeProbability,10) || 0)) : 0,
+      tradeStatus:     p.tradeStatus     || p.tradePermission || 'No active trade signal',
+      tradePermission: p.tradePermission || p.tradeStatus     || 'No active trade signal',
+      marketRead:      p.marketRead      || null,
+      forwardWatch:    p.forwardWatch    || null,
+      coreyContribution: p.coreyContribution || p.incorego || null,
       validityMinutes: p.validityMinutes || 15,
       reassessMinutes: p.reassessMinutes || 60,
       direction: p.direction || '',
+      directionShort: p.directionShort || p.direction || '',
       entry: p.entry == null ? 'Pending' : p.entry,
       entrySub: p.entrySub || '',
-      stopLoss: p.stopLoss || 'Not authorised',
-      extendedStopLoss: p.extendedStopLoss || 'Not authorised',
-      target: p.target || 'Not authorised',
-      riskDollars: p.riskDollars || 'Not active',
+      stopLoss: p.stopLoss || 'Not yet defined',
+      extendedStopLoss: p.extendedStopLoss || 'Not yet defined',
+      target: p.target || 'Not yet defined',
+      riskDollars: p.riskDollars || 'No active trade',
       riskSub: p.riskSub || '',
-      targetDollars: p.targetDollars || 'Not active',
+      targetDollars: p.targetDollars || 'No active trade',
       costDollars: p.costDollars || '—',
       cancellation: p.cancellation || '—',
       bullishCandidate: p.bullishCandidate || null,
@@ -1285,15 +1549,24 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   var validityStr  = fmtClock(validityAt)  + ' (in ' + countdown(validityAt)  + ')';
   var reassessStr  = fmtClock(reassessAt)  + ' (in ' + countdown(reassessAt)  + ')';
 
-  // ---------- action pill (Phase 3 — bias / permission / state split) ----------
+  // ---------- action pill — advisory state strip ----------
+  // Strip carries: Bias Direction, Bias Momentum, Trade Probability (1–5),
+  // Trade Status (advisory; not "permission"), Valid Until, Reassess.
   document.getElementById('action-state').textContent = ctx.actionState;
   document.getElementById('action-pill').setAttribute('data-tone', ctx.actionTone);
-  document.getElementById('vstrip-bias').textContent  = ctx.biasDirection || 'Neutral';
-  document.getElementById('vstrip-perm').textContent  = ctx.tradePermission || 'Pending';
+  document.getElementById('vstrip-bias').textContent     = ctx.biasDirection || 'Neutral';
+  var vMom = document.getElementById('vstrip-momentum');
+  if (vMom) vMom.textContent = ctx.biasMomentum || 'Steady';
+  var vProb = document.getElementById('vstrip-prob');
+  if (vProb) {
+    var pn = parseInt(ctx.tradeProbability, 10) || 0;
+    vProb.textContent = (pn > 0 ? pn : '—') + ' / 5';
+  }
+  document.getElementById('vstrip-perm').textContent  = ctx.tradeStatus || ctx.tradePermission || 'Pending';
   document.getElementById('vstrip-val').textContent   = validityStr;
   document.getElementById('vstrip-next').textContent  = reassessStr;
 
-  document.getElementById('es-dir').textContent       = ctx.directionShort;
+  document.getElementById('es-dir').textContent       = ctx.directionShort || ctx.direction || '—';
   document.getElementById('es-entry').textContent     = ctx.entry;
   document.getElementById('es-entry-sub').textContent = ctx.entrySub || '';
   document.getElementById('es-target').textContent    = ctx.target;
@@ -1307,6 +1580,364 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   document.getElementById('es-cancel').textContent    = ctx.cancellation;
   document.getElementById('es-next').textContent      = reassessStr;
   document.getElementById('es-assetclass').textContent= ctx.assetClass.toUpperCase();
+
+  // ---------- Market Read · Forward Watch · INCOREGO ----------
+  // Market Read: Jane's plain-language read of the current condition.
+  // Forward Watch: the next watch list (price · time · bias · confidence).
+  // INCOREGO: Corey's macro contribution narrative (DXY / yields / vol /
+  // regime / event-window). All three render with structured fallbacks
+  // when the packet does not yet provide them.
+  function teachLine(label, val){
+    return '<div style="display:grid;grid-template-columns:140px 1fr;gap:8px;margin:4px 0">' +
+      '<div style="color:var(--mut);font-size:10px;letter-spacing:1.5px;text-transform:uppercase">' + escapeHtml(label) + '</div>' +
+      '<div style="color:var(--fg);font-size:12px">' + escapeHtml(val == null ? 'pending' : String(val)) + '</div>' +
+      '</div>';
+  }
+  // Market Read body
+  (function(){
+    var mr = ctx.marketRead || null;
+    var el = document.getElementById('market-read-body');
+    if (!el) return;
+    if (mr && (mr.summary || mr.condition || mr.structureReference)) {
+      el.innerHTML =
+        (mr.summary ? '<div style="margin-bottom:8px;font-size:13px;color:var(--fg);line-height:1.55">' + escapeHtml(mr.summary) + '</div>' : '') +
+        teachLine('Condition',  mr.condition) +
+        teachLine('Structure',  mr.structureReference) +
+        teachLine('Confirm',    mr.confirm  || (ctx.triggers && ctx.triggers.bullish && ctx.triggers.bullish.close)) +
+        teachLine('Cancel',     mr.cancel   || (ctx.triggers && ctx.triggers.bullish && ctx.triggers.bullish.invalidation)) +
+        teachLine('Bias',       (ctx.biasDirection || 'Neutral') + ' · ' + (ctx.biasMomentum || 'Steady')) +
+        teachLine('Confidence', mr.confidence || (ctx.tradeProbability ? (ctx.tradeProbability + '/5') : 'pending'));
+    } else {
+      var nextStep = (window.ATLAS && window.ATLAS.dashboardState === 'analysis_pending')
+        ? 'Run <code>!' + activeSymbol.toLowerCase() + ' analyse</code> in Discord to generate the Jane packet.'
+        : 'Pending — Jane has not posted a market read for ' + activeSymbol + ' yet.';
+      el.innerHTML = '<div style="color:var(--mut2);font-size:12px;line-height:1.55">' + nextStep + '</div>';
+    }
+    var sym = el.querySelector ? null : null;
+    var symEl = document.querySelector('.mr-sym');
+    if (symEl) symEl.textContent = activeSymbol.toLowerCase();
+  })();
+  // Forward Watch body — price · time · bias · confidence
+  (function(){
+    var fw = ctx.forwardWatch || null;
+    var el = document.getElementById('forward-watch-body');
+    if (!el) return;
+    var rows = (fw && Array.isArray(fw.items)) ? fw.items : null;
+    if (!rows && fw && (fw.price || fw.time || fw.bias || fw.confidence)) {
+      rows = [{
+        price: fw.price, time: fw.time, bias: fw.bias, confidence: fw.confidence,
+        note: fw.note, structure: fw.structureReference
+      }];
+    }
+    if (rows && rows.length) {
+      el.innerHTML = rows.map(function(r){
+        return '<div style="border-left:2px solid var(--gold);padding:6px 10px;margin-bottom:8px;background:var(--bg2);border-radius:0 3px 3px 0">' +
+          teachLine('Price',      r.price) +
+          teachLine('Time',       r.time) +
+          teachLine('Bias',       r.bias) +
+          teachLine('Confidence', r.confidence) +
+          (r.structure ? teachLine('Structure ref', r.structure) : '') +
+          (r.note      ? '<div style="color:var(--mut2);font-size:11px;font-style:italic;margin-top:4px">' + escapeHtml(r.note) + '</div>' : '') +
+          '</div>';
+      }).join('');
+    } else {
+      el.innerHTML = '<div style="color:var(--mut2);font-size:12px;line-height:1.55">' +
+        'Forward Watch is the next set of watch items Jane will publish — each one priced, time-bound, bias-tagged, and confidence-rated. ' +
+        'It populates after <code>!' + activeSymbol.toLowerCase() + ' analyse</code> generates the Jane packet.' +
+        '</div>';
+    }
+  })();
+  // ─────────────────────────────────────────────────────────────────────
+  // COREY · INCOREGO contribution (load-bearing, not cosmetic)
+  //
+  // INCOREGO layers:
+  //   IN — Internal: asset/company/instrument-specific drivers (earnings,
+  //        news, fundamentals, FX-pair currency pressure, commodity/index
+  //        instrument flow).
+  //   CO — Country:  domestic economy (central bank, inflation, labour,
+  //        GDP, retail, PMIs, rates, yields).
+  //   RE — Regional: session/regional pressure (US/EU/Asia bloc behaviour,
+  //        correlated markets, regional risk tone).
+  //   GO — Global:   DXY, VIX, yields, commodities, risk-on/off,
+  //        geopolitical/global catalyst pressure.
+  //
+  // Acceptance:
+  //   - COREY OK pill cannot appear without an explanation in the body.
+  //     If the packet flags corey=ok|live|final but no contribution data
+  //     is present (and we cannot derive one from coreyMacro fields),
+  //     the pill is downgraded to "partial: ok_but_no_contribution_provided"
+  //     and a structured warning is rendered in the body.
+  //   - Corey must influence trade probability / timing / event / confidence
+  //     — the Impact card surfaces these explicitly.
+  //   - Corey Clone must be explicit: ACTIVE w/ contribution OR
+  //     UNAVAILABLE / NOT IMPLEMENTED. Never fake.
+  // ─────────────────────────────────────────────────────────────────────
+  function coreyToneOk(s){
+    if (!s) return false;
+    var v = String(s);
+    var tone = STATUS_TONE[v] || STATUS_TONE[v.split(':')[0]] || STATUS_TONE[v.split(/[: ]/)[0]];
+    return tone === 'ok';
+  }
+  function deriveIncoregoBuckets(ctx){
+    // Best-effort fallback derivation from existing coreyMacro / macro
+    // fields when the packet does not carry an explicit IN/CO/RE/GO breakdown.
+    var m  = ctx.coreyMacro || ctx.macro || {};
+    var ev = (ctx.events && ctx.events.length) ? ctx.events : [];
+    var ac = ctx.assetClass || inferAssetClass(activeSymbol);
+    var symLow = activeSymbol.toLowerCase();
+
+    var IN_text = (function(){
+      if (ac === 'fx') {
+        var base = activeSymbol.slice(0,3), quote = activeSymbol.slice(3,6);
+        return 'FX pair pressure: ' + base + ' vs ' + quote + '. Pair-specific drivers not provided in current packet — Corey did not isolate per-leg currency strength for ' + activeSymbol + '.';
+      }
+      if (ac === 'equity') {
+        return 'Stock-specific drivers (earnings / news / sector / fundamental pressure) not provided in current packet for ' + activeSymbol + '. Corey did not isolate instrument-specific impulse.';
+      }
+      if (ac === 'commodity' || ac === 'index') {
+        return 'Instrument-specific flows for ' + activeSymbol + ' not provided in current packet. Corey did not isolate per-instrument impulse.';
+      }
+      return 'Asset-specific drivers not provided in current packet for ' + activeSymbol + '.';
+    })();
+    var CO_text = (function(){
+      var bits = [];
+      if (m.us10y != null) bits.push('US10Y ' + m.us10y);
+      if (m.bias)          bits.push('Macro bias ' + m.bias);
+      if (m.regime)        bits.push('Regime ' + m.regime);
+      if (!bits.length) return 'Domestic economy read (central bank · inflation · labour · GDP · retail · PMIs · rates · yields) not in current packet.';
+      return 'Country read: ' + bits.join(' · ') + '.';
+    })();
+    var RE_text = (function(){
+      var h = new Date().getUTCHours();
+      var sess = (h>=0&&h<7)  ? 'Asia / late-Asia'
+               : (h>=7&&h<12) ? 'London open'
+               : (h>=12&&h<16)? 'London / NY overlap'
+               : (h>=16&&h<21)? 'NY afternoon'
+               :                'post-NY / late-session drift';
+      var bits = ['Session: ' + sess + ' (UTC ' + h + ':00)'];
+      if (m.equities != null) bits.push('Equities ' + m.equities);
+      return bits.join(' · ') + '. Correlated-market read not detailed in current packet.';
+    })();
+    var GO_text = (function(){
+      var bits = [];
+      if (m.dxy   != null) bits.push('DXY ' + m.dxy);
+      if (m.vix   != null) bits.push('VIX ' + m.vix);
+      if (m.us10y != null) bits.push('US10Y ' + m.us10y);
+      if (!bits.length) return 'Global risk tone (DXY · VIX · yields · risk-on/off) not in current packet.';
+      return 'Global tone: ' + bits.join(' · ') + '. Geopolitical/global catalyst pressure not detailed in packet.';
+    })();
+    return { in: IN_text, co: CO_text, re: RE_text, go: GO_text, derived: true };
+  }
+  function renderCoreyIncorego(ctx){
+    var c           = ctx.coreyContribution || ctx.incorego || null;
+    var coreySrcRaw = (ctx.sources && ctx.sources.corey) || 'unavailable';
+    var coreyOk     = coreyToneOk(coreySrcRaw);
+
+    var summaryEl = document.getElementById('incorego-summary');
+    var gridEl    = document.getElementById('incorego-grid');
+    if (!summaryEl || !gridEl) return null;
+
+    // Pull explicit IN/CO/RE/GO from the packet first; fall back to derived
+    // buckets from coreyMacro / session data when the packet did not carry
+    // them. If neither is available AND the pill says OK — that's the
+    // "cosmetic OK" case the user is calling out.
+    var hasExplicit = c && (c.in || c.co || c.re || c.go);
+    var derived = (!hasExplicit) ? deriveIncoregoBuckets(ctx) : null;
+    var IN = (c && c.in) || (derived && derived.in);
+    var CO = (c && c.co) || (derived && derived.co);
+    var RE = (c && c.re) || (derived && derived.re);
+    var GO = (c && c.go) || (derived && derived.go);
+
+    var legacyMacro = ctx.coreyMacro || ctx.macro || null;
+    var hasAnyMacro = legacyMacro && (legacyMacro.dxy != null || legacyMacro.us10y != null || legacyMacro.vix != null || legacyMacro.equities != null || legacyMacro.bias || legacyMacro.regime);
+
+    // GUARD — cosmetic-OK protection. If pill claims OK but neither an
+    // explicit Corey contribution NOR coreyMacro fields are present,
+    // downgrade the pill so the desk does not show a green-OK Corey with
+    // no read in the body.
+    if (coreyOk && !hasExplicit && !hasAnyMacro) {
+      var downgraded = 'partial: ok_but_no_contribution_provided';
+      console.warn('[COREY-GUARD] symbol=' + activeSymbol +
+        ' upstream=' + coreySrcRaw + ' decision=downgrade reason=no_contribution_provided');
+      try { setSourcePill('corey', downgraded); } catch (e) {}
+      coreySrcRaw = downgraded;
+      coreyOk = false;
+    }
+
+    var summaryText = (c && c.summary)
+      || (hasAnyMacro
+          ? 'Corey read derived from macro fields (DXY / US10Y / VIX / equities / bias / regime). Per-layer IN/CO/RE/GO breakdown was not provided by the packet — buckets below are derived, not explicit.'
+          : 'Corey contribution not provided in current packet. Buckets below are derived from session context only — no upstream macro read attached.');
+    summaryEl.innerHTML = '<div><b style="color:var(--gold)">COREY READ — ' + escapeHtml(activeSymbol) +
+      '</b> · source <code>' + escapeHtml(String(coreySrcRaw)) + '</code>' +
+      (derived ? ' · <span style="color:var(--amber)">derived buckets</span>' : '') +
+      '</div>' +
+      '<div style="margin-top:6px">' + escapeHtml(summaryText) + '</div>';
+
+    var bucket = function(key, name, text){
+      return '<div class="inco-bucket ' + key + '">' +
+        '<div class="ib-hd"><span class="ib-key">' + key + '</span><span class="ib-name">' + name + '</span></div>' +
+        '<div class="ib-text">' + escapeHtml(text || ('Pending — ' + name + ' not provided')) + '</div>' +
+        '</div>';
+    };
+    gridEl.innerHTML =
+      bucket('IN', 'Internal · asset / pair / instrument',          IN) +
+      bucket('CO', 'Country · domestic economy / central bank',     CO) +
+      bucket('RE', 'Regional · session / bloc / correlations',      RE) +
+      bucket('GO', 'Global · DXY · VIX · yields · risk tone',       GO);
+
+    return { coreyStatus: coreySrcRaw, coreyOk: coreyOk, derived: !!derived };
+  }
+
+  function renderCoreyImpact(ctx){
+    var c = ctx.coreyContribution || ctx.incorego || null;
+    var el = document.getElementById('corey-impact-body');
+    if (!el) return;
+    var supportRaw = (c && c.supportRead) || (c && c.support) || null;
+    var probImpact = (c && c.probabilityImpact) || (c && c.probImpact) || null;
+    var probCap    = (c && (c.probabilityCap != null ? c.probabilityCap : c.probCap)) ;
+    var catalyst   = (c && c.catalystWindow) || null;
+    var nextEvent  = (c && c.nextEvent)      || null;
+    var eventClass = '';
+    if (!nextEvent && ctx.events && ctx.events.length) {
+      var ev0 = ctx.events[0];
+      nextEvent = (ev0.what || 'event') + ' · ' + (ev0.whenISO || ev0.when || '?') + ' · impact ' + (ev0.impact || '?');
+    }
+
+    // Derive a support/weaken/neutral verdict if the packet did not provide one.
+    if (!supportRaw) {
+      var prob = parseInt(ctx.tradeProbability, 10) || 0;
+      var bias = (ctx.biasDirection || '').toLowerCase();
+      if (prob >= 4 && /bull|bear/.test(bias))      supportRaw = 'Macro supports the active trade direction (Corey/INCOREGO not contradicting).';
+      else if (prob <= 1)                            supportRaw = 'Macro neutralises the trade — Corey did not provide a clean directional vote.';
+      else                                           supportRaw = 'Macro mixed — Corey neither strongly supports nor weakens the current setup.';
+    }
+    var supportTone =
+      /support|tailwind|reinforce/i.test(supportRaw) ? 'support' :
+      /weaken|headwind|contradict|adverse/i.test(supportRaw) ? 'weaken' :
+      'neutral';
+
+    if (!probImpact) {
+      var probNow = parseInt(ctx.tradeProbability, 10) || 0;
+      probImpact = probNow > 0
+        ? 'Trade Probability ' + probNow + '/5 — held at this level until structure confirms at next 15M/30M close (Corey did not lift or cap further).'
+        : 'Trade Probability withheld — Corey contribution not strong enough to assert directional probability for ' + activeSymbol + '.';
+    }
+    var capLine = '';
+    if (probCap != null) {
+      capLine = '<div class="k">Probability Cap</div><div class="v">' + escapeHtml('Capped at ' + probCap + '/5 by Corey/INCOREGO read') + '</div>';
+    }
+
+    el.innerHTML =
+      '<div class="corey-impact">' +
+        '<div class="k">Macro support</div><div class="v ' + supportTone + '">' + escapeHtml(supportRaw) + '</div>' +
+        '<div class="k">Probability impact</div><div class="v">' + escapeHtml(probImpact) + '</div>' +
+        capLine +
+        '<div class="k">Catalyst window</div><div class="v">' + escapeHtml(catalyst || 'No active high-impact catalyst window detected by Corey for ' + activeSymbol + '.') + '</div>' +
+        '<div class="k">Next event</div><div class="v">' + escapeHtml(nextEvent || 'No upcoming event in active window from Corey/calendar feed.') + '</div>' +
+        '<div class="k">Confidence</div><div class="v">' + escapeHtml((c && c.confidence) || (ctx.tradeProbability ? (ctx.tradeProbability + '/5') : 'pending')) + '</div>' +
+      '</div>';
+  }
+
+  function renderCoreyClone(ctx){
+    var el = document.getElementById('corey-clone-body');
+    if (!el) return;
+    var srcRaw = (ctx.sources && ctx.sources.coreyClone) || 'unavailable: not implemented';
+    var contrib = ctx.coreyCloneContribution || ctx.cloneValidation || null;
+    var srcLow = String(srcRaw).toLowerCase();
+    var notImplemented = /not[\s_-]?implemented/.test(srcLow) || /^unavailable/.test(srcLow);
+    var conflict = /conflict|disagree|contradict/.test(srcLow);
+    var partial  = /partial|degraded|missing/.test(srcLow);
+    var active   = !notImplemented && coreyToneOk(srcRaw);
+
+    if (notImplemented) {
+      el.innerHTML =
+        '<div class="clone-state off">CLONE UNAVAILABLE — NOT IMPLEMENTED</div>' +
+        '<div style="font-size:12px;color:var(--mut2);line-height:1.55">' +
+          'Corey Clone is not yet implemented in this build. No second-pass validation has run. ' +
+          '<b>No clone contribution is implied — do not infer agreement or disagreement from the absence of a clone read.</b>' +
+        '</div>' +
+        '<div style="margin-top:8px;font-size:11px;color:var(--mut);font-style:italic">' +
+          'Source status: <code>' + escapeHtml(String(srcRaw)) + '</code>' +
+        '</div>';
+      return;
+    }
+    if (active && contrib && (contrib.summary || contrib.contradictions || contrib.missingDrivers || contrib.eventRisk || contrib.analogue || contrib.sourceConfidence)) {
+      el.innerHTML =
+        '<div class="clone-state active">CLONE ACTIVE — SECOND-PASS VALIDATION ATTACHED</div>' +
+        (contrib.summary ? '<div style="font-size:12px;color:var(--fg);line-height:1.55;margin-bottom:8px">' + escapeHtml(contrib.summary) + '</div>' : '') +
+        '<div class="corey-impact">' +
+          '<div class="k">Contradictions</div><div class="v">'  + escapeHtml(contrib.contradictions  || 'No contradictions detected against Corey\'s primary read.') + '</div>' +
+          '<div class="k">Missing drivers</div><div class="v">' + escapeHtml(contrib.missingDrivers  || 'No missing drivers flagged.') + '</div>' +
+          '<div class="k">Event-risk check</div><div class="v">' + escapeHtml(contrib.eventRisk      || 'No event-risk overrides flagged by clone.') + '</div>' +
+          '<div class="k">Historical analogue</div><div class="v">' + escapeHtml(contrib.analogue    || 'No analogue check attached.') + '</div>' +
+          '<div class="k">Source confidence</div><div class="v">' + escapeHtml(contrib.sourceConfidence || 'No source-confidence note attached.') + '</div>' +
+        '</div>';
+      return;
+    }
+    if (active && !contrib) {
+      // Pill says active but no clone contribution attached — guard
+      // against a fake green badge.
+      console.warn('[COREY-CLONE-GUARD] symbol=' + activeSymbol +
+        ' upstream=' + srcRaw + ' decision=downgrade reason=clone_active_but_no_contribution');
+      try { setSourcePill('coreyClone', 'partial: active_but_no_contribution_provided'); } catch (e) {}
+      el.innerHTML =
+        '<div class="clone-state partial">CLONE FLAGGED ACTIVE BUT NO CONTRIBUTION ATTACHED</div>' +
+        '<div style="font-size:12px;color:var(--mut2);line-height:1.55">' +
+          'The packet marks Corey Clone as active but did not attach the validation payload. ' +
+          'This is treated as PARTIAL — no agreement is implied.' +
+        '</div>';
+      return;
+    }
+    if (conflict) {
+      el.innerHTML =
+        '<div class="clone-state conflict">CLONE CONFLICT — CONTRADICTS COREY PRIMARY READ</div>' +
+        '<div style="font-size:12px;color:var(--mut2);line-height:1.55">' +
+          escapeHtml((contrib && contrib.summary) || 'Clone disagrees with Corey\'s primary read. Reconcile before raising trade probability.') +
+        '</div>';
+      return;
+    }
+    if (partial) {
+      el.innerHTML =
+        '<div class="clone-state partial">CLONE PARTIAL — INCOMPLETE SECOND-PASS</div>' +
+        '<div style="font-size:12px;color:var(--mut2);line-height:1.55">' +
+          escapeHtml((contrib && contrib.summary) || 'Clone returned an incomplete validation. Treat as no-vote.') +
+        '</div>';
+      return;
+    }
+    // Default fallthrough — explicit "unavailable" string.
+    el.innerHTML =
+      '<div class="clone-state off">CLONE UNAVAILABLE</div>' +
+      '<div style="font-size:12px;color:var(--mut2);line-height:1.55">' +
+        'Source status: <code>' + escapeHtml(String(srcRaw)) + '</code>. No clone contribution is implied.' +
+      '</div>';
+  }
+
+  // Run the Corey load-bearing renderers.
+  var coreyState = renderCoreyIncorego(ctx) || {};
+  renderCoreyImpact(ctx);
+  renderCoreyClone(ctx);
+
+  // Structured upstream-source summary log — emitted once per render,
+  // from a single canonical place. The dashboard never renders without
+  // this line in the console.
+  (function emitDataSourceLog(){
+    var s = ctx.sources || {};
+    var liveQ = (window.ATLAS && window.ATLAS.liveQuote) || null;
+    var quote = (liveQ && liveQ.source) || s.quote || 'unavailable';
+    var ohlc  = s.ohlc || s.twelvedata || (window.ATLAS && window.ATLAS.tdUsage && window.ATLAS.tdUsage.fetches > 0 ? 'twelvedata' : 'pending');
+    console.log('[DATA-SOURCE]' +
+      ' symbol='        + activeSymbol +
+      ' quote='         + quote +
+      ' ohlc='          + ohlc +
+      ' fundamentals='  + (s.fmp || s.eodhd || s.fundamentals || 'unavailable') +
+      ' calendar='      + (s.calendar || 'unavailable') +
+      ' historical='    + (s.historical || 'unavailable') +
+      ' corey='         + (coreyState.coreyStatus || s.corey || 'unavailable') +
+      ' coreyClone='    + (s.coreyClone || 'unavailable: not implemented') +
+      ' spidey='        + (s.spidey || 'unavailable') +
+      ' jane='          + (s.jane || 'unavailable'));
+  })();
 
   // ---------- candidate-levels (Phase 4) ----------
   var candGrid = document.getElementById('cand-grid');
@@ -1356,7 +1987,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     };
     switch (key) {
       case 'executionAuthority':
-        return 'Jane: ' + (ctx.tradePermission || ctx.actionState || 'no entry authorised');
+        return 'Jane: ' + (ctx.tradeStatus || ctx.tradePermission || ctx.actionState || 'no active trade signal');
       case 'structure':
         return fmtSrc('Spidey', s.spidey) + ' — HTF/LTF structure not provided by packet';
       case 'liquidityPressure':
@@ -1377,8 +2008,9 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       case 'macroAlignment':
         return fmtSrc('Corey', s.corey) + ' — no macro-alignment read attached to packet';
       case 'conviction':
-        return 'Jane: ' + (ctx.tradePermission || 'composite withheld') +
-               (ctx.biasDirection ? ' · bias=' + ctx.biasDirection : '');
+        return 'Jane: ' + (ctx.tradeStatus || ctx.tradePermission || 'composite withheld') +
+               (ctx.biasDirection ? ' · bias=' + ctx.biasDirection : '') +
+               (ctx.biasMomentum  ? ' · momentum=' + ctx.biasMomentum : '');
       case 'regime':
         return fmtSrc('Corey', s.corey) + ' — regime classification not attached to packet';
       default:
@@ -1415,11 +2047,13 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     grid.appendChild(cell);
   });
 
-  // ---------- Forward Expectation (Phase 6 — operational fields) ----------
-  // Single sourced reason used wherever a Forward / Trigger field would
-  // otherwise be a bare dash. Every empty field on the live desk now reads
-  // "Not authorised because <packet-derived reason>" instead.
-  function notAuthorisedBecause(ctx){
+  // ---------- Forward Watch (advisory fields) ----------
+  // Single sourced reason used wherever a Forward Watch / Trigger field
+  // would otherwise be a bare dash. Every empty field on the live desk
+  // now reads "Pending — Jane has not produced this field" with the
+  // upstream source state inline. Avoids "authorised" / "permission"
+  // language entirely.
+  function pendingBecause(ctx){
     var s = (ctx && ctx.sources) || {};
     var bits = [];
     if (s.jane)       bits.push('jane=' + s.jane);
@@ -1427,13 +2061,15 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     if (s.spidey)     bits.push('spidey=' + s.spidey);
     if (s.historical) bits.push('historical=' + s.historical);
     var srcStr = bits.length ? bits.join(' · ') : 'no upstream sources reported';
-    var perm = ctx.tradePermission || 'no entry authorised';
-    return 'Not authorised because Jane has not produced this field for ' + activeSymbol + '. ' +
-           'Source state: ' + srcStr + '. Current permission: ' + perm + '.';
+    var status = ctx.tradeStatus || ctx.tradePermission || 'no active trade signal';
+    return 'Pending — Jane has not produced this field for ' + activeSymbol + '. ' +
+           'Source state: ' + srcStr + '. Current trade status: ' + status + '.';
   }
+  // Backward-compat alias — older call sites still use notAuthorisedBecause.
+  var notAuthorisedBecause = pendingBecause;
   function feValOrWithheld(v){
     if (v && String(v).trim() && String(v).trim() !== '—') return String(v);
-    return notAuthorisedBecause(ctx);
+    return pendingBecause(ctx);
   }
   var fe = ctx.forward || {};
   var feWithhold = (ctx.withholdNotes && ctx.withholdNotes.forwardExpectation) || fe.withholdNote;
@@ -1878,6 +2514,38 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       ? (blockedCount === 0 ? 'live' : 'partial: ' + liveCount + '/' + (liveCount + blockedCount))
       : 'unavailable');
 
+    // [DASHBOARD-STATE] post-chart-load classification. analysis_pending
+    // mode escalates to TRUE FAILURE only if the chart layer also dies
+    // (liveCount === 0). When charts load successfully, analysis_pending
+    // remains amber — exactly the user-visible behaviour we want for
+    // "fresh symbol opened before !analyse fired".
+    var dState = (window.ATLAS && window.ATLAS.dashboardState) || (ctx && ctx.actionState ? 'jane_present' : 'unknown');
+    if (dState === 'analysis_pending') {
+      if (liveCount > 0) {
+        console.log('[DASHBOARD-STATE] symbol=' + activeSymbol +
+          ' marketData=live janePacket=missing state=analysis_pending charts=' + liveCount + '/' + (liveCount + blockedCount));
+        console.log('[DASHBOARD-STATE] redFailure=false reason=no_jane_packet_but_market_live');
+      } else {
+        // Escalate — charts also dead.
+        console.warn('[DASHBOARD-STATE] symbol=' + activeSymbol +
+          ' state=true_failure escalation reason=charts_unavailable_in_analysis_pending');
+        window.ATLAS.dashboardState = 'true_failure';
+        // Repaint the surface to red withhold (replace the amber banner).
+        try {
+          document.querySelectorAll('.withhold-banner.pending').forEach(function(b){ b.remove(); });
+          setSourceStatusUnavailable('chart_layer_unavailable');
+          renderWithheldExecutionSurface('chart_layer_unavailable_after_analysis_pending');
+        } catch (e) { console.error('[DASHBOARD-STATE] escalation render err', e && e.message); }
+      }
+    } else if (dState === 'true_failure') {
+      console.warn('[DASHBOARD-STATE] symbol=' + activeSymbol +
+        ' state=true_failure marketData=' + (liveCount > 0 ? 'live' : 'unavailable'));
+    } else {
+      console.log('[DASHBOARD-STATE] symbol=' + activeSymbol +
+        ' state=jane_present marketData=' + (liveCount > 0 ? 'live' : 'unavailable') +
+        ' charts=' + liveCount + '/' + (liveCount + blockedCount));
+    }
+
     // PRICE-GUARD — cross-check packet.lastPrice against the latest /twelvedata
     // OHLC close. If they disagree by > tolerance, REPLACE the header with
     // "PRICE DATA MISMATCH" and block any decision surface from rendering
@@ -2144,7 +2812,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       '<div class="wb-title">' + escapeHtml(title) + ' WITHHELD</div>' +
       '<div class="wb-detail"><b>Source:</b> ' + escapeHtml(sourceLabel) + ' · status <code>' + escapeHtml(statusTxt) + '</code></div>' +
       '<div class="wb-detail" style="margin-top:6px"><b>Missing:</b> ' + escapeHtml(missing) + '</div>' +
-      '<div class="wb-detail" style="margin-top:8px;color:var(--mut2);font-style:italic">Not authorised to populate this section until the upstream source posts the required fields.</div>' +
+      '<div class="wb-detail" style="margin-top:8px;color:var(--mut2);font-style:italic">Pending — this section will populate once the upstream source posts the required fields.</div>' +
       '</div>';
   }
   function kvBlock(rows){
@@ -2332,22 +3000,34 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   }
 
   var GLOSSARY = [
-    ['BOS', 'Break of Structure — price closes beyond a prior swing high/low, marking a structural shift.'],
+    ['BOS', 'Break of Structure — price closes beyond a prior swing high/low, marking a structural shift. Concept colour: GOLD.'],
     ['CHoCH', 'Change of Character — first counter-trend break that signals momentum has flipped.'],
+    ['Pullback', 'Counter-trend retrace into prior structure before continuation. Concept colour: CYAN.'],
+    ['Liquidity', 'Pools / sweeps / clusters — areas where stop orders sit. Concept colour: PURPLE.'],
     ['Liquidity Sweep', 'Wick takes out a known cluster of stops then immediately reverses.'],
-    ['Imbalance / FVG', 'A candle range with no overlap from neighbours; price often returns to fill it.'],
+    ['Imbalance / FVG', 'A candle range with no overlap from neighbours; price often returns to fill it. Concept colour: AMBER.'],
+    ['Event', 'Scheduled or unscheduled high-impact catalyst that can override structure. Concept colour: RED.'],
+    ['Invalidation', 'The specific level / close / time that voids the trade idea. Concept colour: RED.'],
+    ['Confirm', 'The specific level / close that activates the trade idea. Concept colour: GREEN.'],
     ['Supply Zone', 'Origin candle of a strong down move; sellers expected on retest.'],
     ['Demand Zone', 'Origin candle of a strong up move; buyers expected on retest.'],
-    ['Execution Authority', 'Level of confidence required to take the trade now vs wait.'],
+    ['Execution Authority', 'Composite confidence score (1-5) for taking action now vs continuing to observe.'],
     ['Macro Driver', 'Upstream variable (DXY / VIX / yields / event) currently moving the market.'],
-    ['Event Risk', 'Scheduled or unscheduled high-impact catalyst that can override structure.'],
-    ['Validity Window', 'Time/price range over which the current plan remains in force.'],
+    ['Event Risk', 'Scheduled / unscheduled high-impact catalyst that can override structure.'],
+    ['Validity Window', 'Time / price range over which the current advisory remains in force.'],
     ['Flow', 'Directional pressure (toward / away from a level) inferred from order-flow proxies.'],
     ['Regime', 'Current market environment (risk-on / risk-off / range / trend).'],
     ['Stop Loss', 'Exit level that invalidates the trade idea; never moved against the position.'],
-    ['Trigger', 'The specific price action that arms entry permission.'],
+    ['Trigger', 'The specific price action that activates entry status.'],
     ['Dot Scale', '1-5 single-colour dots: 1 = absent, 3 = developing, 5 = fully met. No mixed colours.'],
-    ['Action State', 'TRADE CONFIRMED · ENTRY AUTHORISED · ARMED — WAITING FOR TRIGGER · ENTRY NOT AUTHORISED · TRADE INVALID · WAIT — NO TRADE · MONITOR — CONDITIONS BUILDING.']
+    ['Bias Direction', 'Net directional read: bullish / bearish / neutral.'],
+    ['Bias Momentum', 'Whether the current bias is accelerating, building, steady, fading, or reversing.'],
+    ['Trade Probability', '1–5 advisory rating of how likely the current setup is to fire (5 = highest).'],
+    ['Trade Status', 'Advisory state of the current setup. NOT a permission word — it never says "authorised".'],
+    ['Market Read', 'Plain-language read of the current condition: structure reference + confirm + cancel + bias + confidence.'],
+    ['Forward Watch', 'The next watch list — each item priced, time-bound, bias-tagged, and confidence-rated.'],
+    ['INCOREGO', 'Corey\'s macro contribution narrative for the active symbol (DXY / yields / vol / regime / event-window).'],
+    ['Action State', 'ATLAS ANALYSIS PENDING · HOLD — NO ACTIVE TRADE · OBSERVE — CONDITIONS BUILDING · ARMED — WAITING FOR TRIGGER · ENTRY TRIGGERED · TRADE CONFIRMED · TRADE INVALID. (Advisory wording — no "authorised" / "permission".)']
   ];
   document.getElementById('gloss-grid').innerHTML = GLOSSARY.map(function(g){
     return '<div class="gl-card"><div class="gl-term">'+escapeHtml(g[0])+'</div><div class="gl-def">'+escapeHtml(g[1])+'</div></div>';
