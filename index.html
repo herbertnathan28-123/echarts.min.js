@@ -1549,11 +1549,79 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   var validityStr  = fmtClock(validityAt)  + ' (in ' + countdown(validityAt)  + ')';
   var reassessStr  = fmtClock(reassessAt)  + ' (in ' + countdown(reassessAt)  + ')';
 
+  // ---------- COMPRESSION LAYER ----------
+  // When the engine state is "deliberate stand-down" (sources alive, Jane
+  // issued final:no_trade), the dashboard MUST NOT surface as a wall of
+  // RED / "Blocked" / "Not authorised" — that reads as backend disconnection,
+  // not as a controlled professional decision. This layer translates raw
+  // engine nulls into trader-grade language and recolours the surface amber.
+  // Applied as a presentation overlay; never modifies ctx.
+  function compressionMode(ctx){
+    var s = (ctx && ctx.sources) || {};
+    var jane = String(s.jane || '').toLowerCase();
+    var marketOk = /live|ok/i.test(s.marketData || '');
+    var coreyOk  = /^ok|^partial/i.test(s.corey || '');
+    var spideyOk = /^ok|^partial/i.test(s.spidey || '');
+    if (marketOk && coreyOk && spideyOk && /^final:?no.?trade|wait.*no.?trade|no_?trade/i.test(jane + ' ' + (ctx.actionState || ''))) return 'clean_no_trade';
+    if (jane.indexOf('final:armed') === 0) return 'armed';
+    if (jane.indexOf('final:entry_authorised') === 0) return 'entry_authorised';
+    if (jane.indexOf('final:trade_confirmed') === 0) return 'trade_confirmed';
+    return null;
+  }
+  var COMPRESSION = compressionMode(ctx);
+
+  // Trader-grade language map for the "clean stand-down" state. Replaces
+  // raw nulls / "Pending" / "Not authorised" with calm operational copy
+  // that reads as "ATLAS deliberately stood down" not "backend missing".
+  var CLEAN_NO_TRADE_EXEC = {
+    entry:        'Waiting',
+    target:       'Inactive — no live trade',
+    stopLoss:     'Inactive — no entry exists',
+    extendedStop: 'Inactive — no entry exists',
+    riskDollars:  'No active risk',
+    targetDollars:'Inactive',
+    riskSub:      'no entry / no invalidation'
+  };
+  var CLEAN_NO_TRADE_GRID = {
+    executionAuthority: { chip:'AMBER', state:'WAITING',                          note:'Jane has not authorised an entry.',                                  effect:'No live order can be placed yet.' },
+    structure:          { chip:'AMBER', state:'NO ACTIONABLE TRIGGER',            note:'Structure is not aligned enough for entry.',                          effect:'Wait for a clean BOS / CHoCH on a tradable timeframe.' },
+    liquidityPressure:  { chip:'AMBER', state:'INACTIVE',                         note:'No usable liquidity pressure is driving an entry.',                   effect:'Continue to monitor; no edge to capture right now.' },
+    eventRisk:          { chip:'GOLD',  state:'QUIET',                            note:'No active event window affecting this decision.',                     effect:'Calendar is calm — re-check before any new entry.' },
+    sessionEnergy:      { chip:'AMBER', state:'LOW / WAITING',                    note:'Session conditions do not justify entry.',                            effect:'Conservation mode; trade quality is the gate, not session heat.' },
+    macroAlignment:     { chip:'GOLD',  state:'NEUTRAL',                          note:'No directional macro edge strong enough for trade authorisation.',    effect:'Macro is balanced; structure must lead.' },
+    conviction:         { chip:'AMBER', state:'INSUFFICIENT',                     note:'Not enough evidence for a live order.',                               effect:'Stand aside until evidence stacks.' },
+    regime:             { chip:'GOLD',  state:'NEUTRAL / UNCLASSIFIED FOR TRADE', note:'Regime is not driving a valid setup.',                                effect:'No regime-coherent edge present.' }
+  };
+  var CLEAN_NO_TRADE_SUBTITLE =
+    'No trade-quality setup is authorised at this time. ' +
+    'Market data is live. Corey and Spidey are active. ' +
+    'Jane has issued ' + ((ctx.sources && ctx.sources.jane) || 'final:no_trade') +
+    ' because bias is ' + (String(ctx.biasDirection || 'neutral').toLowerCase()) +
+    ' and no approved entry trigger / candidate level is present.';
+
   // ---------- action pill — advisory state strip ----------
   // Strip carries: Bias Direction, Bias Momentum, Trade Probability (1–5),
   // Trade Status (advisory; not "permission"), Valid Until, Reassess.
   document.getElementById('action-state').textContent = ctx.actionState;
-  document.getElementById('action-pill').setAttribute('data-tone', ctx.actionTone);
+  // Compression mode forces an AMBER tone for clean no_trade — calm-stand-down
+  // colour, NOT alarming red. Real RED is reserved for mismatch / failure /
+  // hard breach (handled by the PRICE-GUARD code path).
+  var pill = document.getElementById('action-pill');
+  pill.setAttribute('data-tone', COMPRESSION === 'clean_no_trade' ? 'amber' : ctx.actionTone);
+
+  // Insert / refresh the "deliberate stand-down" subtitle under the action state.
+  (function(){
+    var stateEl = document.getElementById('action-state');
+    var sub = document.getElementById('action-subtitle');
+    if (!sub) {
+      sub = document.createElement('div');
+      sub.id = 'action-subtitle';
+      sub.style.cssText = 'font-size:12px;color:var(--mut2);margin-top:6px;line-height:1.5;max-width:680px';
+      stateEl.parentNode.appendChild(sub);
+    }
+    sub.textContent = (COMPRESSION === 'clean_no_trade') ? CLEAN_NO_TRADE_SUBTITLE : '';
+  })();
+
   document.getElementById('vstrip-bias').textContent     = ctx.biasDirection || 'Neutral';
   var vMom = document.getElementById('vstrip-momentum');
   if (vMom) vMom.textContent = ctx.biasMomentum || 'Steady';
@@ -1566,15 +1634,22 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   document.getElementById('vstrip-val').textContent   = validityStr;
   document.getElementById('vstrip-next').textContent  = reassessStr;
 
-  document.getElementById('es-dir').textContent       = ctx.directionShort || ctx.direction || '—';
-  document.getElementById('es-entry').textContent     = ctx.entry;
-  document.getElementById('es-entry-sub').textContent = ctx.entrySub || '';
-  document.getElementById('es-target').textContent    = ctx.target;
-  document.getElementById('es-stop').textContent      = ctx.stopLoss;
-  document.getElementById('es-stop-ext').textContent  = ctx.extendedStopLoss;
-  document.getElementById('es-risk').textContent      = ctx.riskDollars;
-  document.getElementById('es-risk-sub').textContent  = ctx.riskSub || '';
-  document.getElementById('es-tgt-d').textContent     = ctx.targetDollars;
+  // Exec-strip values — compress raw nulls into trader-grade copy when the
+  // engine is in clean stand-down. "Pending" → "Waiting", "Not authorised" →
+  // "Inactive — no entry exists", etc. ctx is never mutated.
+  function compressVal(rawVal, fallback) {
+    if (COMPRESSION === 'clean_no_trade' && /pending|not authorised|withheld|—|not active|^\s*$/i.test(String(rawVal || ''))) return fallback;
+    return rawVal;
+  }
+  document.getElementById('es-dir').textContent       = ctx.directionShort || ctx.direction || (COMPRESSION === 'clean_no_trade' ? 'No directional read for entry yet' : '—');
+  document.getElementById('es-entry').textContent     = compressVal(ctx.entry,            CLEAN_NO_TRADE_EXEC.entry);
+  document.getElementById('es-entry-sub').textContent = ctx.entrySub || (COMPRESSION === 'clean_no_trade' ? 'no live order permitted yet' : '');
+  document.getElementById('es-target').textContent    = compressVal(ctx.target,           CLEAN_NO_TRADE_EXEC.target);
+  document.getElementById('es-stop').textContent      = compressVal(ctx.stopLoss,         CLEAN_NO_TRADE_EXEC.stopLoss);
+  document.getElementById('es-stop-ext').textContent  = compressVal(ctx.extendedStopLoss, CLEAN_NO_TRADE_EXEC.extendedStop);
+  document.getElementById('es-risk').textContent      = compressVal(ctx.riskDollars,      CLEAN_NO_TRADE_EXEC.riskDollars);
+  document.getElementById('es-risk-sub').textContent  = ctx.riskSub || (COMPRESSION === 'clean_no_trade' ? CLEAN_NO_TRADE_EXEC.riskSub : '');
+  document.getElementById('es-tgt-d').textContent     = compressVal(ctx.targetDollars,    CLEAN_NO_TRADE_EXEC.targetDollars);
   document.getElementById('es-cost').textContent      = ctx.costDollars;
   document.getElementById('es-validity').textContent  = validityStr;
   document.getElementById('es-cancel').textContent    = ctx.cancellation;
@@ -2021,14 +2096,28 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   GRID_DIMS.forEach(function(dim){
     var key = dim[0], label = dim[1];
     var v = ctx.grid[key] || 0;
-    var note = (ctx.gridNotes && ctx.gridNotes[key]) || '';
+    var note   = (ctx.gridNotes && ctx.gridNotes[key]) || '';
     var effect = (ctx.gridEffects && ctx.gridEffects[key]) || '';
     var c = chipFor(v);
-    // If packet didn't supply a per-dim note AND the chip would otherwise
-    // read as a bare "Blocked"/"Weak"/etc., fall back to a sourced reason
-    // so no cell ever surfaces "Blocked" alone on the live desk.
-    var displayNote = note || defaultReasonFor(key, ctx);
+    var displayNote   = note || defaultReasonFor(key, ctx);
     var displayEffect = effect || '';
+    var stateLabel    = c.state;
+
+    // Compression overlay — when ATLAS is in clean stand-down and the cell
+    // would otherwise read as RED/Blocked, swap to the spec language map.
+    // Real RED is reserved for true failures and is suppressed here only
+    // when the upstream sources are genuinely OK (deliberate stand-down,
+    // not a backend disconnection).
+    if (COMPRESSION === 'clean_no_trade' && v <= 1) {
+      var override = CLEAN_NO_TRADE_GRID[key];
+      if (override) {
+        c = { chip: override.chip, state: override.state };
+        stateLabel    = override.state;
+        displayNote   = override.note;
+        displayEffect = override.effect;
+      }
+    }
+
     var dotsHtml = '';
     for (var i=1; i<=5; i++){
       dotsHtml += '<span class="d ' + (i<=v ? 'on' : '') + '"></span>';
@@ -2042,7 +2131,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         '<span class="cl-num">' + v + '/5</span>' +
         '<span class="cl-chip ' + c.chip + '">' + c.chip + '</span>' +
       '</div>' +
-      '<div class="cl-state">' + c.state + ' — ' + escapeHtml(displayNote) + '</div>' +
+      '<div class="cl-state">' + escapeHtml(stateLabel) + ' — ' + escapeHtml(displayNote) + '</div>' +
       (displayEffect ? '<div class="cl-effect">Effect: ' + escapeHtml(displayEffect) + '</div>' : '');
     grid.appendChild(cell);
   });
