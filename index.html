@@ -71,6 +71,34 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
    Jane decision layer not yet generated). Amber, never red. */
 .withhold-banner.pending{border-color:var(--amber-d);background:rgba(255,145,0,0.06)}
 .withhold-banner.pending .wb-title{color:var(--amber)}
+/* INCOREGO bucket cards — IN (Internal) / CO (Country) /
+   RE (Regional) / GO (Global). Locked colours so each layer
+   reads the same anywhere on the desk. */
+.inco-bucket{background:var(--bg2);border:1px solid var(--line2);border-left:3px solid var(--mut);border-radius:3px;padding:10px 12px}
+.inco-bucket .ib-hd{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}
+.inco-bucket .ib-key{font-size:11px;letter-spacing:2px;font-weight:900;font-family:"SF Mono",monospace}
+.inco-bucket .ib-name{font-size:9px;letter-spacing:1.5px;color:var(--mut);text-transform:uppercase;font-weight:600}
+.inco-bucket .ib-text{font-size:12px;color:var(--fg);line-height:1.5}
+.inco-bucket.IN{border-left-color:var(--cyan)}
+.inco-bucket.IN .ib-key{color:var(--cyan)}
+.inco-bucket.CO{border-left-color:var(--gold)}
+.inco-bucket.CO .ib-key{color:var(--gold)}
+.inco-bucket.RE{border-left-color:var(--amber)}
+.inco-bucket.RE .ib-key{color:var(--amber)}
+.inco-bucket.GO{border-left-color:#B16BFF}
+.inco-bucket.GO .ib-key{color:#B16BFF}
+/* Corey Impact + Clone visual states */
+.corey-impact{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;font-size:12px}
+.corey-impact .k{color:var(--mut);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding-top:2px}
+.corey-impact .v{color:var(--fg);line-height:1.5}
+.corey-impact .v.support  {color:var(--green)}
+.corey-impact .v.weaken   {color:var(--red)}
+.corey-impact .v.neutral  {color:var(--mut2);font-style:italic}
+.clone-state{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:3px;font-size:11px;letter-spacing:1.5px;font-weight:700;text-transform:uppercase;margin-bottom:8px}
+.clone-state.active{background:rgba(0,180,80,0.10);border:1px solid var(--green-d);color:var(--green)}
+.clone-state.partial{background:rgba(255,214,0,0.10);border:1px solid var(--gold-d);color:var(--gold)}
+.clone-state.conflict{background:rgba(255,0,21,0.10);border:1px solid var(--red-d);color:var(--red)}
+.clone-state.off{background:rgba(122,129,140,0.10);border:1px solid var(--line2);color:var(--mut2)}
 /* Concept-colour key used in the Spidey + Glossary surfaces. Locked
    colours so BOS / pullback / liquidity / imbalance / event /
    invalidation always read as the same colour anywhere they appear. */
@@ -314,11 +342,29 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     </div>
   </div>
 
-  <!-- COREY INCOREGO CONTRIBUTION (macro narrative summary) -->
-  <div class="advisory-row" id="incorego-row" style="display:grid;grid-template-columns:1fr;gap:12px;padding:6px 22px 0">
+  <!-- COREY · INCOREGO contribution (IN / CO / RE / GO) +
+       COREY IMPACT ON JANE +
+       COREY CLONE (second-pass validation; explicit active or unavailable)
+       Corey is a load-bearing input — never a cosmetic OK pill. The
+       renderers in renderFromCtx will downgrade the COREY pill if no
+       contribution is provided, and force the Clone surface to read
+       "unavailable / not implemented" unless the packet explicitly
+       wires Clone validation. -->
+  <div class="advisory-row" id="incorego-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:6px 22px 0">
     <div class="fe-card" id="incorego-card">
       <h3>Corey · INCOREGO Contribution</h3>
-      <div id="incorego-body" style="font-size:12px;color:var(--mut2);line-height:1.55">Pending — Corey's macro narrative (DXY / yields / vol / regime / event window) will summarise here once the analysis runs.</div>
+      <div id="incorego-summary" style="font-size:12px;color:var(--mut2);line-height:1.55;margin-bottom:10px"></div>
+      <div id="incorego-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+    </div>
+    <div class="fe-card" id="corey-impact-card">
+      <h3>Corey Impact on Jane</h3>
+      <div id="corey-impact-body" style="font-size:12px;color:var(--mut2);line-height:1.55"></div>
+    </div>
+  </div>
+  <div class="advisory-row" id="corey-clone-row" style="display:grid;grid-template-columns:1fr;gap:12px;padding:6px 22px 0">
+    <div class="fe-card" id="corey-clone-card">
+      <h3>Corey Clone — Second-Pass Validation</h3>
+      <div id="corey-clone-body" style="font-size:12px;color:var(--mut2);line-height:1.55"></div>
     </div>
   </div>
 
@@ -1601,26 +1647,296 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         '</div>';
     }
   })();
-  // Corey INCOREGO contribution
-  (function(){
-    var c = ctx.coreyContribution || null;
-    var el = document.getElementById('incorego-body');
-    if (!el) return;
-    if (c && (c.summary || c.dxy || c.yields || c.vol || c.regime || c.event)) {
-      el.innerHTML =
-        (c.summary ? '<div style="margin-bottom:8px;font-size:13px;color:var(--fg);line-height:1.55">' + escapeHtml(c.summary) + '</div>' : '') +
-        teachLine('DXY / USD',   c.dxy) +
-        teachLine('Yields',      c.yields) +
-        teachLine('Volatility',  c.vol) +
-        teachLine('Regime',      c.regime) +
-        teachLine('Event window',c.event) +
-        (c.contribution ? '<div style="margin-top:8px;font-size:11px;color:var(--mut2);font-style:italic">Contribution to ' + escapeHtml(activeSymbol) + ': ' + escapeHtml(c.contribution) + '</div>' : '');
-    } else {
-      el.innerHTML = '<div style="color:var(--mut2);font-size:12px;line-height:1.55">' +
-        'INCOREGO is Corey\'s macro contribution layer: DXY / yields / vol / regime / event-window narrative summarised toward ' +
-        escapeHtml(activeSymbol) + '. Populates after Jane runs.' +
-        '</div>';
+  // ─────────────────────────────────────────────────────────────────────
+  // COREY · INCOREGO contribution (load-bearing, not cosmetic)
+  //
+  // INCOREGO layers:
+  //   IN — Internal: asset/company/instrument-specific drivers (earnings,
+  //        news, fundamentals, FX-pair currency pressure, commodity/index
+  //        instrument flow).
+  //   CO — Country:  domestic economy (central bank, inflation, labour,
+  //        GDP, retail, PMIs, rates, yields).
+  //   RE — Regional: session/regional pressure (US/EU/Asia bloc behaviour,
+  //        correlated markets, regional risk tone).
+  //   GO — Global:   DXY, VIX, yields, commodities, risk-on/off,
+  //        geopolitical/global catalyst pressure.
+  //
+  // Acceptance:
+  //   - COREY OK pill cannot appear without an explanation in the body.
+  //     If the packet flags corey=ok|live|final but no contribution data
+  //     is present (and we cannot derive one from coreyMacro fields),
+  //     the pill is downgraded to "partial: ok_but_no_contribution_provided"
+  //     and a structured warning is rendered in the body.
+  //   - Corey must influence trade probability / timing / event / confidence
+  //     — the Impact card surfaces these explicitly.
+  //   - Corey Clone must be explicit: ACTIVE w/ contribution OR
+  //     UNAVAILABLE / NOT IMPLEMENTED. Never fake.
+  // ─────────────────────────────────────────────────────────────────────
+  function coreyToneOk(s){
+    if (!s) return false;
+    var v = String(s);
+    var tone = STATUS_TONE[v] || STATUS_TONE[v.split(':')[0]] || STATUS_TONE[v.split(/[: ]/)[0]];
+    return tone === 'ok';
+  }
+  function deriveIncoregoBuckets(ctx){
+    // Best-effort fallback derivation from existing coreyMacro / macro
+    // fields when the packet does not carry an explicit IN/CO/RE/GO breakdown.
+    var m  = ctx.coreyMacro || ctx.macro || {};
+    var ev = (ctx.events && ctx.events.length) ? ctx.events : [];
+    var ac = ctx.assetClass || inferAssetClass(activeSymbol);
+    var symLow = activeSymbol.toLowerCase();
+
+    var IN_text = (function(){
+      if (ac === 'fx') {
+        var base = activeSymbol.slice(0,3), quote = activeSymbol.slice(3,6);
+        return 'FX pair pressure: ' + base + ' vs ' + quote + '. Pair-specific drivers not provided in current packet — Corey did not isolate per-leg currency strength for ' + activeSymbol + '.';
+      }
+      if (ac === 'equity') {
+        return 'Stock-specific drivers (earnings / news / sector / fundamental pressure) not provided in current packet for ' + activeSymbol + '. Corey did not isolate instrument-specific impulse.';
+      }
+      if (ac === 'commodity' || ac === 'index') {
+        return 'Instrument-specific flows for ' + activeSymbol + ' not provided in current packet. Corey did not isolate per-instrument impulse.';
+      }
+      return 'Asset-specific drivers not provided in current packet for ' + activeSymbol + '.';
+    })();
+    var CO_text = (function(){
+      var bits = [];
+      if (m.us10y != null) bits.push('US10Y ' + m.us10y);
+      if (m.bias)          bits.push('Macro bias ' + m.bias);
+      if (m.regime)        bits.push('Regime ' + m.regime);
+      if (!bits.length) return 'Domestic economy read (central bank · inflation · labour · GDP · retail · PMIs · rates · yields) not in current packet.';
+      return 'Country read: ' + bits.join(' · ') + '.';
+    })();
+    var RE_text = (function(){
+      var h = new Date().getUTCHours();
+      var sess = (h>=0&&h<7)  ? 'Asia / late-Asia'
+               : (h>=7&&h<12) ? 'London open'
+               : (h>=12&&h<16)? 'London / NY overlap'
+               : (h>=16&&h<21)? 'NY afternoon'
+               :                'post-NY / late-session drift';
+      var bits = ['Session: ' + sess + ' (UTC ' + h + ':00)'];
+      if (m.equities != null) bits.push('Equities ' + m.equities);
+      return bits.join(' · ') + '. Correlated-market read not detailed in current packet.';
+    })();
+    var GO_text = (function(){
+      var bits = [];
+      if (m.dxy   != null) bits.push('DXY ' + m.dxy);
+      if (m.vix   != null) bits.push('VIX ' + m.vix);
+      if (m.us10y != null) bits.push('US10Y ' + m.us10y);
+      if (!bits.length) return 'Global risk tone (DXY · VIX · yields · risk-on/off) not in current packet.';
+      return 'Global tone: ' + bits.join(' · ') + '. Geopolitical/global catalyst pressure not detailed in packet.';
+    })();
+    return { in: IN_text, co: CO_text, re: RE_text, go: GO_text, derived: true };
+  }
+  function renderCoreyIncorego(ctx){
+    var c           = ctx.coreyContribution || ctx.incorego || null;
+    var coreySrcRaw = (ctx.sources && ctx.sources.corey) || 'unavailable';
+    var coreyOk     = coreyToneOk(coreySrcRaw);
+
+    var summaryEl = document.getElementById('incorego-summary');
+    var gridEl    = document.getElementById('incorego-grid');
+    if (!summaryEl || !gridEl) return null;
+
+    // Pull explicit IN/CO/RE/GO from the packet first; fall back to derived
+    // buckets from coreyMacro / session data when the packet did not carry
+    // them. If neither is available AND the pill says OK — that's the
+    // "cosmetic OK" case the user is calling out.
+    var hasExplicit = c && (c.in || c.co || c.re || c.go);
+    var derived = (!hasExplicit) ? deriveIncoregoBuckets(ctx) : null;
+    var IN = (c && c.in) || (derived && derived.in);
+    var CO = (c && c.co) || (derived && derived.co);
+    var RE = (c && c.re) || (derived && derived.re);
+    var GO = (c && c.go) || (derived && derived.go);
+
+    var legacyMacro = ctx.coreyMacro || ctx.macro || null;
+    var hasAnyMacro = legacyMacro && (legacyMacro.dxy != null || legacyMacro.us10y != null || legacyMacro.vix != null || legacyMacro.equities != null || legacyMacro.bias || legacyMacro.regime);
+
+    // GUARD — cosmetic-OK protection. If pill claims OK but neither an
+    // explicit Corey contribution NOR coreyMacro fields are present,
+    // downgrade the pill so the desk does not show a green-OK Corey with
+    // no read in the body.
+    if (coreyOk && !hasExplicit && !hasAnyMacro) {
+      var downgraded = 'partial: ok_but_no_contribution_provided';
+      console.warn('[COREY-GUARD] symbol=' + activeSymbol +
+        ' upstream=' + coreySrcRaw + ' decision=downgrade reason=no_contribution_provided');
+      try { setSourcePill('corey', downgraded); } catch (e) {}
+      coreySrcRaw = downgraded;
+      coreyOk = false;
     }
+
+    var summaryText = (c && c.summary)
+      || (hasAnyMacro
+          ? 'Corey read derived from macro fields (DXY / US10Y / VIX / equities / bias / regime). Per-layer IN/CO/RE/GO breakdown was not provided by the packet — buckets below are derived, not explicit.'
+          : 'Corey contribution not provided in current packet. Buckets below are derived from session context only — no upstream macro read attached.');
+    summaryEl.innerHTML = '<div><b style="color:var(--gold)">COREY READ — ' + escapeHtml(activeSymbol) +
+      '</b> · source <code>' + escapeHtml(String(coreySrcRaw)) + '</code>' +
+      (derived ? ' · <span style="color:var(--amber)">derived buckets</span>' : '') +
+      '</div>' +
+      '<div style="margin-top:6px">' + escapeHtml(summaryText) + '</div>';
+
+    var bucket = function(key, name, text){
+      return '<div class="inco-bucket ' + key + '">' +
+        '<div class="ib-hd"><span class="ib-key">' + key + '</span><span class="ib-name">' + name + '</span></div>' +
+        '<div class="ib-text">' + escapeHtml(text || ('Pending — ' + name + ' not provided')) + '</div>' +
+        '</div>';
+    };
+    gridEl.innerHTML =
+      bucket('IN', 'Internal · asset / pair / instrument',          IN) +
+      bucket('CO', 'Country · domestic economy / central bank',     CO) +
+      bucket('RE', 'Regional · session / bloc / correlations',      RE) +
+      bucket('GO', 'Global · DXY · VIX · yields · risk tone',       GO);
+
+    return { coreyStatus: coreySrcRaw, coreyOk: coreyOk, derived: !!derived };
+  }
+
+  function renderCoreyImpact(ctx){
+    var c = ctx.coreyContribution || ctx.incorego || null;
+    var el = document.getElementById('corey-impact-body');
+    if (!el) return;
+    var supportRaw = (c && c.supportRead) || (c && c.support) || null;
+    var probImpact = (c && c.probabilityImpact) || (c && c.probImpact) || null;
+    var probCap    = (c && (c.probabilityCap != null ? c.probabilityCap : c.probCap)) ;
+    var catalyst   = (c && c.catalystWindow) || null;
+    var nextEvent  = (c && c.nextEvent)      || null;
+    var eventClass = '';
+    if (!nextEvent && ctx.events && ctx.events.length) {
+      var ev0 = ctx.events[0];
+      nextEvent = (ev0.what || 'event') + ' · ' + (ev0.whenISO || ev0.when || '?') + ' · impact ' + (ev0.impact || '?');
+    }
+
+    // Derive a support/weaken/neutral verdict if the packet did not provide one.
+    if (!supportRaw) {
+      var prob = parseInt(ctx.tradeProbability, 10) || 0;
+      var bias = (ctx.biasDirection || '').toLowerCase();
+      if (prob >= 4 && /bull|bear/.test(bias))      supportRaw = 'Macro supports the active trade direction (Corey/INCOREGO not contradicting).';
+      else if (prob <= 1)                            supportRaw = 'Macro neutralises the trade — Corey did not provide a clean directional vote.';
+      else                                           supportRaw = 'Macro mixed — Corey neither strongly supports nor weakens the current setup.';
+    }
+    var supportTone =
+      /support|tailwind|reinforce/i.test(supportRaw) ? 'support' :
+      /weaken|headwind|contradict|adverse/i.test(supportRaw) ? 'weaken' :
+      'neutral';
+
+    if (!probImpact) {
+      var probNow = parseInt(ctx.tradeProbability, 10) || 0;
+      probImpact = probNow > 0
+        ? 'Trade Probability ' + probNow + '/5 — held at this level until structure confirms at next 15M/30M close (Corey did not lift or cap further).'
+        : 'Trade Probability withheld — Corey contribution not strong enough to assert directional probability for ' + activeSymbol + '.';
+    }
+    var capLine = '';
+    if (probCap != null) {
+      capLine = '<div class="k">Probability Cap</div><div class="v">' + escapeHtml('Capped at ' + probCap + '/5 by Corey/INCOREGO read') + '</div>';
+    }
+
+    el.innerHTML =
+      '<div class="corey-impact">' +
+        '<div class="k">Macro support</div><div class="v ' + supportTone + '">' + escapeHtml(supportRaw) + '</div>' +
+        '<div class="k">Probability impact</div><div class="v">' + escapeHtml(probImpact) + '</div>' +
+        capLine +
+        '<div class="k">Catalyst window</div><div class="v">' + escapeHtml(catalyst || 'No active high-impact catalyst window detected by Corey for ' + activeSymbol + '.') + '</div>' +
+        '<div class="k">Next event</div><div class="v">' + escapeHtml(nextEvent || 'No upcoming event in active window from Corey/calendar feed.') + '</div>' +
+        '<div class="k">Confidence</div><div class="v">' + escapeHtml((c && c.confidence) || (ctx.tradeProbability ? (ctx.tradeProbability + '/5') : 'pending')) + '</div>' +
+      '</div>';
+  }
+
+  function renderCoreyClone(ctx){
+    var el = document.getElementById('corey-clone-body');
+    if (!el) return;
+    var srcRaw = (ctx.sources && ctx.sources.coreyClone) || 'unavailable: not implemented';
+    var contrib = ctx.coreyCloneContribution || ctx.cloneValidation || null;
+    var srcLow = String(srcRaw).toLowerCase();
+    var notImplemented = /not[\s_-]?implemented/.test(srcLow) || /^unavailable/.test(srcLow);
+    var conflict = /conflict|disagree|contradict/.test(srcLow);
+    var partial  = /partial|degraded|missing/.test(srcLow);
+    var active   = !notImplemented && coreyToneOk(srcRaw);
+
+    if (notImplemented) {
+      el.innerHTML =
+        '<div class="clone-state off">CLONE UNAVAILABLE — NOT IMPLEMENTED</div>' +
+        '<div style="font-size:12px;color:var(--mut2);line-height:1.55">' +
+          'Corey Clone is not yet implemented in this build. No second-pass validation has run. ' +
+          '<b>No clone contribution is implied — do not infer agreement or disagreement from the absence of a clone read.</b>' +
+        '</div>' +
+        '<div style="margin-top:8px;font-size:11px;color:var(--mut);font-style:italic">' +
+          'Source status: <code>' + escapeHtml(String(srcRaw)) + '</code>' +
+        '</div>';
+      return;
+    }
+    if (active && contrib && (contrib.summary || contrib.contradictions || contrib.missingDrivers || contrib.eventRisk || contrib.analogue || contrib.sourceConfidence)) {
+      el.innerHTML =
+        '<div class="clone-state active">CLONE ACTIVE — SECOND-PASS VALIDATION ATTACHED</div>' +
+        (contrib.summary ? '<div style="font-size:12px;color:var(--fg);line-height:1.55;margin-bottom:8px">' + escapeHtml(contrib.summary) + '</div>' : '') +
+        '<div class="corey-impact">' +
+          '<div class="k">Contradictions</div><div class="v">'  + escapeHtml(contrib.contradictions  || 'No contradictions detected against Corey\'s primary read.') + '</div>' +
+          '<div class="k">Missing drivers</div><div class="v">' + escapeHtml(contrib.missingDrivers  || 'No missing drivers flagged.') + '</div>' +
+          '<div class="k">Event-risk check</div><div class="v">' + escapeHtml(contrib.eventRisk      || 'No event-risk overrides flagged by clone.') + '</div>' +
+          '<div class="k">Historical analogue</div><div class="v">' + escapeHtml(contrib.analogue    || 'No analogue check attached.') + '</div>' +
+          '<div class="k">Source confidence</div><div class="v">' + escapeHtml(contrib.sourceConfidence || 'No source-confidence note attached.') + '</div>' +
+        '</div>';
+      return;
+    }
+    if (active && !contrib) {
+      // Pill says active but no clone contribution attached — guard
+      // against a fake green badge.
+      console.warn('[COREY-CLONE-GUARD] symbol=' + activeSymbol +
+        ' upstream=' + srcRaw + ' decision=downgrade reason=clone_active_but_no_contribution');
+      try { setSourcePill('coreyClone', 'partial: active_but_no_contribution_provided'); } catch (e) {}
+      el.innerHTML =
+        '<div class="clone-state partial">CLONE FLAGGED ACTIVE BUT NO CONTRIBUTION ATTACHED</div>' +
+        '<div style="font-size:12px;color:var(--mut2);line-height:1.55">' +
+          'The packet marks Corey Clone as active but did not attach the validation payload. ' +
+          'This is treated as PARTIAL — no agreement is implied.' +
+        '</div>';
+      return;
+    }
+    if (conflict) {
+      el.innerHTML =
+        '<div class="clone-state conflict">CLONE CONFLICT — CONTRADICTS COREY PRIMARY READ</div>' +
+        '<div style="font-size:12px;color:var(--mut2);line-height:1.55">' +
+          escapeHtml((contrib && contrib.summary) || 'Clone disagrees with Corey\'s primary read. Reconcile before raising trade probability.') +
+        '</div>';
+      return;
+    }
+    if (partial) {
+      el.innerHTML =
+        '<div class="clone-state partial">CLONE PARTIAL — INCOMPLETE SECOND-PASS</div>' +
+        '<div style="font-size:12px;color:var(--mut2);line-height:1.55">' +
+          escapeHtml((contrib && contrib.summary) || 'Clone returned an incomplete validation. Treat as no-vote.') +
+        '</div>';
+      return;
+    }
+    // Default fallthrough — explicit "unavailable" string.
+    el.innerHTML =
+      '<div class="clone-state off">CLONE UNAVAILABLE</div>' +
+      '<div style="font-size:12px;color:var(--mut2);line-height:1.55">' +
+        'Source status: <code>' + escapeHtml(String(srcRaw)) + '</code>. No clone contribution is implied.' +
+      '</div>';
+  }
+
+  // Run the Corey load-bearing renderers.
+  var coreyState = renderCoreyIncorego(ctx) || {};
+  renderCoreyImpact(ctx);
+  renderCoreyClone(ctx);
+
+  // Structured upstream-source summary log — emitted once per render,
+  // from a single canonical place. The dashboard never renders without
+  // this line in the console.
+  (function emitDataSourceLog(){
+    var s = ctx.sources || {};
+    var liveQ = (window.ATLAS && window.ATLAS.liveQuote) || null;
+    var quote = (liveQ && liveQ.source) || s.quote || 'unavailable';
+    var ohlc  = s.ohlc || s.twelvedata || (window.ATLAS && window.ATLAS.tdUsage && window.ATLAS.tdUsage.fetches > 0 ? 'twelvedata' : 'pending');
+    console.log('[DATA-SOURCE]' +
+      ' symbol='        + activeSymbol +
+      ' quote='         + quote +
+      ' ohlc='          + ohlc +
+      ' fundamentals='  + (s.fmp || s.eodhd || s.fundamentals || 'unavailable') +
+      ' calendar='      + (s.calendar || 'unavailable') +
+      ' historical='    + (s.historical || 'unavailable') +
+      ' corey='         + (coreyState.coreyStatus || s.corey || 'unavailable') +
+      ' coreyClone='    + (s.coreyClone || 'unavailable: not implemented') +
+      ' spidey='        + (s.spidey || 'unavailable') +
+      ' jane='          + (s.jane || 'unavailable'));
   })();
 
   // ---------- candidate-levels (Phase 4) ----------
