@@ -912,11 +912,19 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     // (e.g. HIGH 545.91 vs CURRENT 542.21 on a tight intraday range),
     // the boxes visually touch / overlap. Compute desired Y for each
     // visible label, sort by Y, then push neighbours apart by GAP_PCT
-    // (forward pass; reverse pass on overflow). This guarantees no two
-    // boxes within MIN_GAP_PCT of pane height. Anchors stay inside the
-    // 4..92% safe band yOf already enforces.
-    var GAP_PCT = 13;   // ~16px on a ~125px pane; box font 9px + padding 2px = ~13px tall
-    var MIN_Y = 4, MAX_Y = 92;
+    // (forward pass; reverse pass on overflow; symmetric centring pass
+    // when the stack is squeezed against MAX_Y). This guarantees no two
+    // boxes within GAP_PCT of pane height AND every box top/bottom edge
+    // remains inside the pane (boxes use transform:translateY(-50%) so
+    // each box extends ~5% above and below its anchor, so the safe band
+    // is MIN_Y..MAX_Y where MIN_Y >= half-box and MAX_Y <= 100-half-box).
+    // GAP_PCT raised to 16 specifically so 5M/1M panes — where HIGH and
+    // CURRENT routinely sit within 10-15c on equities — never visually
+    // touch. Box font 9px + padding 2px = ~13px tall; on a ~125px pane
+    // each box is ~10.5% of pane height, so 16% gap leaves ~5.5% air
+    // between adjacent box edges.
+    var GAP_PCT = 16;
+    var MIN_Y = 6, MAX_Y = 90;
     var labels = [
       { cls: 'high',    lbl: 'HIGH',         price: hi },
       { cls: 'current', lbl: currentLabel,   price: currentPrice },
@@ -925,18 +933,34 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     ].filter(function(it){ return it.price != null && isFinite(it.price); });
     labels.forEach(function(it){ it.y = yOf(it.price); });
     labels.sort(function(a,b){ return a.y - b.y; });
-    // forward pass
+    // forward pass — start by pinning the topmost to MIN_Y if it's above
+    // the safe band, so all subsequent forward pushes start inside the band.
+    if (labels.length && labels[0].y < MIN_Y) labels[0].y = MIN_Y;
     for (var li = 1; li < labels.length; li++) {
       if (labels[li].y < labels[li-1].y + GAP_PCT) labels[li].y = labels[li-1].y + GAP_PCT;
     }
-    // reverse pass if last overflows the bottom band
+    // reverse pass if last overflows the bottom band — pin to MAX_Y and
+    // push earlier labels upward by GAP_PCT until the top edge respects
+    // MIN_Y. If the stack of labels.length boxes cannot fit into the
+    // available band [MIN_Y..MAX_Y] with GAP_PCT spacing (i.e. MAX_Y -
+    // MIN_Y < (n-1)*GAP_PCT) we fall back to even distribution so no
+    // box exits the pane on top or bottom.
     if (labels.length && labels[labels.length-1].y > MAX_Y) {
       labels[labels.length-1].y = MAX_Y;
       for (var lj = labels.length - 2; lj >= 0; lj--) {
         if (labels[lj].y > labels[lj+1].y - GAP_PCT) labels[lj].y = labels[lj+1].y - GAP_PCT;
       }
     }
-    // final clamp to safe band
+    // If after both passes the top still overflows MIN_Y (extreme squeeze
+    // case), distribute evenly across the safe band so every box stays
+    // strictly inside the pane.
+    if (labels.length && labels[0].y < MIN_Y) {
+      var span = MAX_Y - MIN_Y;
+      var step = labels.length > 1 ? span / (labels.length - 1) : 0;
+      for (var lk = 0; lk < labels.length; lk++) labels[lk].y = MIN_Y + lk * step;
+    }
+    // final clamp to safe band — defensive; the passes above already
+    // enforce this for every well-formed input.
     labels.forEach(function(it){ it.y = Math.max(MIN_Y, Math.min(MAX_Y, it.y)); });
     // render in deconflicted order
     labels.forEach(function(it){
@@ -1493,7 +1517,21 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   // letting 1W cache for an hour. Emits [TD-CACHE] hit/miss per call and
   // [TD-USAGE] summary at the end of loadAllPanels.
   var TD_CACHE_PREFIX = 'atlas:td:v1:';
-  var TD_TTL_MS = { '1M':30000, '5M':60000, '15M':120000, '30M':300000, '1H':600000, '4H':900000, '1D':3600000, '1W':3600000 };
+  // Client-side TD TTLs — operational doctrine:
+  //   1M/5M: 30-60s (intraday tick-fresh)
+  //   15M/30M: 60-120s (intraday but slower)
+  //   1H/4H/1D/1W: longer TTL acceptable
+  // Mirrors the server-side proxy TTLs in index.js.
+  var TD_TTL_MS = {
+    '1M':   30 * 1000,
+    '5M':   60 * 1000,
+    '15M':  90 * 1000,
+    '30M': 120 * 1000,
+    '1H':  10 * 60 * 1000,
+    '4H':  15 * 60 * 1000,
+    '1D':  60 * 60 * 1000,
+    '1W':  60 * 60 * 1000
+  };
   var tdUsage = { hits: 0, misses: 0, fetches: 0, errors: 0 };
   function tdCacheGet(key){
     try {
@@ -1648,6 +1686,16 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       if (newEnd > candles.length) { newStart -= (newEnd - candles.length); newEnd = candles.length; newStart = Math.max(0, newStart); }
       state.start = newStart;
       state.end   = newEnd;
+      // [ZOOM] proof line — emitted ONLY for the pane the user is wheeling
+      // on. The closure-captured `pane` variable is the only one this
+      // handler ever reads/writes, so [ZOOM] tf=15M will never appear when
+      // the user wheels on 1H. Pair this with the [CHART-PANE] log below
+      // for full per-pane proof of isolation.
+      var zTf = pane.getAttribute('data-tf');
+      var zSym = pane.getAttribute('data-sym');
+      var zPct = Math.round(100 * (state.end - state.start) / candles.length);
+      console.log('[ZOOM] tf=' + zTf + ' sym=' + zSym + ' direction=' + (e.deltaY < 0 ? 'in' : 'out') +
+        ' bars=' + (state.end - state.start) + ' zoom=' + zPct + '% scope=pane');
       redraw('wheel');
     }, { passive: false });
 
@@ -1685,6 +1733,13 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       e.preventDefault();
       state.start = 0;
       state.end   = candles.length;
+      // [RESET] proof line — emitted ONLY for the pane whose RESET chip
+      // was clicked. Like [ZOOM], this log is scoped to the pane via the
+      // closure-captured `pane` reference; clicking RESET on 15M never
+      // emits [RESET] tf=1H.
+      var rTf = pane.getAttribute('data-tf');
+      var rSym = pane.getAttribute('data-sym');
+      console.log('[RESET] tf=' + rTf + ' sym=' + rSym + ' bars=' + candles.length + ' zoom=100% scope=pane');
       redraw('reset');
     });
 
@@ -1779,6 +1834,11 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     var tdTotal = tdUsage.hits + tdUsage.misses;
     var tdHitRate = tdTotal ? Math.round(100 * tdUsage.hits / tdTotal) : 0;
     console.log('[TD-USAGE] symbol=' + activeSymbol + ' hits=' + tdUsage.hits + ' misses=' + tdUsage.misses + ' fetches=' + tdUsage.fetches + ' errors=' + tdUsage.errors + ' total=' + tdTotal + ' hitRate=' + tdHitRate + '%');
+    // Expose the live counters to the Source Status / Audit surface so the
+    // ohlc / twelvedata rows can read them. Mirrors the in-flight tdUsage
+    // (object, not a snapshot) so subsequent fetches are reflected too.
+    window.ATLAS = window.ATLAS || {};
+    window.ATLAS.tdUsage = tdUsage;
     document.getElementById('ch-htf-grid').innerHTML = HTF.map(function(t){ return resolvedHtml[t]; }).join('');
     document.getElementById('ch-ltf-grid').innerHTML = LTF.map(function(t){ return resolvedHtml[t]; }).join('');
 
@@ -2143,18 +2203,70 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     }
   }
 
-  // Source Status / Audit — lists EVERY upstream including CoreyClone (which
-  // is hidden from the operational source-row but still surfaced here).
+  // Source Status / Audit — lists EVERY upstream the operational desk
+  // depends on, including the chart-data feed layer (quote / OHLC / per-
+  // provider state) and the macro-event source (calendar / FMP / EODHD).
+  // Sourced from:
+  //   ctx.sources.*      — bot-supplied sources from the Jane packet
+  //   window.ATLAS.liveQuote   — global quote (price + source + asOf)
+  //                              filled by /quote during loadAllPanels
+  //   window.ATLAS.tdUsage     — TD-CACHE counters captured for the audit
+  //                              surface (mirrored from in-flight tdUsage)
+  //   ctx.spideyStructure.*    — HTF/LTF bias for the Spidey row
+  // Every row carries a structured value (never a blank dash). When a
+  // source is unavailable, the value is the exact reason ('unavailable:
+  // <reason>') so the audit row reads as a structured degraded state.
   var auditBody = document.getElementById('audit-body');
   if (auditBody) {
     var src = ctx.sources || {};
+    var sp = ctx.spideyStructure || ctx.structure || null;
+
+    // Quote source — read from the same global the price boxes consume.
+    var lq = (window.ATLAS && window.ATLAS.liveQuote) || null;
+    var quoteStatus, quoteNote;
+    if (lq && lq.symbol === activeSymbol && isFinite(lq.price)) {
+      quoteStatus = 'live: ' + (lq.source || 'twelvedata-quote');
+      quoteNote = 'Global CURRENT for ' + activeSymbol + ' = ' + lq.price + ' · asOf=' + (lq.asOf || 'n/a');
+    } else if (lq && lq.symbol === activeSymbol) {
+      quoteStatus = 'unavailable: no_finite_price';
+      quoteNote = 'Quote responded but price was not parseable';
+    } else {
+      quoteStatus = 'unavailable: no_quote_for_symbol';
+      quoteNote = 'GET /quote did not resolve for ' + activeSymbol;
+    }
+
+    // OHLC source — derived from TD usage counters captured during the
+    // chart load. tdUsage is attached to window.ATLAS at loadAllPanels.
+    var tdU = (window.ATLAS && window.ATLAS.tdUsage) || null;
+    var ohlcStatus, ohlcNote;
+    if (tdU && (tdU.fetches > 0 || tdU.hits > 0)) {
+      var tot = tdU.hits + tdU.misses;
+      var hr = tot ? Math.round(100 * tdU.hits / tot) : 0;
+      ohlcStatus = (tdU.errors > 0 && tdU.fetches === 0 && tdU.hits === 0)
+        ? ('unavailable: all_fetches_failed errors=' + tdU.errors)
+        : ('live · hits=' + tdU.hits + ' misses=' + tdU.misses + ' fetches=' + tdU.fetches + ' errors=' + tdU.errors + ' hitRate=' + hr + '%');
+      ohlcNote = 'Per-pane TD candle series (8 timeframes) with sessionStorage cache; conserved upstream calls = ' + tdU.hits;
+    } else if (tdU && tdU.errors > 0) {
+      ohlcStatus = 'unavailable: errors=' + tdU.errors + ' fetches=0';
+      ohlcNote = 'Every OHLC fetch returned an error or empty payload';
+    } else {
+      ohlcStatus = 'unavailable: tdUsage_not_captured';
+      ohlcNote = 'OHLC layer has not yet emitted [TD-USAGE] for this session';
+    }
+
     var rows = [
-      ['marketData',  src.marketData  || 'unavailable', 'TwelveData REST proxy · /twelvedata'],
-      ['corey',       src.corey       || 'unavailable', 'Corey macro engine'],
-      ['coreyClone',  src.coreyClone  || 'unavailable: not implemented', 'CoreyClone pending implementation — not used in current Jane decision'],
-      ['spidey',      src.spidey      || 'unavailable', 'Spidey structure engine'],
-      ['jane',        src.jane        || 'unavailable', 'Jane decision packet'],
-      ['historical',  src.historical  || 'unavailable', 'Historical analogues lookup']
+      ['marketData',  src.marketData                    || 'unavailable', 'TwelveData REST proxy · /twelvedata · upstream chart feed for all 8 panes'],
+      ['quote',       quoteStatus,                                          quoteNote],
+      ['ohlc',        ohlcStatus,                                           ohlcNote],
+      ['twelvedata',  src.twelvedata                    || (tdU && tdU.fetches > 0 ? 'live' : (lq && lq.source === 'twelvedata-quote' ? 'live' : 'unavailable: no_calls_observed')), 'TWELVE_DATA_API_KEY-backed proxy (server) · per-tf TTL 30s..60min'],
+      ['fmp',         src.fmp                           || 'unavailable: not_attached_to_packet', 'Financial Modeling Prep · used by macro v3 when wired'],
+      ['eodhd',       src.eodhd                         || 'unavailable: not_attached_to_packet', 'EODHD · macro v3 fundamentals adapter'],
+      ['calendar',    src.calendar                      || 'unavailable: not_attached_to_packet', 'TradingView / FMP economic calendar · upstream for events tab'],
+      ['corey',       src.corey                         || 'unavailable', 'Corey macro engine (DXY / US10Y / VIX / equities / bias / regime)'],
+      ['coreyClone',  src.coreyClone                    || 'unavailable: not implemented',         'CoreyClone pending implementation — hidden from operational pill row to avoid false-fail signal'],
+      ['spidey',      src.spidey                        || 'unavailable',                          'Spidey structure engine · HTF=' + ((sp && sp.htfBias) || 'n/a') + ' · LTF=' + ((sp && sp.ltfBias) || 'n/a')],
+      ['jane',        src.jane                          || 'unavailable',                          'Jane final decision packet (state, candidates, grid, forward, triggers)'],
+      ['historical',  src.historical                    || 'unavailable',                          'Historical analogues lookup (cache-hit / no-match)']
     ];
     var rowHtml = rows.map(function(r){
       var v = String(r[1]);
@@ -2175,7 +2287,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         '</tr></thead><tbody>' + rowHtml + '</tbody>' +
       '</table>' +
       '<div style="margin-top:14px;font-size:11px;color:var(--mut2);font-style:italic">' +
-        'Audit-only surface. CoreyClone is hidden from the operational source-row at the top of the desk because it is not yet implemented — showing it as a red "not implemented" pill on the live desk would look like an active system failure. It is listed here so the audit surface is complete.' +
+        'Audit-only surface. Every row carries a structured status — never a blank dash. CoreyClone is hidden from the operational source-row at the top of the desk because it is not yet implemented; surfaced here so the audit is complete. quote / ohlc / twelvedata rows are derived from the live data layer (window.ATLAS.liveQuote and tdUsage counters); fmp / eodhd / calendar are driven by the inbound Jane packet ctx.sources.' +
       '</div>';
   }
 
