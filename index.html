@@ -338,7 +338,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     </div>
     <div class="fe-card" id="forward-watch-card">
       <h3>Forward Watch — Price · Time · Bias · Confidence</h3>
-      <div id="forward-watch-body" style="font-size:12px;color:var(--mut2);line-height:1.55">Pending — Jane will publish the watchlist (price level · time window · bias context · confidence rating) once analysis fires.</div>
+      <div id="forward-watch-body" style="font-size:12px;color:var(--mut2);line-height:1.55">Forward watch waiting for candle-close confirmation.</div>
     </div>
   </div>
 
@@ -530,7 +530,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   }
 
   if(!requestedSymbol){
-    hardFail('No symbol provided. Append ?symbol=XYZ to the URL.', 'requestedSymbol=null action=blocked');
+    hardFail('No symbol provided. Append ?symbol=XYZ to the URL.', 'requestedSymbol=null action=withheld');
     return;
   }
 
@@ -599,7 +599,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         tradability: 'Range absorption — remaining movement most likely wasted in chop between the boundaries unless a 15M close breaks one edge with imbalance retained.',
         confirmsBullish: '15M body close above $94.10 + fresh demand zone retained on the impulse + no high-impact event inside next 2h.',
         confirmsBearish: '15M body close below $90.20 + fresh supply zone retained on the impulse + no high-impact event inside next 2h.',
-        keepsBlocked:    'Price held inside $90.20 – $94.10 with no clean displacement, OR a high-impact event scheduled inside ±2h.'
+        keepsInactive:    'Price held inside $90.20 – $94.10 with no clean displacement, OR a high-impact event scheduled inside ±2h.'
       },
       triggers: {
         bullish: { tf:'15M', level:'$94.10', close:'15M body close above $94.10', supply:'fresh demand zone left behind on the impulse', catalyst:'no high-impact event inside next 2h', invalidation:'15M close back below $93.20 within 2 candles' },
@@ -702,7 +702,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         tradability: 'Tradable upside — if the 15M body close above 1.07900 fires inside the active session, the move into 1.08600 is the working plan. If no trigger fires, remaining movement is absorbed sideways.',
         confirmsBullish: '15M body close above 1.07900 + fresh demand zone retained on the impulse + no high-impact event inside next 2h.',
         confirmsBearish: '15M body close below 1.07550 + fresh supply zone retained on the impulse + no high-impact event inside next 2h.',
-        keepsBlocked:    'Price held inside 1.07550 – 1.07900 with no fresh impulse, OR NFP / ECB inside ±2h.'
+        keepsInactive:    'Price held inside 1.07550 – 1.07900 with no fresh impulse, OR NFP / ECB inside ±2h.'
       },
       triggers: {
         bullish: { tf:'15M', level:'1.07900', close:'15M body close above 1.07900', supply:'fresh demand zone retained on the impulse', catalyst:'no high-impact event inside next 2h', invalidation:'15M close back below 1.07780 within 2 candles' },
@@ -1684,8 +1684,8 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         teachLine('Confidence', mr.confidence || (ctx.tradeProbability ? (ctx.tradeProbability + '/5') : 'pending'));
     } else {
       var nextStep = (window.ATLAS && window.ATLAS.dashboardState === 'analysis_pending')
-        ? 'Run <code>!' + activeSymbol.toLowerCase() + ' analyse</code> in Discord to generate the Jane packet.'
-        : 'Pending — Jane has not posted a market read for ' + activeSymbol + ' yet.';
+        ? 'Market read pending further structure confirmation. Run <code>!' + activeSymbol.toLowerCase() + ' analyse</code> in Discord to populate the advisory layer.'
+        : 'Market read pending further structure confirmation for ' + activeSymbol + '.';
       el.innerHTML = '<div style="color:var(--mut2);font-size:12px;line-height:1.55">' + nextStep + '</div>';
     }
     var sym = el.querySelector ? null : null;
@@ -1717,8 +1717,8 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       }).join('');
     } else {
       el.innerHTML = '<div style="color:var(--mut2);font-size:12px;line-height:1.55">' +
-        'Forward Watch is the next set of watch items Jane will publish — each one priced, time-bound, bias-tagged, and confidence-rated. ' +
-        'It populates after <code>!' + activeSymbol.toLowerCase() + ' analyse</code> generates the Jane packet.' +
+        'Forward watch waiting for candle-close confirmation. ' +
+        'Each watch item will be priced, time-bound, bias-tagged, and confidence-rated once the next analysis run completes.' +
         '</div>';
     }
   })();
@@ -2049,11 +2049,11 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     if (score === 4) return { chip: 'GOLD',  state: 'Building' };
     if (score === 3) return { chip: 'GOLD',  state: 'Mixed / developing' };
     if (score === 2) return { chip: 'AMBER', state: 'Weak' };
-    return { chip: 'RED', state: 'Blocked' };
+    return { chip: 'RED', state: 'Inactive' };
   }
   // Per-dimension fallback reason — used when the packet did not carry
   // gridNotes[key]. Derived from upstream packet sources / Jane decision so
-  // the cell never shows a bare "Blocked" without sourcing on a live screen.
+  // the cell never shows a bare "Inactive" without sourcing on a live screen.
   function defaultReasonFor(key, ctx){
     var s = (ctx && ctx.sources) || {};
     var fmtSrc = function(label, val){
@@ -2685,19 +2685,19 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         if (mismatch) hdPrice.style.color = 'var(--red)';
       }
       if (mismatch) {
-        if (hdChg) { hdChg.textContent = 'BLOCKED'; hdChg.classList.remove('pos','neg'); hdChg.classList.add('neg'); }
-        // Stamp the surface so the user knows decisions are blocked.
+        if (hdChg) { hdChg.textContent = 'WITHHELD'; hdChg.classList.remove('pos','neg'); hdChg.classList.add('neg'); }
+        // Stamp the surface so the user knows the decision is withheld.
         var pill = document.getElementById('action-pill');
         var state = document.getElementById('action-state');
         if (pill) pill.setAttribute('data-tone', 'red');
-        if (state) state.textContent = 'PRICE DATA MISMATCH — DECISION BLOCKED';
+        if (state) state.textContent = 'PRICE DATA MISMATCH — DECISION WITHHELD';
         // Add a banner above the action pill
         var banner = document.createElement('div');
         banner.className = 'withhold-banner';
         banner.style.borderColor = 'var(--red)';
-        banner.innerHTML = '<div class="wb-title" style="color:var(--red)">PRICE DATA MISMATCH — DECISION BLOCKED</div>' +
+        banner.innerHTML = '<div class="wb-title" style="color:var(--red)">PRICE DATA MISMATCH — DECISION WITHHELD</div>' +
           '<div class="wb-detail">Packet price <b>' + (packetPrice == null ? 'n/a' : fmt(packetPrice)) + '</b> disagrees with live OHLC close <b>' + (ohlcLast == null ? 'n/a' : fmt(ohlcLast)) + '</b> for ' + activeSymbol + ' (timeframe ' + (ohlcTf||'?') + ') by more than ' + TOLERANCE_PCT + '%. ' +
-          'The dashboard will not render execution levels until the source is reconciled.</div>';
+          'The dashboard will not render advisory levels until the source is reconciled.</div>';
         var anchor = document.querySelector('.action-row');
         if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(banner, anchor);
       } else if (!mismatch && hdChg) {
