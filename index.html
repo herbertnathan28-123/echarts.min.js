@@ -338,7 +338,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     </div>
     <div class="fe-card" id="forward-watch-card">
       <h3>Forward Watch — Price · Time · Bias · Confidence</h3>
-      <div id="forward-watch-body" style="font-size:12px;color:var(--mut2);line-height:1.55">Pending — Jane will publish the watchlist (price level · time window · bias context · confidence rating) once analysis fires.</div>
+      <div id="forward-watch-body" style="font-size:12px;color:var(--mut2);line-height:1.55">Forward watch waiting for candle-close confirmation.</div>
     </div>
   </div>
 
@@ -387,7 +387,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   <div class="candidate-row" id="candidate-row">
     <div class="cand-hd">
       <span class="cand-title">Candidate Levels</span>
-      <span class="cand-warning">NOT ACTIVE — no live order permitted yet</span>
+      <span class="cand-warning">NOT ACTIVE — entry conditions not yet developed</span>
     </div>
     <div class="cand-grid" id="cand-grid"></div>
   </div>
@@ -530,7 +530,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   }
 
   if(!requestedSymbol){
-    hardFail('No symbol provided. Append ?symbol=XYZ to the URL.', 'requestedSymbol=null action=blocked');
+    hardFail('No symbol provided. Append ?symbol=XYZ to the URL.', 'requestedSymbol=null action=withheld');
     return;
   }
 
@@ -541,7 +541,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     MU: {
       assetClass: 'equity',
       lastPrice: 92.40, lastChangePct: -1.85,
-      actionState: 'HOLD — NO ACTIVE TRADE', actionTone: 'amber',
+      actionState: 'HOLD — BIAS STILL FORMING', actionTone: 'amber',
       biasDirection: 'Neutral / Mixed',
       biasMomentum: 'Flat',
       tradeProbability: 1,
@@ -578,17 +578,17 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         eventRisk:          'Fed speak inside 36h',
         sessionEnergy:      'late session drift',
         macroAlignment:     'neutral',
-        conviction:         'no authorised conviction',
+        conviction:         'no decisive conviction yet',
         regime:             'transition'
       },
       gridEffects: {
-        executionAuthority: 'Blocks live entry — no actionable trigger present.',
+        executionAuthority: 'No active trade signal — no actionable trigger present.',
         structure:          'Needs a clean 15M / 30M structure break with an imbalance left behind.',
-        liquidityPressure:  'Watch the $94.10 / $90.20 edges — first to break with imbalance retained authorises review.',
+        liquidityPressure:  'Watch the $94.10 / $90.20 edges — first to break with imbalance retained reopens the review.',
         eventRisk:          'No fresh entry inside 2h of a high-impact catalyst window.',
         sessionEnergy:      'Late-session drift — expect lower follow-through and more chop.',
         macroAlignment:     'No directional macro vote — direction must come from structure alone.',
-        conviction:         'No conviction authorisation — system has no clean evidence to risk capital.',
+        conviction:         'No decisive conviction yet — system has no clean evidence to risk capital.',
         regime:             'Transitional regime — false breaks more likely; require closes, not wicks.'
       },
       forward: {
@@ -599,7 +599,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         tradability: 'Range absorption — remaining movement most likely wasted in chop between the boundaries unless a 15M close breaks one edge with imbalance retained.',
         confirmsBullish: '15M body close above $94.10 + fresh demand zone retained on the impulse + no high-impact event inside next 2h.',
         confirmsBearish: '15M body close below $90.20 + fresh supply zone retained on the impulse + no high-impact event inside next 2h.',
-        keepsBlocked:    'Price held inside $90.20 – $94.10 with no clean displacement, OR a high-impact event scheduled inside ±2h.'
+        keepsInactive:    'Price held inside $90.20 – $94.10 with no clean displacement, OR a high-impact event scheduled inside ±2h.'
       },
       triggers: {
         bullish: { tf:'15M', level:'$94.10', close:'15M body close above $94.10', supply:'fresh demand zone left behind on the impulse', catalyst:'no high-impact event inside next 2h', invalidation:'15M close back below $93.20 within 2 candles' },
@@ -609,7 +609,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       },
       historical: [
         { name:'AI/Semiconductor consolidation pattern (post-rally cooling)', stamp:'amber', sample:'n=14 daily windows since 2024-Q4', timeframe:'1D', relevance:'Memory/semis after concentrated rally', continuation:'Range-bound; 60-70% retest of prior swing low first', confidence:'medium', supports:'context — no directional vote', suggests:'Expect range first, breakout second. Stand aside until a fresh structural break is left.', expires:'When a 15M close beyond $94.10 OR $90.20 is confirmed' },
-        { name:'NVDA earnings sympathy drag (T-3 → T-1)', stamp:'red', sample:'n=8 NVDA cycles 2023-2025', timeframe:'4H', relevance:'MU drifts lower into NVDA earnings windows', continuation:'62.5% drift down before reversal at NVDA print', confidence:'medium-high', supports:'adverse for buyers in T-3 to T-1', suggests:'Heavy short-side pressure if NVDA prints inside next 72h. Not authorised to long.', expires:'NVDA earnings window closes' },
+        { name:'NVDA earnings sympathy drag (T-3 → T-1)', stamp:'red', sample:'n=8 NVDA cycles 2023-2025', timeframe:'4H', relevance:'MU drifts lower into NVDA earnings windows', continuation:'62.5% drift down before reversal at NVDA print', confidence:'medium-high', supports:'adverse for buyers in T-3 to T-1', suggests:'Heavy short-side pressure if NVDA prints inside next 72h. Long entries not advised.', expires:'NVDA earnings window closes' },
         { name:'Q-end rebalance reversal window', stamp:'green', sample:'n=12 quarter-end sessions, large-cap semis 2022-2025', timeframe:'1D', relevance:'Quarter-end can drive sharp last-day reversal', continuation:'58% sharp counter-trend close on quarter-end day', confidence:'medium', supports:'supportive only on a quarter-end calendar match', suggests:'If session falls on quarter-end and structure aligns, expect a sharp reversal candle.', expires:'Outside quarter-end ±1 day window' },
         { name:'Generic "2017 reflation" comparison', stamp:'grey', sample:'unsupported — no clean denominator', timeframe:'unspecified', relevance:'low — different rate regime, different sector composition', continuation:'no audited rate', confidence:'rejected', supports:'neutral — should not influence the desk', suggests:'Disregard. Not a clean analogue.', expires:'n/a — analogue rejected' }
       ],
@@ -702,7 +702,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         tradability: 'Tradable upside — if the 15M body close above 1.07900 fires inside the active session, the move into 1.08600 is the working plan. If no trigger fires, remaining movement is absorbed sideways.',
         confirmsBullish: '15M body close above 1.07900 + fresh demand zone retained on the impulse + no high-impact event inside next 2h.',
         confirmsBearish: '15M body close below 1.07550 + fresh supply zone retained on the impulse + no high-impact event inside next 2h.',
-        keepsBlocked:    'Price held inside 1.07550 – 1.07900 with no fresh impulse, OR NFP / ECB inside ±2h.'
+        keepsInactive:    'Price held inside 1.07550 – 1.07900 with no fresh impulse, OR NFP / ECB inside ±2h.'
       },
       triggers: {
         bullish: { tf:'15M', level:'1.07900', close:'15M body close above 1.07900', supply:'fresh demand zone retained on the impulse', catalyst:'no high-impact event inside next 2h', invalidation:'15M close back below 1.07780 within 2 candles' },
@@ -713,7 +713,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       historical: [
         { name:'London-session breakout above session high', stamp:'green', sample:'n=42 EURUSD London sessions 2024', timeframe:'15M', relevance:'directly comparable session profile', continuation:'68% follow-through to next liquidity cluster within 4h', confidence:'medium-high', supports:'supportive of the bullish trigger', suggests:'If the 15M trigger fires before NY open, target 1.0860 stop cluster.', expires:'When London session closes' },
         { name:'Pre-NFP USD short squeeze (T-1 session)', stamp:'amber', sample:'n=18 NFP windows 2023-2025', timeframe:'1H', relevance:'mixed — outcome depends on prior week price action', continuation:'52% drift continuation pre-print; 48% reversal', confidence:'low-medium', supports:'mixed — do not trade based on this alone', suggests:'Reduce size into NFP window; expect spreads to widen.', expires:'Inside NFP ±2h window' },
-        { name:'Yield-curve disinversion phase EURUSD lift', stamp:'cyan', sample:'n=6 macro phases 2019-2025', timeframe:'1D', relevance:'broad context only', continuation:'EURUSD averages +1.4% in 60 days post-disinversion', confidence:'medium', supports:'context — does not authorise an entry', suggests:'Slow background tailwind for EURUSD long bias.', expires:'When yield curve re-inverts' }
+        { name:'Yield-curve disinversion phase EURUSD lift', stamp:'cyan', sample:'n=6 macro phases 2019-2025', timeframe:'1D', relevance:'broad context only', continuation:'EURUSD averages +1.4% in 60 days post-disinversion', confidence:'medium', supports:'context — does not establish entry conditions', suggests:'Slow background tailwind for EURUSD long bias.', expires:'When yield curve re-inverts' }
       ],
       mechanismDetail: {
         cause: 'UUP (DXY proxy) score -0.05 bias Neutral — USD softening on the margin without a strong safe-haven bid.',
@@ -840,11 +840,11 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     var banner = document.createElement('div');
     banner.className = 'withhold-banner';
     banner.innerHTML =
-      '<div class="wb-title">JANE DECISION UNAVAILABLE — EXECUTION DECISION WITHHELD</div>' +
+      '<div class="wb-title">DECISION WITHHELD — SOURCE INCOMPLETE</div>' +
       '<div class="wb-detail">No Jane packet has been posted for <b>' + activeSymbol + '</b>. ' +
-      'The execution-decision surface (action state, entry, target, stop, candidate levels, condition grid, ' +
-      'forward expectation, trigger map) is intentionally blank. The dashboard will not invent values that ' +
-      'Jane has not produced.</div>' +
+      'The advisory surface (action state, entry, target, stop, candidate levels, condition grid, ' +
+      'forward expectation, trigger map) is intentionally blank — the dashboard will not display values ' +
+      'the upstream engines have not generated.</div>' +
       '<div class="wb-detail" style="margin-top:8px"><b>Reason:</b> ' + escapeHtml(reason || 'no Jane packet for symbol') + '.</div>' +
       '<div class="wb-list"><b>To populate this surface:</b>' +
         '<ul>' +
@@ -1433,18 +1433,18 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   //   - Market Read summarises the current condition; Forward Watch lists
   //     the price/time/bias/confidence triggers to watch next.
   function remapAdvisory(state){
-    if (!state) return 'HOLD — NO ACTIVE TRADE';
+    if (!state) return 'HOLD — BIAS STILL FORMING';
     var s = String(state);
     // Backward-compat remap of legacy "authorised" wording.
     s = s.replace(/ENTRY AUTHORISED/gi, 'ENTRY TRIGGERED')
          .replace(/AUTHORISED/gi, 'TRIGGERED')
          .replace(/NOT AUTHORISED/gi, 'NO ENTRY')
-         .replace(/WAIT\s*[—-]\s*NO TRADE/gi, 'HOLD — NO ACTIVE TRADE')
+         .replace(/WAIT\s*[—-]\s*NO TRADE/gi, 'HOLD — BIAS STILL FORMING')
          .replace(/PERMISSION/gi, 'STATUS');
     return s;
   }
   function janePacketToCtx(p){
-    var rawAction = p.actionState || p.verdict || 'HOLD — NO ACTIVE TRADE';
+    var rawAction = p.actionState || p.verdict || 'HOLD — BIAS STILL FORMING';
     var actionState = remapAdvisory(rawAction);
     return {
       assetClass: p.assetClass || inferAssetClass(activeSymbol),
@@ -1583,21 +1583,21 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     riskSub:      'no entry / no invalidation'
   };
   var CLEAN_NO_TRADE_GRID = {
-    executionAuthority: { chip:'AMBER', state:'WAITING',                          note:'Jane has not authorised an entry.',                                  effect:'No live order can be placed yet.' },
+    executionAuthority: { chip:'AMBER', state:'WAITING',                          note:'No active trade signal yet for this symbol.',                         effect:'Entry conditions not yet developed.' },
     structure:          { chip:'AMBER', state:'NO ACTIONABLE TRIGGER',            note:'Structure is not aligned enough for entry.',                          effect:'Wait for a clean BOS / CHoCH on a tradable timeframe.' },
     liquidityPressure:  { chip:'AMBER', state:'INACTIVE',                         note:'No usable liquidity pressure is driving an entry.',                   effect:'Continue to monitor; no edge to capture right now.' },
     eventRisk:          { chip:'GOLD',  state:'QUIET',                            note:'No active event window affecting this decision.',                     effect:'Calendar is calm — re-check before any new entry.' },
     sessionEnergy:      { chip:'AMBER', state:'LOW / WAITING',                    note:'Session conditions do not justify entry.',                            effect:'Conservation mode; trade quality is the gate, not session heat.' },
-    macroAlignment:     { chip:'GOLD',  state:'NEUTRAL',                          note:'No directional macro edge strong enough for trade authorisation.',    effect:'Macro is balanced; structure must lead.' },
-    conviction:         { chip:'AMBER', state:'INSUFFICIENT',                     note:'Not enough evidence for a live order.',                               effect:'Stand aside until evidence stacks.' },
+    macroAlignment:     { chip:'GOLD',  state:'NEUTRAL',                          note:'No directional macro edge strong enough to support an active trade.', effect:'Macro is balanced; structure must lead.' },
+    conviction:         { chip:'AMBER', state:'INSUFFICIENT',                     note:'Not enough evidence for an active trade signal yet.',                 effect:'Stand aside until evidence stacks.' },
     regime:             { chip:'GOLD',  state:'NEUTRAL / UNCLASSIFIED FOR TRADE', note:'Regime is not driving a valid setup.',                                effect:'No regime-coherent edge present.' }
   };
   var CLEAN_NO_TRADE_SUBTITLE =
-    'No trade-quality setup is authorised at this time. ' +
+    'No active trade signal at this time. ' +
     'Market data is live. Corey and Spidey are active. ' +
     'Jane has issued ' + ((ctx.sources && ctx.sources.jane) || 'final:no_trade') +
     ' because bias is ' + (String(ctx.biasDirection || 'neutral').toLowerCase()) +
-    ' and no approved entry trigger / candidate level is present.';
+    ' and no entry trigger / candidate level is in place yet.';
 
   // ---------- action pill — advisory state strip ----------
   // Strip carries: Bias Direction, Bias Momentum, Trade Probability (1–5),
@@ -1635,15 +1635,15 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   document.getElementById('vstrip-next').textContent  = reassessStr;
 
   // Exec-strip values — compress raw nulls into trader-grade copy when the
-  // engine is in clean stand-down. "Pending" → "Waiting", "Not authorised" →
-  // "Inactive — no entry exists", etc. ctx is never mutated.
+  // engine is in clean stand-down. "Pending" → "Waiting", legacy
+  // "Not authorised" → "Inactive — no entry exists", etc. ctx is never mutated.
   function compressVal(rawVal, fallback) {
-    if (COMPRESSION === 'clean_no_trade' && /pending|not authorised|withheld|—|not active|^\s*$/i.test(String(rawVal || ''))) return fallback;
+    if (COMPRESSION === 'clean_no_trade' && /pending|not authorised|not yet defined|withheld|—|not active|^\s*$/i.test(String(rawVal || ''))) return fallback;
     return rawVal;
   }
   document.getElementById('es-dir').textContent       = ctx.directionShort || ctx.direction || (COMPRESSION === 'clean_no_trade' ? 'No directional read for entry yet' : '—');
   document.getElementById('es-entry').textContent     = compressVal(ctx.entry,            CLEAN_NO_TRADE_EXEC.entry);
-  document.getElementById('es-entry-sub').textContent = ctx.entrySub || (COMPRESSION === 'clean_no_trade' ? 'no live order permitted yet' : '');
+  document.getElementById('es-entry-sub').textContent = ctx.entrySub || (COMPRESSION === 'clean_no_trade' ? 'no active entry yet' : '');
   document.getElementById('es-target').textContent    = compressVal(ctx.target,           CLEAN_NO_TRADE_EXEC.target);
   document.getElementById('es-stop').textContent      = compressVal(ctx.stopLoss,         CLEAN_NO_TRADE_EXEC.stopLoss);
   document.getElementById('es-stop-ext').textContent  = compressVal(ctx.extendedStopLoss, CLEAN_NO_TRADE_EXEC.extendedStop);
@@ -1684,8 +1684,8 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         teachLine('Confidence', mr.confidence || (ctx.tradeProbability ? (ctx.tradeProbability + '/5') : 'pending'));
     } else {
       var nextStep = (window.ATLAS && window.ATLAS.dashboardState === 'analysis_pending')
-        ? 'Run <code>!' + activeSymbol.toLowerCase() + ' analyse</code> in Discord to generate the Jane packet.'
-        : 'Pending — Jane has not posted a market read for ' + activeSymbol + ' yet.';
+        ? 'Market read pending further structure confirmation. Run <code>!' + activeSymbol.toLowerCase() + ' analyse</code> in Discord to populate the advisory layer.'
+        : 'Market read pending further structure confirmation for ' + activeSymbol + '.';
       el.innerHTML = '<div style="color:var(--mut2);font-size:12px;line-height:1.55">' + nextStep + '</div>';
     }
     var sym = el.querySelector ? null : null;
@@ -1717,8 +1717,8 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       }).join('');
     } else {
       el.innerHTML = '<div style="color:var(--mut2);font-size:12px;line-height:1.55">' +
-        'Forward Watch is the next set of watch items Jane will publish — each one priced, time-bound, bias-tagged, and confidence-rated. ' +
-        'It populates after <code>!' + activeSymbol.toLowerCase() + ' analyse</code> generates the Jane packet.' +
+        'Forward watch waiting for candle-close confirmation. ' +
+        'Each watch item will be priced, time-bound, bias-tagged, and confidence-rated once the next analysis run completes.' +
         '</div>';
     }
   })();
@@ -2049,11 +2049,11 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     if (score === 4) return { chip: 'GOLD',  state: 'Building' };
     if (score === 3) return { chip: 'GOLD',  state: 'Mixed / developing' };
     if (score === 2) return { chip: 'AMBER', state: 'Weak' };
-    return { chip: 'RED', state: 'Blocked' };
+    return { chip: 'RED', state: 'Inactive' };
   }
   // Per-dimension fallback reason — used when the packet did not carry
   // gridNotes[key]. Derived from upstream packet sources / Jane decision so
-  // the cell never shows a bare "Blocked" without sourcing on a live screen.
+  // the cell never shows a bare "Inactive" without sourcing on a live screen.
   function defaultReasonFor(key, ctx){
     var s = (ctx && ctx.sources) || {};
     var fmtSrc = function(label, val){
@@ -2137,11 +2137,10 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   });
 
   // ---------- Forward Watch (advisory fields) ----------
-  // Single sourced reason used wherever a Forward Watch / Trigger field
-  // would otherwise be a bare dash. Every empty field on the live desk
-  // now reads "Pending — Jane has not produced this field" with the
-  // upstream source state inline. Avoids "authorised" / "permission"
-  // language entirely.
+  // Concise advisory phrasing used wherever a Forward Watch / Trigger field
+  // would otherwise be a bare dash. Every empty field reads "Pending —
+  // entry conditions not yet developed." instead of the verbose Jane-line.
+  // Source state is appended only as a debug suffix in italics.
   function pendingBecause(ctx){
     var s = (ctx && ctx.sources) || {};
     var bits = [];
@@ -2151,8 +2150,8 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     if (s.historical) bits.push('historical=' + s.historical);
     var srcStr = bits.length ? bits.join(' · ') : 'no upstream sources reported';
     var status = ctx.tradeStatus || ctx.tradePermission || 'no active trade signal';
-    return 'Pending — Jane has not produced this field for ' + activeSymbol + '. ' +
-           'Source state: ' + srcStr + '. Current trade status: ' + status + '.';
+    return 'Pending — entry conditions not yet developed for ' + activeSymbol +
+           '. Trade readiness: ' + status + '.  _(sources: ' + srcStr + ')_';
   }
   // Backward-compat alias — older call sites still use notAuthorisedBecause.
   var notAuthorisedBecause = pendingBecause;
@@ -2179,7 +2178,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       feRow('Tradability',         feValOrWithheld(fe.tradability || fe.absorption)) +
       feRow('Confirms Bullish',    feValOrWithheld(fe.confirmsBullish || fe.waitingFor)) +
       feRow('Confirms Bearish',    feValOrWithheld(fe.confirmsBearish)) +
-      feRow('Keeps Blocked',       feValOrWithheld(fe.keepsBlocked));
+      feRow('Keeps Inactive',      feValOrWithheld(fe.keepsBlocked || fe.keepsInactive));
   }
 
   function feRow(k,v){
@@ -2201,7 +2200,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       tmBlock('up', 'BULLISH SHIFT', tm.bullish) +
       tmBlock('dn', 'BEARISH SHIFT', tm.bearish) +
       '<div class="tm-block">' +
-        '<div class="tm-hd"><span class="arrow no">·</span><span class="ttl">NO-TRADE CONDITION</span></div>' +
+        '<div class="tm-hd"><span class="arrow no">·</span><span class="ttl">NO ACTIVE TRADE — CONDITION</span></div>' +
         '<div style="font-size:12px;color:var(--mut2)">'+escapeHtml(noTradeVal)+'</div>' +
       '</div>' +
       '<div class="tm-block">' +
@@ -2686,19 +2685,19 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         if (mismatch) hdPrice.style.color = 'var(--red)';
       }
       if (mismatch) {
-        if (hdChg) { hdChg.textContent = 'BLOCKED'; hdChg.classList.remove('pos','neg'); hdChg.classList.add('neg'); }
-        // Stamp the surface so the user knows decisions are blocked.
+        if (hdChg) { hdChg.textContent = 'WITHHELD'; hdChg.classList.remove('pos','neg'); hdChg.classList.add('neg'); }
+        // Stamp the surface so the user knows the decision is withheld.
         var pill = document.getElementById('action-pill');
         var state = document.getElementById('action-state');
         if (pill) pill.setAttribute('data-tone', 'red');
-        if (state) state.textContent = 'PRICE DATA MISMATCH — DECISION BLOCKED';
+        if (state) state.textContent = 'PRICE DATA MISMATCH — DECISION WITHHELD';
         // Add a banner above the action pill
         var banner = document.createElement('div');
         banner.className = 'withhold-banner';
         banner.style.borderColor = 'var(--red)';
-        banner.innerHTML = '<div class="wb-title" style="color:var(--red)">PRICE DATA MISMATCH — DECISION BLOCKED</div>' +
+        banner.innerHTML = '<div class="wb-title" style="color:var(--red)">PRICE DATA MISMATCH — DECISION WITHHELD</div>' +
           '<div class="wb-detail">Packet price <b>' + (packetPrice == null ? 'n/a' : fmt(packetPrice)) + '</b> disagrees with live OHLC close <b>' + (ohlcLast == null ? 'n/a' : fmt(ohlcLast)) + '</b> for ' + activeSymbol + ' (timeframe ' + (ohlcTf||'?') + ') by more than ' + TOLERANCE_PCT + '%. ' +
-          'The dashboard will not render execution levels until the source is reconciled.</div>';
+          'The dashboard will not render advisory levels until the source is reconciled.</div>';
         var anchor = document.querySelector('.action-row');
         if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(banner, anchor);
       } else if (!mismatch && hdChg) {
@@ -3112,11 +3111,11 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     ['Bias Direction', 'Net directional read: bullish / bearish / neutral.'],
     ['Bias Momentum', 'Whether the current bias is accelerating, building, steady, fading, or reversing.'],
     ['Trade Probability', '1–5 advisory rating of how likely the current setup is to fire (5 = highest).'],
-    ['Trade Status', 'Advisory state of the current setup. NOT a permission word — it never says "authorised".'],
+    ['Trade Status', 'Advisory state of the current setup — describes readiness, never an execution gate. The dashboard never uses gate-keeping wording.'],
     ['Market Read', 'Plain-language read of the current condition: structure reference + confirm + cancel + bias + confidence.'],
     ['Forward Watch', 'The next watch list — each item priced, time-bound, bias-tagged, and confidence-rated.'],
     ['INCOREGO', 'Corey\'s macro contribution narrative for the active symbol (DXY / yields / vol / regime / event-window).'],
-    ['Action State', 'ATLAS ANALYSIS PENDING · HOLD — NO ACTIVE TRADE · OBSERVE — CONDITIONS BUILDING · ARMED — WAITING FOR TRIGGER · ENTRY TRIGGERED · TRADE CONFIRMED · TRADE INVALID. (Advisory wording — no "authorised" / "permission".)']
+    ['Action State', 'ATLAS ANALYSIS PENDING · HOLD — BIAS STILL FORMING · MONITOR — CONDITIONS BUILDING · ENTRY CONDITIONS DEVELOPING · ENTRY CONDITIONS SUPPORTED · ARMED — WAITING FOR TRIGGER · ENTRY TRIGGERED · TRADE PROBABILITY HIGH · TRADE CONFIRMED · TRADE INVALIDATED · DECISION WITHHELD — SOURCE INCOMPLETE · ENTRY NOT ADVISED.']
   ];
   document.getElementById('gloss-grid').innerHTML = GLOSSARY.map(function(g){
     return '<div class="gl-card"><div class="gl-term">'+escapeHtml(g[0])+'</div><div class="gl-def">'+escapeHtml(g[1])+'</div></div>';
