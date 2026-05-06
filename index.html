@@ -24,6 +24,53 @@ a{color:var(--gold);text-decoration:none}
 button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:inherit}
 
 .atlas-hd{display:flex;align-items:center;gap:18px;padding:14px 22px;background:linear-gradient(180deg,#0c0e12 0%,#08090b 100%);border-bottom:1px solid var(--line2)}
+
+/* ── ATLAS LIVE TICKER ────────────────────────────────────
+   Top market-ticker tape. Continuous right-to-left scroll,
+   loops cleanly via duplicated track. Pure CSS animation;
+   JS only re-populates content. No layout jumps; fixed
+   height; pauses on hover. */
+.atlas-ticker{
+  position:relative; overflow:hidden;
+  background:#000; color:#e6e8eb;
+  border-bottom:1px solid var(--line2);
+  height:34px; line-height:34px;
+  font-size:12.5px; letter-spacing:0.3px;
+  white-space:nowrap;
+}
+.atlas-ticker::before,.atlas-ticker::after{
+  content:""; position:absolute; top:0; bottom:0; width:36px; z-index:2; pointer-events:none;
+}
+.atlas-ticker::before{left:0;  background:linear-gradient(90deg,#000 0%,rgba(0,0,0,0) 100%)}
+.atlas-ticker::after { right:0; background:linear-gradient(270deg,#000 0%,rgba(0,0,0,0) 100%)}
+.atlas-ticker__track{
+  display:inline-flex; align-items:center; gap:0;
+  animation: atlas-ticker-scroll 90s linear infinite;
+  will-change: transform;
+}
+.atlas-ticker:hover .atlas-ticker__track,
+.atlas-ticker:active .atlas-ticker__track{ animation-play-state: paused }
+@keyframes atlas-ticker-scroll{
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.atlas-ticker__item{ display:inline-flex; align-items:center; gap:8px; padding:0 14px; color:#e6e8eb }
+.atlas-ticker__time{ color: var(--gold); font-weight:700; letter-spacing:0.6px }
+.atlas-ticker__flag{ font-size:13px }
+.atlas-ticker__sep { display:inline-block; width:5px; height:5px; border-radius:50%; background:#3a4049; margin:0 2px }
+.atlas-ticker__item--session{ color:#cdd2da }
+.atlas-ticker__item--session .atlas-ticker__lbl{ color:#9aa2ad; text-transform:uppercase; letter-spacing:1.2px; font-size:10.5px; font-weight:700; padding:1px 8px; border:1px solid #2a3038; border-radius:3px; background:#0a0c10 }
+.atlas-ticker__item--session.is-active .atlas-ticker__lbl{ color:#00ff7a; border-color:#0e3d22; background:#08130c }
+.atlas-ticker__item--risk    .atlas-ticker__lbl{ color:#FF7A00; border:1px solid #4a2a0d; background:#1a0d05; padding:1px 8px; border-radius:3px; letter-spacing:1.2px; font-size:10.5px; font-weight:700 }
+.atlas-ticker__item--power   .atlas-ticker__lbl{ color:#FFD600; border:1px solid #4a3a0d; background:#1a1605; padding:1px 8px; border-radius:3px; letter-spacing:1.2px; font-size:10.5px; font-weight:700 }
+.atlas-ticker__deg{ padding:0 14px; color:#9aa2ad; font-style:italic; font-size:12px }
+@media (max-width: 720px){
+  .atlas-ticker{ height:30px; line-height:30px; font-size:11.5px }
+  .atlas-ticker__track{ animation-duration: 70s }
+}
+@media (prefers-reduced-motion: reduce){
+  .atlas-ticker__track{ animation-duration: 0s; animation: none; transform: none }
+}
 .atlas-hd .brand{display:flex;align-items:center;gap:10px}
 .atlas-hd .logo-dot{width:10px;height:10px;background:var(--gold);border-radius:2px}
 .atlas-hd .brand-name{font-weight:900;letter-spacing:3px;font-size:15px;color:var(--gold)}
@@ -276,6 +323,13 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
 </style>
 </head>
 <body>
+
+<!-- ATLAS LIVE TICKER — right-to-left market tape. Built from
+     ctx.events (calendar) + computed FX session windows. Falls back
+     to a session-only tape when no calendar data is attached. -->
+<div class="atlas-ticker" id="atlas-ticker" aria-label="ATLAS live market ticker">
+  <div class="atlas-ticker__track" id="atlas-ticker-track"></div>
+</div>
 
 <header class="atlas-hd">
   <div class="brand">
@@ -1496,8 +1550,195 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     };
   }
 
+  // ── ATLAS LIVE TICKER CONTROLLER ──────────────────────────
+  // Builds the right-to-left scrolling tape from:
+  //   1. Computed FX session status (Sydney / Tokyo / London / NY +
+  //      LON-NY overlap "Power Hour"), purely from wall clock — never
+  //      depends on the calendar feed.
+  //   2. ctx.events (Jane packet calendar entries), prioritised by
+  //      high-impact and time-to-release.
+  //   3. Optional event-risk indicator when ctx.eventRisk is high.
+  // The track is duplicated so the CSS keyframe can scroll -50% and
+  // loop seamlessly without a visible jump.
+  var ATLAS_TICKER = (function(){
+    var trackEl = null;
+    var lastBuildAt = 0;
+    function el(){ return trackEl || (trackEl = document.getElementById('atlas-ticker-track')); }
+    var FLAGS = { USD:'🇺🇸', EUR:'🇪🇺', GBP:'🇬🇧', JPY:'🇯🇵', AUD:'🇦🇺', NZD:'🇳🇿', CAD:'🇨🇦', CHF:'🇨🇭', CNY:'🇨🇳' };
+    function flagFor(ccy){ return FLAGS[String(ccy || '').toUpperCase()] || '🌐'; }
+    function pad2(n){ return String(n).padStart(2, '0'); }
+
+    // FX session windows in UTC (no DST handling — close enough for
+    // ticker labels; the spec calls for "session active" not exact
+    // session timing). Sydney 22-07, Tokyo 23-08, London 07-16,
+    // New York 12-21, LON/NY overlap 12-16.
+    function sessionState(now){
+      var h = now.getUTCHours() + (now.getUTCMinutes() / 60);
+      var sydney = (h >= 22) || (h < 7);
+      var tokyo  = (h >= 23) || (h < 8);
+      var london = (h >= 7)  && (h < 16);
+      var ny     = (h >= 12) && (h < 21);
+      var overlap= (h >= 12) && (h < 16);          // LON-NY overlap
+      var power  = (h >= 14) && (h < 15);          // Power Hour (NY mid)
+      return { sydney, tokyo, london, ny, overlap, power };
+    }
+
+    // Time-to-release label: TODAY HH:MM AWST · TOMORROW HH:MM · IN 25 MIN
+    function whenLabel(scheduledMs, nowMs){
+      if (!scheduledMs) return '';
+      var diffMin = Math.round((scheduledMs - nowMs) / 60000);
+      if (diffMin > 0 && diffMin <= 90) return 'IN ' + diffMin + ' MIN';
+      var awst = new Date(scheduledMs + 8 * 60 * 60 * 1000);
+      var nowAwst = new Date(nowMs + 8 * 60 * 60 * 1000);
+      var hhmm = pad2(awst.getUTCHours()) + ':' + pad2(awst.getUTCMinutes());
+      var sameDay = awst.getUTCFullYear() === nowAwst.getUTCFullYear() &&
+                    awst.getUTCMonth()    === nowAwst.getUTCMonth()    &&
+                    awst.getUTCDate()     === nowAwst.getUTCDate();
+      var dayLbl;
+      if (sameDay) dayLbl = 'TODAY';
+      else {
+        var dayDiff = Math.round((awst - nowAwst) / (24*60*60*1000));
+        dayLbl = dayDiff === 1 ? 'TOMORROW' : (dayDiff > 1 ? '+' + dayDiff + 'D' : '');
+      }
+      return (dayLbl ? dayLbl + ' ' : '') + hhmm;
+    }
+
+    function impactBucket(ev){
+      var imp = String(ev.impact || ev.importance || '').toLowerCase();
+      if (imp === 'high' || ev.severity === 'high')   return 3;
+      if (imp === 'medium')                           return 2;
+      return 1;
+    }
+
+    function buildEventItems(ctx, nowMs){
+      var out = [];
+      var events = (ctx && ctx.events) || [];
+      // Filter: future events OR within last 30min, prioritise HIGH first then by time
+      var horizon = nowMs - 30 * 60 * 1000;
+      var horizonEnd = nowMs + 24 * 60 * 60 * 1000;
+      var filtered = events.map(function(e){
+        var ms = e.scheduled_time || e.time || e.whenMs || (e.whenISO ? Date.parse(e.whenISO) : 0);
+        return Object.assign({}, e, { _ms: ms });
+      }).filter(function(e){
+        return e._ms && e._ms >= horizon && e._ms <= horizonEnd;
+      });
+      filtered.sort(function(a,b){
+        var ba = impactBucket(a), bb = impactBucket(b);
+        if (ba !== bb) return bb - ba;
+        return a._ms - b._ms;
+      });
+      for (var i = 0; i < Math.min(filtered.length, 12); i++){
+        var e = filtered[i];
+        var ccy = e.currency || e.ccy || '';
+        var title = e.title || e.what || e.name || 'event';
+        var when = whenLabel(e._ms, nowMs);
+        var fc = (e.forecast != null) ? '  ·  Forecast: ' + e.forecast : (e.expected != null ? '  ·  Forecast: ' + e.expected : '');
+        out.push({
+          kind:'event',
+          html:
+            '<span class="atlas-ticker__time">' + escapeAttr(when) + '</span>' +
+            '<span class="atlas-ticker__flag">' + flagFor(ccy) + '</span>' +
+            '<span>' + escapeAttr(ccy ? ccy + ' ' : '') + escapeAttr(title) + escapeAttr(fc) + '</span>',
+        });
+      }
+      return out;
+    }
+
+    function buildSessionItems(now){
+      var s = sessionState(now);
+      var items = [];
+      function push(flag, name, active, mod){
+        items.push({
+          kind:'session',
+          html:
+            '<span class="atlas-ticker__flag">' + flag + '</span>' +
+            '<span class="atlas-ticker__lbl">' + name + (active ? ' ACTIVE' : ' OPEN') + '</span>',
+          active: !!active,
+          mod: mod || '',
+        });
+      }
+      // Always include the four major sessions, with "ACTIVE" tag if open now.
+      push('🇦🇺', 'SYDNEY', s.sydney);
+      push('🇯🇵', 'TOKYO',  s.tokyo);
+      push('🇬🇧', 'LONDON', s.london);
+      push('🇺🇸', 'NEW YORK', s.ny);
+      if (s.overlap) items.push({ kind:'session', html:'<span class="atlas-ticker__lbl">LONDON / NY OVERLAP ACTIVE</span>', active:true });
+      if (s.power)   items.push({ kind:'power',   html:'<span class="atlas-ticker__lbl">⚡ POWER HOUR</span>' });
+      return items;
+    }
+
+    function buildRiskItem(ctx){
+      var risk = ctx && (ctx.eventRisk || (ctx.coreyMarketIntel && ctx.coreyMarketIntel.eventRisk));
+      if (risk && /^(high|extreme)$/i.test(risk)){
+        return [{ kind:'risk', html:'<span class="atlas-ticker__lbl">⚠ EVENT RISK ' + escapeAttr(String(risk).toUpperCase()) + '</span>' }];
+      }
+      return [];
+    }
+
+    function escapeAttr(s){
+      return String(s == null ? '' : s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+    function itemHtml(it){
+      var cls = 'atlas-ticker__item';
+      if (it.kind === 'session') cls += ' atlas-ticker__item--session' + (it.active ? ' is-active' : '');
+      if (it.kind === 'risk')    cls += ' atlas-ticker__item--risk';
+      if (it.kind === 'power')   cls += ' atlas-ticker__item--power';
+      return '<span class="' + cls + '">' + it.html + '</span><span class="atlas-ticker__sep"></span>';
+    }
+
+    function build(ctx){
+      var t = el(); if (!t) return;
+      var now = new Date(); var nowMs = now.getTime();
+      var sessionItems = buildSessionItems(now);
+      var riskItems    = buildRiskItem(ctx || {});
+      var eventItems   = buildEventItems(ctx || {}, nowMs);
+
+      var calendarUnavailable = !eventItems.length;
+      var ordered = [];
+      // Risk first, then event items (chronological by impact), then sessions
+      ordered = ordered.concat(riskItems, eventItems, sessionItems);
+
+      var html = ordered.map(itemHtml).join('');
+      if (calendarUnavailable){
+        html = '<span class="atlas-ticker__deg">Calendar source unavailable — session ticker active.</span><span class="atlas-ticker__sep"></span>' + html;
+      }
+      // Duplicate track for seamless loop (CSS scrolls to -50%)
+      t.innerHTML = html + html;
+      lastBuildAt = nowMs;
+    }
+
+    function rebuildIfStale(ctx, ttlMs){
+      var t = ttlMs == null ? 60 * 1000 : ttlMs;
+      if (Date.now() - lastBuildAt > t) build(ctx);
+    }
+
+    return { build: build, rebuildIfStale: rebuildIfStale };
+  })();
+
+  // First build runs as soon as the DOM is ready, even before any
+  // ctx is loaded — this surfaces the session ticker immediately
+  // and prevents an empty bar at first paint.
+  if (typeof document !== 'undefined' && document.readyState !== 'loading') {
+    try { ATLAS_TICKER.build(window.ATLAS && window.ATLAS.ctx); } catch (_e) {}
+  } else if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', function(){
+      try { ATLAS_TICKER.build(window.ATLAS && window.ATLAS.ctx); } catch (_e) {}
+    });
+  }
+  // Periodic refresh — every 60s the ticker re-evaluates session state
+  // and re-prioritises events. Build is idempotent and cheap.
+  if (typeof setInterval === 'function') {
+    setInterval(function(){ try { ATLAS_TICKER.rebuildIfStale(window.ATLAS && window.ATLAS.ctx, 60*1000); } catch (_e) {} }, 60 * 1000);
+  }
+
   function renderFromCtx(ctx){
     if (!ctx) return;
+
+    // Refresh the live ticker from the latest ctx (events + risk).
+    try { ATLAS_TICKER.build(ctx); } catch (_e) {}
 
   document.getElementById('hd-sym').textContent     = activeSymbol;
   document.getElementById('hd-class').textContent   = ctx.assetClass.toUpperCase();
