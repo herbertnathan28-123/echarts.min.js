@@ -216,15 +216,19 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
 .chart-pane .tf-tag{position:absolute;top:6px;left:8px;font-size:9px;letter-spacing:2px;color:var(--gold);font-weight:700}
 .chart-pane .sym-tag{position:absolute;top:6px;right:8px;font-size:9px;letter-spacing:2px;color:var(--fg);font-weight:700;font-family:"SF Mono",monospace}
 .chart-pane svg{width:100%;height:100%;opacity:0.85}
-/* Per-pane right-side price boxes — LOCKED CLAUDE.md hex colours.
+/* Per-pane right-side price boxes — LOCKED dashboard-spec hex colours.
    Each pane carries its own independent state (no shared CSS class
-   instance), and the colours never derive dynamically. */
+   instance), and the colours never derive dynamically. ENTRY does NOT
+   appear in the chart ladder (per spec it belongs in ANALYSED TARGETS
+   only). */
 .chart-pane .price-box-stack{position:absolute;top:0;right:0;bottom:0;width:0;pointer-events:none;z-index:55}
 .chart-pane .price-box{position:absolute;right:0;font-family:"SF Mono",Menlo,Consolas,monospace;font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 6px;transform:translateY(-50%);box-shadow:-1px 0 0 rgba(0,0,0,0.45);white-space:nowrap;pointer-events:none;border-radius:0 0 0 1px}
-.chart-pane .price-box.high   {background:#FFD600;color:#000000}
-.chart-pane .price-box.current{background:#00FF5A;color:#000000}
-.chart-pane .price-box.entry  {background:#FF9100;color:#000000}
-.chart-pane .price-box.low    {background:#00B0FF;color:#FFFFFF}
+.chart-pane .price-box.high   {background:#2962ff;color:#ffffff}
+.chart-pane .price-box.ask    {background:#b22833;color:#ffffff}
+.chart-pane .price-box.current{background:#66bb6a;color:#000000}
+.chart-pane .price-box.bid    {background:#ffee58;color:#000000}
+.chart-pane .price-box.prev   {background:#fb8c00;color:#000000}
+.chart-pane .price-box.low    {background:#2962ff;color:#ffffff}
 
 .hist-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .hist-card{background:var(--cell);border:1px solid var(--line2);border-left:3px solid var(--mut);border-radius:3px;padding:14px}
@@ -1043,16 +1047,24 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       currentSource = 'tf-last';
     }
 
-    // ENTRY level — read from per-symbol ctx if present (Jane packet).
-    var entry = null;
+    // ASK / BID / PREV CLOSE for the chart ladder. ENTRY is intentionally
+    // excluded here (spec: ENTRY belongs in ANALYSED TARGETS only, never
+    // in the chart ladder). BID / ASK are derived from CURRENT ± half the
+    // typical instrument spread (the same approximation charts-engine.js
+    // uses); PREV is the second-to-last full bar's close in the visible
+    // window — i.e. the prior session/bar reference, not the live tape.
+    var ask = null, bid = null, prev = null;
     try {
-      var aCtx = (window.ATLAS && window.ATLAS.ctx) || null;
-      var aSym = (window.ATLAS && window.ATLAS.activeSymbol) || null;
-      if (aCtx && aSym === paneSym && aCtx.entry != null && aCtx.entry !== 'Pending' && aCtx.entry !== 'Withheld'){
-        var n = parseFloat(aCtx.entry);
-        if (isFinite(n)) entry = n;
+      var spread = spreadPxLocal(paneSym, currentPrice);
+      if (isFinite(spread) && spread > 0 && isFinite(currentPrice)){
+        ask = currentPrice + spread / 2;
+        bid = currentPrice - spread / 2;
       }
-    } catch (_e) { entry = null; }
+    } catch (_es) { ask = null; bid = null; }
+    if (slice.length >= 2){
+      var p = slice[slice.length - 2].c;
+      if (isFinite(p)) prev = p;
+    }
 
     // The vertical placement scale uses the PANE's HIGH/LOW (its own
     // visible window) so each box sits at the correct y-coordinate
@@ -1095,8 +1107,10 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     var MIN_Y = 6, MAX_Y = 90;
     var labels = [
       { cls: 'high',    lbl: 'HIGH',         price: hi },
+      { cls: 'ask',     lbl: 'ASK',          price: ask },
       { cls: 'current', lbl: currentLabel,   price: currentPrice },
-      { cls: 'entry',   lbl: 'ENTRY',        price: entry },
+      { cls: 'bid',     lbl: 'BID',          price: bid },
+      { cls: 'prev',    lbl: 'PREV CLOSE',   price: prev },
       { cls: 'low',     lbl: 'LOW',          price: lo }
     ].filter(function(it){ return it.price != null && isFinite(it.price); });
     labels.forEach(function(it){ it.y = yOf(it.price); });
@@ -1141,7 +1155,8 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
 
     // Per-pane state lives on the DOM node — never on a shared object.
     pane._priceBoxState = {
-      hi: hi, low: lo, entry: entry, dg: dg,
+      hi: hi, low: lo, dg: dg,
+      ask: ask, bid: bid, prev: prev,
       current: currentPrice,
       currentLabel: currentLabel,
       currentSource: currentSource,
@@ -1150,11 +1165,30 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
 
     console.log('[PRICE-BOX] symbol=' + paneSym + ' tf=' + tf +
       ' high=' + hi.toFixed(dg) +
+      ' ask=' + (ask == null ? 'n/a' : ask.toFixed(dg)) +
       ' current=' + currentPrice.toFixed(dg) +
       ' source=' + currentSource +
+      ' bid=' + (bid == null ? 'n/a' : bid.toFixed(dg)) +
+      ' prev=' + (prev == null ? 'n/a' : prev.toFixed(dg)) +
       ' tfLast=' + tfLast.toFixed(dg) +
-      ' entry=' + (entry == null ? 'withheld' : entry.toFixed(dg)) +
       ' low=' + lo.toFixed(dg));
+  }
+
+  // Spread approximation used to derive BID/ASK for the chart ladder
+  // when no real top-of-book quote is available. Mirrors the convention
+  // used by charts-engine.js renderLadder so both rendering paths stay
+  // consistent. FX uses pip-based spreads; equities use dollar-based.
+  function spreadPxLocal(sym, px){
+    if (!isFinite(px)) return 0;
+    if (/^[A-Z]{6}$/.test(sym)){
+      // FX 6-char like EURUSD/USDJPY — JPY pairs use 0.01 pip, others 0.0001
+      return /JPY$/.test(sym) ? 0.02 : 0.0002;
+    }
+    // equity / index / commodity — half-cent for sub-$10, scaling up
+    if (px < 10)    return 0.01;
+    if (px < 100)   return 0.02;
+    if (px < 1000)  return 0.05;
+    return 0.20;
   }
 
   // Price-integrity sweep. Runs once after all panes have rendered
