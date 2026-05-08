@@ -738,7 +738,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       },
       historical: [
         { name:'AI/Semiconductor consolidation pattern (post-rally cooling)', stamp:'amber', sample:'n=14 daily windows since 2024-Q4', timeframe:'1D', relevance:'Memory/semis after concentrated rally', continuation:'Range-bound; 60-70% retest of prior swing low first', confidence:'medium', supports:'context — no directional vote', suggests:'Expect range first, breakout second. Stand aside until a fresh structural break is left.', expires:'When a 15M close beyond $94.10 OR $90.20 is confirmed' },
-        { name:'NVDA earnings sympathy drag (T-3 → T-1)', stamp:'red', sample:'n=8 NVDA cycles 2023-2025', timeframe:'4H', relevance:'MU drifts lower into NVDA earnings windows', continuation:'62.5% drift down before reversal at NVDA print', confidence:'medium-high', supports:'adverse for buyers in T-3 to T-1', suggests:'Heavy short-side pressure if NVDA prints inside next 72h. Not authorised to long.', expires:'NVDA earnings window closes' },
+        { name:'NVDA earnings sympathy drag (T-3 → T-1)', stamp:'red', sample:'n=8 NVDA cycles 2023-2025', timeframe:'4H', relevance:'MU drifts lower into NVDA earnings windows', continuation:'62.5% drift down before reversal at NVDA print', confidence:'medium-high', supports:'adverse for buyers in T-3 to T-1', suggests:'Heavy short-side pressure if NVDA prints inside next 72h. Long entries are not justified by current evidence.', expires:'NVDA earnings window closes' },
         { name:'Q-end rebalance reversal window', stamp:'green', sample:'n=12 quarter-end sessions, large-cap semis 2022-2025', timeframe:'1D', relevance:'Quarter-end can drive sharp last-day reversal', continuation:'58% sharp counter-trend close on quarter-end day', confidence:'medium', supports:'supportive only on a quarter-end calendar match', suggests:'If session falls on quarter-end and structure aligns, expect a sharp reversal candle.', expires:'Outside quarter-end ±1 day window' },
         { name:'Generic "2017 reflation" comparison', stamp:'grey', sample:'unsupported — no clean denominator', timeframe:'unspecified', relevance:'low — different rate regime, different sector composition', continuation:'no audited rate', confidence:'rejected', supports:'neutral — should not influence the desk', suggests:'Disregard. Not a clean analogue.', expires:'n/a — analogue rejected' }
       ],
@@ -773,7 +773,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     EURUSD: {
       assetClass: 'fx',
       lastPrice: 1.07820, lastChangePct: 0.18,
-      actionState: 'ARMED — WAITING FOR TRIGGER', actionTone: 'gold',
+      actionState: 'ARMED — WAITING FOR CONFIRMATION', actionTone: 'gold',
       biasDirection: 'Bullish',
       biasMomentum: 'Building',
       tradeProbability: 4,
@@ -977,7 +977,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       '<div class="wb-list"><b>To populate this surface:</b>' +
         '<ul>' +
           '<li>Run <code>!' + activeSymbol.toLowerCase() + ' analyse</code> in any FX Bot#3867 channel.</li>' +
-          '<li>The bot publishes the read packet to <code>/load</code> on this service.</li>' +
+          '<li>The bot publishes the read to <code>/load</code> on this service.</li>' +
           '<li>This page will pick it up on next reload (or via SSE in a future pass).</li>' +
         '</ul></div>';
     anchor.parentNode.insertBefore(banner, anchor);
@@ -1737,62 +1737,199 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     ' because bias is ' + (String(ctx.biasDirection || 'neutral').toLowerCase()) +
     ' and no approved entry trigger / candidate level is present.';
 
-  // ---------- action pill — advisory state strip ----------
-  // Strip carries: Bias Direction, Bias Momentum, Trade Probability (1–5),
-  // Trade Status (advisory; not "permission"), Valid Until, Reassess.
-  document.getElementById('action-state').textContent = ctx.actionState;
-  // Compression mode forces an AMBER tone for clean no_trade — calm-stand-down
-  // colour, NOT alarming red. Real RED is reserved for mismatch / failure /
-  // hard breach (handled by the PRICE-GUARD code path).
-  var pill = document.getElementById('action-pill');
-  pill.setAttribute('data-tone', COMPRESSION === 'clean_no_trade' ? 'amber' : ctx.actionTone);
+  // ---------- Trade Status / Final Assessment pill + verdict strip ----------
+  // Strip carries: Trade Probability, Entry Status, Setup Quality,
+  // Execution Confidence, Bias Direction, Bias Momentum, Valid Until,
+  // Reassess. No "permission" / "authorised" / "blocked" wording — those
+  // are internal state names mapped to clean user-facing labels here.
+  function setText(id, val){ var el = document.getElementById(id); if (el) el.textContent = (val == null ? '—' : val); }
 
-  // Insert / refresh the "deliberate stand-down" subtitle under the action state.
-  (function(){
-    var stateEl = document.getElementById('action-state');
-    var sub = document.getElementById('action-subtitle');
-    if (!sub) {
-      sub = document.createElement('div');
-      sub.id = 'action-subtitle';
-      sub.style.cssText = 'font-size:12px;color:var(--mut2);margin-top:6px;line-height:1.5;max-width:680px';
-      stateEl.parentNode.appendChild(sub);
+  // Map raw internal action-state strings to clean operator-facing copy.
+  // Internal enums like 'final:entry_authorised' MUST NOT reach the user.
+  function mapActionState(raw){
+    var s = String(raw || '').trim();
+    if (!s) return 'ATLAS analysis pending';
+    var low = s.toLowerCase();
+    if (/(^|[\s—-])no\s*active\s*trade|hold\s*[—-]\s*no/i.test(s)) return 'HOLD — NO ACTIVE TRADE';
+    if (/^waiting$|^observe$|conditions\s*building/i.test(low))    return 'OBSERVE — CONDITIONS BUILDING';
+    if (/^armed|^arm\b/i.test(low))                                return 'ARMED — WAITING FOR CONFIRMATION';
+    if (/entry_?authorised|entry\s*confirmed|entry\s*ok/i.test(low)) return 'ENTRY CONFIRMED';
+    if (/trade_?confirmed|live_?trade/i.test(low))                  return 'TRADE CONFIRMED';
+    if (/invalid|cancel/i.test(low))                                return 'TRADE INVALID — STAND DOWN';
+    if (/analysis\s*pending|pending|loading/i.test(low))            return 'ATLAS analysis pending';
+    if (/no_?jane|withheld|missing|empty_?decision/i.test(low))     return 'ATLAS analysis pending';
+    return s;   // already operator-facing
+  }
+  setText('action-state', mapActionState(ctx.actionState));
+  var pill = document.getElementById('ts-pill');
+  if (pill) pill.setAttribute('data-tone', COMPRESSION === 'clean_no_trade' ? 'amber' : (ctx.actionTone || 'amber'));
+
+  var subEl = document.getElementById('action-subtitle');
+  if (subEl) subEl.textContent = (COMPRESSION === 'clean_no_trade') ? CLEAN_NO_TRADE_SUBTITLE : '';
+
+  setText('vstrip-bias',     ctx.biasDirection || 'Neutral');
+  setText('vstrip-momentum', ctx.biasMomentum || 'Steady');
+  var pn = parseInt(ctx.tradeProbability, 10) || 0;
+  setText('vstrip-prob',     (pn > 0 ? pn : '—') + ' / 5');
+  setText('vstrip-perm',     ctx.tradeStatus || ctx.tradePermission || 'No active read yet');
+  // Setup Quality + Execution Confidence — derived from ctx if present,
+  // otherwise neutral fallback. These replace the old "permission" label.
+  var sq = ctx.setupQuality || ctx.setup_quality || (pn >= 4 ? 'High' : pn >= 3 ? 'Medium' : pn >= 1 ? 'Low' : '—');
+  var ec = ctx.executionConfidence || ctx.execution_confidence || (pn >= 4 ? 'High' : pn >= 3 ? 'Medium' : pn >= 1 ? 'Low' : '—');
+  setText('vstrip-quality',    sq);
+  setText('vstrip-confidence', ec);
+  setText('vstrip-val',        validityStr);
+  setText('vstrip-next',       reassessStr);
+
+  // ---------- ANALYSED TARGETS values + sub-context ----------
+  // Sub rows carry the per-row Greenhorn context (cancel + reassess
+  // wording). Where ctx provides direct fields they are used; otherwise
+  // a calm "not identified yet" fallback is used. NEVER fake numbers.
+  var hasValidEntry = ctx.entry != null && ctx.entry !== 'Pending' && ctx.entry !== 'Withheld' &&
+                      String(ctx.entry).trim() !== '' && String(ctx.entry).trim() !== '—';
+  var notId = 'Not identified yet';
+
+  function valOrNotId(raw){
+    if (raw == null) return notId;
+    var s = String(raw).trim();
+    if (!s || /^—$|^pending$|^withheld$|^not\s*authorised$|^waiting$|^inactive/i.test(s)) return notId;
+    return s;
+  }
+
+  setText('es-entry',           valOrNotId(ctx.entry));
+  setText('es-entry-sub',       ctx.entrySub || '');
+  setText('es-entry-ext',       valOrNotId(ctx.entryExtended || ctx.entry_extended));
+  setText('es-entry-ext-sub',   ctx.entryExtendedSub || (hasValidEntry ? 'Wider primary-zone fill if price retraces deeper before confirming' : ''));
+  setText('es-target',          valOrNotId(ctx.target));
+  setText('es-target-sub',      ctx.targetSub || (hasValidEntry ? 'Where the primary plan exits and books risk-reward' : ''));
+  setText('es-dir',             ctx.directionShort || ctx.direction || (COMPRESSION === 'clean_no_trade' ? 'No directional read yet' : notId));
+  setText('es-dir-sub',         ctx.directionSub || (hasValidEntry ? 'Current trend frame for this symbol on the primary timeframe' : ''));
+  setText('es-stop',            valOrNotId(ctx.stopLoss));
+  setText('es-stop-sub',        ctx.stopLossSub || (hasValidEntry ? 'Primary protection — if price closes here on the primary TF, the read is invalidated' : ''));
+  setText('es-stop-ext',        valOrNotId(ctx.extendedStopLoss));
+  setText('es-stop-ext-sub',    ctx.extendedStopLossSub || (hasValidEntry ? 'Wider alternative protection for higher-noise sessions' : ''));
+
+  // NEUTRAL MARKET row appears only when there is no usable bias.
+  var biasIsNeutral = !ctx.biasDirection || /^neutral|^mixed|^flat|^range/i.test(String(ctx.biasDirection));
+  var neutralRow = document.getElementById('at-row-neutral');
+  if (neutralRow){
+    if (biasIsNeutral && !hasValidEntry){
+      neutralRow.style.display = '';
+      setText('es-neutral',     'Buyers and sellers balanced');
+      setText('es-neutral-sub', 'No directional bias is being signalled yet — wait for a clean break/hold before treating any level as a buy or sell.');
+    } else {
+      neutralRow.style.display = 'none';
     }
-    sub.textContent = (COMPRESSION === 'clean_no_trade') ? CLEAN_NO_TRADE_SUBTITLE : '';
+  }
+
+  // ANALYSED TARGETS hero / no-setup state.
+  var noSetupEl = document.getElementById('at-no-setup');
+  var headlineEl = document.getElementById('at-headline');
+  if (noSetupEl){
+    if (!hasValidEntry){
+      noSetupEl.style.display = '';
+      noSetupEl.textContent = 'NO VALID BUY OR SELL TARGET IDENTIFIED';
+      if (headlineEl) headlineEl.textContent = (biasIsNeutral
+        ? 'Buyers and sellers are balanced. ATLAS has not identified a valid buy or sell target yet.'
+        : 'ATLAS has not identified a valid buy or sell target yet on this symbol.');
+    } else {
+      noSetupEl.style.display = 'none';
+      if (headlineEl) headlineEl.textContent = (ctx.directionShort || ctx.direction || 'Active read');
+    }
+  }
+
+  // Risk / cost / validity / next-reassessment / cancellation grid.
+  setText('es-risk',       valOrNotId(ctx.riskDollars));
+  setText('es-risk-sub',   ctx.riskSub || '');
+  setText('es-tgt-d',      valOrNotId(ctx.targetDollars));
+  setText('es-cost',       ctx.costDollars || '—');
+  setText('es-validity',   validityStr);
+  setText('es-cancel',     ctx.cancellation || (hasValidEntry ? 'Read invalidated when invalidation level is closed against on the primary timeframe' : 'No read to invalidate yet'));
+  setText('es-next',       reassessStr);
+  setText('es-assetclass', String(ctx.assetClass || 'unknown').toUpperCase());
+
+  // Final-read body inside the Trade Status / Final Assessment block.
+  // Pulls from ctx.finalRead / ctx.finalAssessment / ctx.summary, falling
+  // back to a clean "no read yet" message. No engine narration.
+  var finalEl = document.getElementById('final-body');
+  if (finalEl){
+    var finalText = ctx.finalRead || ctx.finalAssessment || ctx.summary || '';
+    if (!finalText){
+      finalText = hasValidEntry
+        ? ('ATLAS read for ' + activeSymbol + ' is active. Use the entry, exit, and stop values above. Reassess at the next reassessment time.')
+        : ('No active read for ' + activeSymbol + ' yet. Charts are live; ANALYSED TARGETS will populate once the read is published.');
+    }
+    finalEl.textContent = finalText;
+  }
+
+  // ---------- Greenhorn block (per ANALYSED TARGETS row) ----------
+  // Each card explains: meaning · why it matters · action implied · what
+  // cancels it · next reassessment. Sourced from packet fields where
+  // available; static fallback copy otherwise. Never invents prices.
+  (function renderGreenhorn(){
+    var host = document.getElementById('at-greenhorn');
+    if (!host) return;
+    var cards = [
+      {
+        label: 'ENTRY POINT',
+        meaning: 'Primary price where the read is triggered.',
+        why:     'Wrong entry breaks the entire risk-to-reward maths — this is the single number that decides whether the trade is worth taking.',
+        action:  hasValidEntry ? ('Place a working order at ' + escapeHtml(String(ctx.entry)) + ' (limit/stop per session rules).') : 'No live action yet — no entry has been identified.',
+        cancels: ctx.cancellation || 'A close against the invalidation level on the primary timeframe.',
+        next:    reassessStr
+      },
+      {
+        label: 'ENTRY EXTENDED',
+        meaning: 'Wider/secondary entry zone for deeper retracements.',
+        why:     'Lets the trader catch the same idea at a better price if the primary entry is missed but the read still holds.',
+        action:  hasValidEntry ? 'Optional only. Use the primary ENTRY POINT first; extend ONLY if the primary fills the wider zone.' : 'No extended entry until ATLAS publishes a read.',
+        cancels: 'Same invalidation as ENTRY POINT — the read is one idea, not two.',
+        next:    reassessStr
+      },
+      {
+        label: 'EXIT POINT',
+        meaning: 'Where the primary plan books risk-to-reward.',
+        why:     'Defines what the trade is being paid for. If the price reaches this level, the idea is realised.',
+        action:  hasValidEntry ? ('Take the planned profit at ' + escapeHtml(String(ctx.target || '—')) + '.') : 'No exit until an entry exists.',
+        cancels: 'A close against the invalidation level before the exit is reached.',
+        next:    reassessStr
+      },
+      {
+        label: 'TREND',
+        meaning: 'The current directional frame for this symbol on the primary timeframe.',
+        why:     'Trade in line with the trend until it changes. Counter-trend ideas need additional evidence.',
+        action:  'Read the trend value above and compare to the bias / momentum strip in Trade Status.',
+        cancels: 'A confirmed structural break against the current direction on the primary timeframe.',
+        next:    reassessStr
+      },
+      {
+        label: 'SET STOP LOSS',
+        meaning: 'Primary protection level for the read.',
+        why:     'A trade without a stop is not a trade. This is the single price that ends the idea.',
+        action:  hasValidEntry ? ('Place stop at ' + escapeHtml(String(ctx.stopLoss || '—')) + '. Use ONLY this stop OR the extended stop, never both.') : 'No stop required — no entry has been identified.',
+        cancels: 'A confirmed close against this level on the primary timeframe.',
+        next:    reassessStr
+      },
+      {
+        label: 'EXTENDED STOP LOSS',
+        meaning: 'Wider alternative protection for higher-noise sessions.',
+        why:     'Reduces stop-out frequency in volatile conditions at the cost of larger maximum risk.',
+        action:  hasValidEntry ? ('Use ' + escapeHtml(String(ctx.extendedStopLoss || '—')) + ' instead of the primary stop ONLY when session volatility justifies it. Never both stops at once.') : 'No extended stop until an entry exists.',
+        cancels: 'Same invalidation logic as primary stop, just at a wider price.',
+        next:    reassessStr
+      }
+    ];
+    host.innerHTML = cards.map(function(c){
+      return '<div class="gh-card">' +
+        '<span class="gh-row-label">' + escapeHtml(c.label) + '</span>' +
+        '<span class="gh-line"><span class="gh-k">Meaning</span><span class="gh-v">' + escapeHtml(c.meaning) + '</span></span>' +
+        '<span class="gh-line"><span class="gh-k">Why it matters</span><span class="gh-v">' + escapeHtml(c.why) + '</span></span>' +
+        '<span class="gh-line"><span class="gh-k">Action</span><span class="gh-v">' + escapeHtml(c.action) + '</span></span>' +
+        '<span class="gh-line"><span class="gh-k">What cancels it</span><span class="gh-v">' + escapeHtml(c.cancels) + '</span></span>' +
+        '<span class="gh-line"><span class="gh-k">Next review</span><span class="gh-v">' + escapeHtml(c.next) + '</span></span>' +
+      '</div>';
+    }).join('');
   })();
-
-  document.getElementById('vstrip-bias').textContent     = ctx.biasDirection || 'Neutral';
-  var vMom = document.getElementById('vstrip-momentum');
-  if (vMom) vMom.textContent = ctx.biasMomentum || 'Steady';
-  var vProb = document.getElementById('vstrip-prob');
-  if (vProb) {
-    var pn = parseInt(ctx.tradeProbability, 10) || 0;
-    vProb.textContent = (pn > 0 ? pn : '—') + ' / 5';
-  }
-  document.getElementById('vstrip-perm').textContent  = ctx.tradeStatus || ctx.tradePermission || 'Pending';
-  document.getElementById('vstrip-val').textContent   = validityStr;
-  document.getElementById('vstrip-next').textContent  = reassessStr;
-
-  // Exec-strip values — compress raw nulls into trader-grade copy when the
-  // engine is in clean stand-down. "Pending" → "Waiting", "Not authorised" →
-  // "Inactive — no entry exists", etc. ctx is never mutated.
-  function compressVal(rawVal, fallback) {
-    if (COMPRESSION === 'clean_no_trade' && /pending|not authorised|withheld|—|not active|^\s*$/i.test(String(rawVal || ''))) return fallback;
-    return rawVal;
-  }
-  document.getElementById('es-dir').textContent       = ctx.directionShort || ctx.direction || (COMPRESSION === 'clean_no_trade' ? 'No directional read for entry yet' : '—');
-  document.getElementById('es-entry').textContent     = compressVal(ctx.entry,            CLEAN_NO_TRADE_EXEC.entry);
-  document.getElementById('es-entry-sub').textContent = ctx.entrySub || (COMPRESSION === 'clean_no_trade' ? 'no live order permitted yet' : '');
-  document.getElementById('es-target').textContent    = compressVal(ctx.target,           CLEAN_NO_TRADE_EXEC.target);
-  document.getElementById('es-stop').textContent      = compressVal(ctx.stopLoss,         CLEAN_NO_TRADE_EXEC.stopLoss);
-  document.getElementById('es-stop-ext').textContent  = compressVal(ctx.extendedStopLoss, CLEAN_NO_TRADE_EXEC.extendedStop);
-  document.getElementById('es-risk').textContent      = compressVal(ctx.riskDollars,      CLEAN_NO_TRADE_EXEC.riskDollars);
-  document.getElementById('es-risk-sub').textContent  = ctx.riskSub || (COMPRESSION === 'clean_no_trade' ? CLEAN_NO_TRADE_EXEC.riskSub : '');
-  document.getElementById('es-tgt-d').textContent     = compressVal(ctx.targetDollars,    CLEAN_NO_TRADE_EXEC.targetDollars);
-  document.getElementById('es-cost').textContent      = ctx.costDollars;
-  document.getElementById('es-validity').textContent  = validityStr;
-  document.getElementById('es-cancel').textContent    = ctx.cancellation;
-  document.getElementById('es-next').textContent      = reassessStr;
-  document.getElementById('es-assetclass').textContent= ctx.assetClass.toUpperCase();
 
   // ---------- Market Read · Forward Watch · INCOREGO ----------
   // Market Read: Jane's plain-language read of the current condition.
@@ -2680,7 +2817,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         } else {
           console.warn('[DATA] source=twelvedata symbol=' + activeSymbol + ' timeframe=' + tf + ' status=fail reason=' + r.reason + ' provider=' + r.provSym);
           console.warn('[CHART] panel=' + tf + ' symbol=' + activeSymbol + ' validation=blocked source=unavailable');
-          resolvedHtml[tf] = panelHtml(tf, activeSymbol, '', 'Live chart data unavailable for ' + activeSymbol + ' ' + tf + ' — chart withheld.');
+          resolvedHtml[tf] = panelHtml(tf, activeSymbol, '', 'No live chart for ' + activeSymbol + ' ' + tf + ' yet — retrying. Charts auto-refresh on the next load.');
           blockedCount++;
         }
       });
@@ -2824,20 +2961,21 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         if (mismatch) hdPrice.style.color = 'var(--red)';
       }
       if (mismatch) {
-        if (hdChg) { hdChg.textContent = 'BLOCKED'; hdChg.classList.remove('pos','neg'); hdChg.classList.add('neg'); }
-        // Stamp the surface so the user knows decisions are blocked.
-        var pill = document.getElementById('action-pill');
+        if (hdChg) { hdChg.textContent = 'CHECK PRICE'; hdChg.classList.remove('pos','neg'); hdChg.classList.add('neg'); }
+        // Stamp the surface so the user knows the read is paused on this symbol.
+        var pill = document.getElementById('ts-pill');
         var state = document.getElementById('action-state');
         if (pill) pill.setAttribute('data-tone', 'red');
-        if (state) state.textContent = 'PRICE DATA MISMATCH — DECISION BLOCKED';
-        // Add a banner above the action pill
+        if (state) state.textContent = 'PRICE DATA MISMATCH — READ PAUSED';
+        // Add a banner above the Trade Status block
         var banner = document.createElement('div');
         banner.className = 'withhold-banner';
         banner.style.borderColor = 'var(--red)';
-        banner.innerHTML = '<div class="wb-title" style="color:var(--red)">PRICE DATA MISMATCH — DECISION BLOCKED</div>' +
-          '<div class="wb-detail">Packet price <b>' + (packetPrice == null ? 'n/a' : fmt(packetPrice)) + '</b> disagrees with live OHLC close <b>' + (ohlcLast == null ? 'n/a' : fmt(ohlcLast)) + '</b> for ' + activeSymbol + ' (timeframe ' + (ohlcTf||'?') + ') by more than ' + TOLERANCE_PCT + '%. ' +
-          'The dashboard will not render execution levels until the source is reconciled.</div>';
-        var anchor = document.querySelector('.action-row');
+        banner.style.margin = '0 22px 14px';
+        banner.innerHTML = '<div class="wb-title" style="color:var(--red)">PRICE DATA MISMATCH — READ PAUSED</div>' +
+          '<div class="wb-detail">Read price <b>' + (packetPrice == null ? 'n/a' : fmt(packetPrice)) + '</b> disagrees with live OHLC close <b>' + (ohlcLast == null ? 'n/a' : fmt(ohlcLast)) + '</b> for ' + activeSymbol + ' (timeframe ' + (ohlcTf||'?') + ') by more than ' + TOLERANCE_PCT + '%. ' +
+          'ANALYSED TARGETS will not render until the source price is reconciled.</div>';
+        var anchor = document.getElementById('sec-trade-status');
         if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(banner, anchor);
       } else if (!mismatch && hdChg) {
         // "Today's change" baseline = previous daily close (penultimate bar).
@@ -3001,33 +3139,17 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     '</tbody></table>';
   document.getElementById('events-body').innerHTML = evHtml;
 
-  var mx = ctx.matrix || [];
-  document.getElementById('matrix-body').innerHTML =
-    '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
-    '<thead><tr style="text-align:left">' +
-      '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut)">SYMBOL</th>' +
-      '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut)">PRICE</th>' +
-      '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut)">CHANGE</th>' +
-      '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut)">RANGE</th>' +
-    '</tr></thead><tbody>' +
-    mx.map(function(r){
-      return '<tr>' +
-        '<td style="padding:10px 8px;border-bottom:1px solid var(--line);color:var(--gold);font-weight:700">'+escapeHtml(r.sym)+'</td>' +
-        '<td style="padding:10px 8px;border-bottom:1px solid var(--line);font-family:\'SF Mono\',monospace">'+escapeHtml(r.px)+'</td>' +
-        '<td style="padding:10px 8px;border-bottom:1px solid var(--line);font-family:\'SF Mono\',monospace;color:'+(/^-/.test(r.chg)?'var(--red)':'var(--green)')+'">'+escapeHtml(r.chg)+'</td>' +
-        '<td style="padding:10px 8px;border-bottom:1px solid var(--line);font-family:\'SF Mono\',monospace;color:var(--mut2)">'+escapeHtml(r.range)+'</td>' +
-      '</tr>';
-    }).join('') +
-    '</tbody></table>';
-
-  document.getElementById('final-body').innerHTML =
-    '<div style="font-size:12px;line-height:1.6;color:var(--mut2)">' +
-    '<p><b style="color:var(--gold)">VERDICT:</b> ' + escapeHtml(ctx.actionState) + '</p>' +
-    '<p style="margin-top:8px"><b style="color:var(--gold)">DIRECTION:</b> ' + escapeHtml(ctx.direction) + '</p>' +
-    '<p style="margin-top:8px"><b style="color:var(--gold)">CANCELLATION:</b> ' + escapeHtml(ctx.cancellation) + '</p>' +
-    '<p style="margin-top:8px"><b style="color:var(--gold)">VALIDITY:</b> ' + escapeHtml(ctx.validity) + '</p>' +
-    '<p style="margin-top:14px;color:var(--mut);font-style:italic">Re-read Trade Status / Live Plan above for the live source. This duplicate exists only as a quick scroll-back for users who land on this tab from a deep link.</p>' +
-    '</div>';
+  // ---------- PRICE MATRIX (LRU recall — last 5 unique searches) ----------
+  // Stored in localStorage so it survives reload. Newest at top, no
+  // duplicates, max 5 entries. Click a row to reload that symbol via
+  // ?symbol= navigation. Active symbol is highlighted. No fake entries.
+  // Empty state is operator-friendly, never developer-facing.
+  PriceMatrix.touch(activeSymbol, {
+    px:    (ctx.lastPrice == null) ? null : (ctx.assetClass === 'fx' ? ctx.lastPrice.toFixed(5) : '$' + ctx.lastPrice.toFixed(2)),
+    chg:   (ctx.lastChangePct == null) ? null : ((ctx.lastChangePct >= 0 ? '+' : '') + ctx.lastChangePct.toFixed(2) + '%'),
+    range: null
+  });
+  PriceMatrix.render(activeSymbol);
 
   // ---------- Corey Macro / Spidey Structure / Source Audit (scaffold + withheld-with-reason) ----------
   // These are first usable versions. They render whatever the packet provides
@@ -3288,6 +3410,164 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
     });
   }
+
+  // ============================================================
+  // PRICE MATRIX — last 5 unique symbol searches, recall/history
+  // only (per locked dashboard spec). localStorage-backed so the
+  // recall surface survives reload. NEVER fabricates entries.
+  // ============================================================
+  var PriceMatrix = (function(){
+    var KEY = 'atlas:price-matrix:v1';
+    var MAX = 5;
+
+    function read(){
+      try {
+        var raw = localStorage.getItem(KEY);
+        if (!raw) return [];
+        var arr = JSON.parse(raw);
+        return Array.isArray(arr) ? arr.filter(function(e){ return e && typeof e.sym === 'string' && e.sym; }).slice(0, MAX) : [];
+      } catch (_e) { return []; }
+    }
+    function write(arr){
+      try { localStorage.setItem(KEY, JSON.stringify(arr.slice(0, MAX))); } catch (_e) {}
+    }
+    function touch(sym, fields){
+      sym = String(sym || '').toUpperCase();
+      if (!sym) return;
+      var list = read().filter(function(e){ return e.sym !== sym; });
+      list.unshift({
+        sym: sym,
+        px:    (fields && fields.px)    || null,
+        chg:   (fields && fields.chg)   || null,
+        range: (fields && fields.range) || null,
+        seen:  Date.now()
+      });
+      write(list);
+    }
+    function render(activeSym){
+      var body = document.getElementById('matrix-body');
+      if (!body) return;
+      var list = read();
+      if (!list.length){
+        body.innerHTML =
+          '<div style="padding:18px;color:var(--mut2);font-size:12px;line-height:1.55;border:1px dashed var(--line2);border-radius:4px;text-align:center">' +
+          'No symbols searched yet. Each symbol you load will appear here for quick recall.' +
+          '</div>';
+        return;
+      }
+      var rows = list.map(function(r){
+        var isActive = (String(activeSym || '').toUpperCase() === r.sym);
+        var pxTxt    = r.px    || '—';
+        var chgTxt   = r.chg   || '';
+        var chgColor = chgTxt && /^-/.test(chgTxt) ? 'var(--red)' : (chgTxt ? 'var(--green)' : 'var(--mut)');
+        var rangeTxt = r.range || '';
+        var bg       = isActive ? 'rgba(255,214,0,0.08)' : 'transparent';
+        var symColor = isActive ? 'var(--gold)' : 'var(--fg)';
+        return '<tr class="pm-row" data-sym="' + escapeHtml(r.sym) + '" tabindex="0" role="button" ' +
+          'style="cursor:pointer;background:' + bg + '">' +
+          '<td style="padding:10px 12px;border-bottom:1px solid var(--line);color:' + symColor + ';font-weight:700;font-family:\'SF Mono\',monospace;letter-spacing:1px">' + escapeHtml(r.sym) + (isActive ? ' · ACTIVE' : '') + '</td>' +
+          '<td style="padding:10px 12px;border-bottom:1px solid var(--line);font-family:\'SF Mono\',monospace">' + escapeHtml(pxTxt) + '</td>' +
+          '<td style="padding:10px 12px;border-bottom:1px solid var(--line);font-family:\'SF Mono\',monospace;color:' + chgColor + '">' + escapeHtml(chgTxt) + '</td>' +
+          '<td style="padding:10px 12px;border-bottom:1px solid var(--line);font-family:\'SF Mono\',monospace;color:var(--mut2)">' + escapeHtml(rangeTxt) + '</td>' +
+        '</tr>';
+      }).join('');
+      body.innerHTML =
+        '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
+        '<thead><tr style="text-align:left">' +
+          '<th style="padding:8px 12px;border-bottom:1px solid var(--line2);color:var(--mut);letter-spacing:1.5px;font-weight:700;font-size:10px;text-transform:uppercase">Symbol</th>' +
+          '<th style="padding:8px 12px;border-bottom:1px solid var(--line2);color:var(--mut);letter-spacing:1.5px;font-weight:700;font-size:10px;text-transform:uppercase">Price</th>' +
+          '<th style="padding:8px 12px;border-bottom:1px solid var(--line2);color:var(--mut);letter-spacing:1.5px;font-weight:700;font-size:10px;text-transform:uppercase">Change</th>' +
+          '<th style="padding:8px 12px;border-bottom:1px solid var(--line2);color:var(--mut);letter-spacing:1.5px;font-weight:700;font-size:10px;text-transform:uppercase">Range</th>' +
+        '</tr></thead><tbody>' + rows + '</tbody></table>';
+      // Wire click + keyboard activation. Reloads via ?symbol= so all
+      // page state (charts, ANALYSED TARGETS, Trade Status) re-renders.
+      var qsUser = (new URLSearchParams(window.location.search).get('user') || '').toUpperCase();
+      function go(sym){
+        if (!sym) return;
+        var url = window.location.pathname + '?symbol=' + encodeURIComponent(sym);
+        if (qsUser) url += '&user=' + encodeURIComponent(qsUser);
+        window.location.href = url;
+      }
+      body.querySelectorAll('.pm-row').forEach(function(tr){
+        tr.addEventListener('click', function(){ go(tr.getAttribute('data-sym')); });
+        tr.addEventListener('keydown', function(ev){
+          if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); go(tr.getAttribute('data-sym')); }
+        });
+      });
+    }
+    return { touch: touch, render: render, read: read };
+  })();
+  // Render the recall surface immediately so it's populated even before
+  // the symbol's own ctx finishes loading.
+  PriceMatrix.render(activeSymbol);
+
+  // ============================================================
+  // BANNED-STRING QA — scans visible user-facing text for any of
+  // the locked banned terms. Console-warns on any hit. Runs on
+  // demand via window.ATLAS.qa() and once 1.5s after page load.
+  // Only inspects rendered text — internal enums, comments, logs,
+  // and audit-only sections are ignored. Used as a guard so future
+  // wording regressions surface immediately.
+  // ============================================================
+  (function installQa(){
+    // Banned terms — case-insensitive. The label "Trade Probability"
+    // is intentionally NOT in this list because the dashboard spec
+    // authorises it as a column header on the verdict strip; the
+    // narrative phrasing "trade probability is …" is still flagged
+    // by 'probability low' / 'no clear edge'.
+    var BANNED = [
+      'trigger','authorised','authorized','permitted','permission',
+      'blocked','withheld','no clear edge','probability low',
+      'trade range','execution map',
+      'no_jane_packet','sourcereason','packet','unavailable',
+      'incomplete','not implemented',
+      'corey clone','corey','spidey','jane'
+    ];
+    // Collapsibles that are allowed to surface engine names (audit/dev only).
+    var DEV_ONLY_IDS = { 'sec-audit':1, 'src-row':1, 'legacy-data-sinks':1 };
+    function isInDevOnly(node){
+      while (node && node !== document.body){
+        if (node.id && DEV_ONLY_IDS[node.id]) return true;
+        if (node.classList && node.classList.contains('legacy-data-sinks')) return true;
+        node = node.parentNode;
+      }
+      return false;
+    }
+    function scan(){
+      var hits = [];
+      var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
+      var n;
+      while ((n = walker.nextNode())){
+        var parent = n.parentNode;
+        if (!parent) continue;
+        // Skip <script>, <style>, <code> (code samples are operator instructions)
+        var tag = parent.nodeName;
+        if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'CODE') continue;
+        if (isInDevOnly(parent)) continue;
+        var txt = String(n.nodeValue || '').toLowerCase();
+        if (!txt.trim()) continue;
+        for (var i = 0; i < BANNED.length; i++){
+          var b = BANNED[i];
+          var re = new RegExp('(^|[^a-z0-9])' + b.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '($|[^a-z0-9])', 'i');
+          if (re.test(txt)){
+            hits.push({ term: b, sample: n.nodeValue.slice(0, 140), parentTag: tag, parentId: parent.id || (parent.closest('[id]') && parent.closest('[id]').id) || '' });
+          }
+        }
+      }
+      if (hits.length){
+        console.warn('[ATLAS-QA] banned-string hits in user-facing text:', hits.length);
+        hits.slice(0, 25).forEach(function(h){
+          console.warn('[ATLAS-QA] term="' + h.term + '" parent=' + h.parentTag + (h.parentId ? '#' + h.parentId : '') + ' :: ' + h.sample);
+        });
+      } else {
+        console.log('[ATLAS-QA] clean — no banned strings in user-facing text.');
+      }
+      return hits;
+    }
+    window.ATLAS = window.ATLAS || {};
+    window.ATLAS.qa = scan;
+    setTimeout(function(){ try { scan(); } catch (_e) {} }, 1500);
+  })();
 
   console.log('[ATLAS-DASHBOARD] v3.0 loaded · symbol=' + activeSymbol + ' user=' + requestedUser);
 })();
