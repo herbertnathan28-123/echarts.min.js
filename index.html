@@ -277,6 +277,89 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   .fe-tm{grid-template-columns:1fr}
   .chart-grid{grid-template-columns:repeat(2,1fr)}
 }
+
+/* ============================================================
+   ANALYSED TARGETS — two-column institutional table directly under
+   the charts. Always-open per dashboard spec. Row left-borders use
+   the locked colour map.
+   ============================================================ */
+.at-table{width:calc(100% - 44px);margin:0 22px 14px;border-collapse:separate;border-spacing:0;background:var(--bg2);border:1px solid var(--line2);border-radius:4px;overflow:hidden;font-size:13px}
+.at-table .at-row td{padding:14px 16px;vertical-align:top;border-bottom:1px solid var(--line)}
+.at-table .at-row:last-child td{border-bottom:0}
+.at-table colgroup col.at-col-label{width:32%;min-width:240px}
+.at-table .at-label{font-size:11px;letter-spacing:2px;color:var(--mut);text-transform:uppercase;font-weight:700;font-family:"SF Mono",monospace;border-left:3px solid var(--line2);padding-left:14px}
+.at-table .at-value .at-val-main{font-family:"SF Mono",monospace;font-size:14px;font-weight:700;color:var(--fg);line-height:1.4}
+.at-table .at-value .at-val-sub{font-size:11px;color:var(--mut2);margin-top:4px;line-height:1.5;font-style:italic}
+/* Row colour map (LOCKED, dashboard spec):
+     Entry           = green  (#00b450 via --green)
+     Entry Extended  = orange (#FF9100 via --amber)
+     Exit Point      = red    (#ff0015 via --red)
+     Trend           = yellow (#FFD600 via --gold)
+     Neutral         = grey
+     Stop Loss       = red
+     Warning         = yellow
+*/
+.at-table .at-row.xc-entry      .at-label{border-left-color:var(--green)}
+.at-table .at-row.xc-entry-ext  .at-label{border-left-color:var(--amber)}
+.at-table .at-row.xc-exit       .at-label{border-left-color:var(--red)}
+.at-table .at-row.xc-trend      .at-label{border-left-color:var(--gold)}
+.at-table .at-row.xc-neutral    .at-label{border-left-color:var(--mut)}
+.at-table .at-row.xc-stop       .at-label{border-left-color:var(--red)}
+.at-table .at-row.xc-warn       .at-label{border-left-color:var(--gold)}
+
+.at-no-setup{margin:0 22px 12px;padding:14px 16px;border:2px dashed var(--mut);border-radius:4px;background:var(--bg2);font-family:"SF Mono",monospace;font-size:13px;letter-spacing:2px;font-weight:800;color:var(--mut2);text-transform:uppercase;text-align:center}
+.at-headline{font-size:11px;color:var(--mut2);letter-spacing:1px}
+
+.at-greenhorn{margin:0 22px 14px;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.gh-card{background:var(--cell);border:1px solid var(--line2);border-left:3px solid var(--mut);border-radius:3px;padding:10px 12px;font-size:11px;line-height:1.55;color:var(--mut2)}
+.gh-card .gh-row-label{display:block;font-size:10px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;font-weight:800;margin-bottom:4px}
+.gh-card .gh-line{display:block;margin:3px 0}
+.gh-card .gh-k{color:var(--mut);font-weight:700;letter-spacing:1px;text-transform:uppercase;font-size:9px;margin-right:6px}
+.gh-card .gh-v{color:var(--fg)}
+
+/* ============================================================
+   TRADE STATUS / FINAL ASSESSMENT — merged block (replaces the
+   old separate Final Read tab and the action-row pill).
+   Always-open. Attached visually to the ANALYSED TARGETS section
+   above so the entry / exit / stop / validity / next reassessment
+   answer is read in one continuous surface.
+   ============================================================ */
+.ts-pill{display:flex;align-items:flex-start;gap:18px;padding:18px 22px;margin:0 22px 12px;border-radius:6px;border:1px solid var(--line2);background:var(--cell)}
+.ts-pill .ts-state-block{flex:1;min-width:0}
+.ts-pill .ts-label{font-size:10px;letter-spacing:3px;color:var(--mut);text-transform:uppercase;font-weight:700;margin-bottom:6px}
+.ts-pill .ts-state{font-size:24px;font-weight:900;letter-spacing:2px;font-family:"SF Mono",monospace;color:var(--fg);line-height:1.2}
+.ts-pill .ts-state-sub{font-size:12px;color:var(--mut2);margin-top:8px;line-height:1.55;max-width:680px}
+.ts-pill[data-tone="green"]{border-color:var(--green-d);background:linear-gradient(90deg,rgba(0,180,80,0.10) 0%,var(--cell) 60%)}
+.ts-pill[data-tone="green"] .ts-state{color:var(--green)}
+.ts-pill[data-tone="gold"]{border-color:var(--gold-d);background:linear-gradient(90deg,rgba(255,214,0,0.08) 0%,var(--cell) 60%)}
+.ts-pill[data-tone="gold"] .ts-state{color:var(--gold)}
+.ts-pill[data-tone="amber"]{border-color:var(--amber-d);background:linear-gradient(90deg,rgba(255,145,0,0.08) 0%,var(--cell) 60%)}
+.ts-pill[data-tone="amber"] .ts-state{color:var(--amber)}
+.ts-pill[data-tone="red"]{border-color:var(--red-d);background:linear-gradient(90deg,rgba(255,0,21,0.10) 0%,var(--cell) 60%)}
+.ts-pill[data-tone="red"] .ts-state{color:var(--red)}
+.ts-strip{display:grid;grid-template-columns:repeat(4,minmax(120px,auto));gap:14px 22px;align-content:start}
+.ts-strip .ts-strip-item{display:flex;flex-direction:column;gap:3px;font-size:10px;letter-spacing:1.5px;text-transform:uppercase}
+.ts-strip .vlbl{color:var(--mut)}
+.ts-strip .vval{color:var(--fg);font-weight:700;font-family:"SF Mono",monospace;font-size:12px;letter-spacing:1px}
+
+.ts-final-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 22px 14px}
+.ts-final-card{background:var(--cell);border:1px solid var(--line2);border-radius:4px;padding:14px 16px}
+.ts-final-card h3{font-size:10px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--line2)}
+.ts-final-card .ts-final-body{font-size:13px;color:var(--fg);line-height:1.55}
+.ts-final-card .ts-grid{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;font-size:12px}
+.ts-final-card .ts-grid .ts-k{color:var(--mut);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;font-weight:600;padding-top:2px}
+.ts-final-card .ts-grid .ts-v{color:var(--fg);font-family:"SF Mono",monospace;font-size:12px}
+.ts-final-card .ts-grid .ts-v-sub{display:block;color:var(--mut2);font-style:italic;font-size:10px;margin-top:2px}
+
+@media (max-width:1100px){
+  .at-greenhorn{grid-template-columns:1fr}
+  .ts-pill{flex-direction:column}
+  .ts-strip{grid-template-columns:repeat(2,1fr)}
+  .ts-final-grid{grid-template-columns:1fr}
+}
+
+/* Keep the legacy data sinks completely out of the visual flow. */
+.legacy-data-sinks{display:none !important}
 </style>
 </head>
 <body>
@@ -317,122 +400,170 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     <span class="pill"        id="src-historical"><span class="pdot"></span><span class="pkey">historical</span><span class="pval">loading</span></span>
   </div>
 
-  <div class="action-row">
-    <div class="action-pill" id="action-pill" data-tone="amber">
-      <div>
-        <div class="label">ATLAS Action State</div>
-        <div class="state" id="action-state">ATLAS ANALYSIS PENDING</div>
-      </div>
-      <div class="verdict-strip">
-        <div class="vstrip-item"><div class="vlbl">Bias Direction</div><div class="vval" id="vstrip-bias">—</div></div>
-        <div class="vstrip-item"><div class="vlbl">Bias Momentum</div><div class="vval" id="vstrip-momentum">—</div></div>
-        <div class="vstrip-item"><div class="vlbl">Trade Probability</div><div class="vval" id="vstrip-prob">—</div></div>
-        <div class="vstrip-item"><div class="vlbl">Trade Status</div><div class="vval" id="vstrip-perm">—</div></div>
-        <div class="vstrip-item"><div class="vlbl">Valid Until</div><div class="vval" id="vstrip-val">—</div></div>
-        <div class="vstrip-item"><div class="vlbl">Reassess</div><div class="vval" id="vstrip-next">—</div></div>
-      </div>
-    </div>
-  </div>
+  <!-- ============================================================
+       SPEC-COMPLIANT VISIBLE SURFACE (always-open)
+       1) CHARTS  →  2) ANALYSED TARGETS  →  3) TRADE STATUS / FINAL ASSESSMENT
+       The collapsibles (Historical / Mechanism / Scenario / Event Intel /
+       Price Matrix / Terminology Index) live below. Source Status / Audit
+       remains as the developer collapsible.
+       ============================================================ -->
 
-  <!-- MARKET READ + FORWARD WATCH (advisory teaching layer) -->
-  <div class="advisory-row" id="market-read-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:14px 22px 0">
-    <div class="fe-card" id="market-read-card">
-      <h3>Market Read</h3>
-      <div id="market-read-body" style="font-size:12px;color:var(--mut2);line-height:1.55">Pending — run <code>!<span class="mr-sym"></span> analyse</code> to generate the Jane packet.</div>
-    </div>
-    <div class="fe-card" id="forward-watch-card">
-      <h3>Forward Watch — Price · Time · Bias · Confidence</h3>
-      <div id="forward-watch-body" style="font-size:12px;color:var(--mut2);line-height:1.55">Pending — Jane will publish the watchlist (price level · time window · bias context · confidence rating) once analysis fires.</div>
-    </div>
-  </div>
-
-  <!-- COREY · INCOREGO contribution (IN / CO / RE / GO) +
-       COREY IMPACT ON JANE +
-       COREY CLONE (second-pass validation; explicit active or unavailable)
-       Corey is a load-bearing input — never a cosmetic OK pill. The
-       renderers in renderFromCtx will downgrade the COREY pill if no
-       contribution is provided, and force the Clone surface to read
-       "unavailable / not implemented" unless the packet explicitly
-       wires Clone validation. -->
-  <div class="advisory-row" id="incorego-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:6px 22px 0">
-    <div class="fe-card" id="incorego-card">
-      <h3>Corey · INCOREGO Contribution</h3>
-      <div id="incorego-summary" style="font-size:12px;color:var(--mut2);line-height:1.55;margin-bottom:10px"></div>
-      <div id="incorego-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
-    </div>
-    <div class="fe-card" id="corey-impact-card">
-      <h3>Corey Impact on Jane</h3>
-      <div id="corey-impact-body" style="font-size:12px;color:var(--mut2);line-height:1.55"></div>
-    </div>
-  </div>
-  <div class="advisory-row" id="corey-clone-row" style="display:grid;grid-template-columns:1fr;gap:12px;padding:6px 22px 0">
-    <div class="fe-card" id="corey-clone-card">
-      <h3>Corey Clone — Second-Pass Validation</h3>
-      <div id="corey-clone-body" style="font-size:12px;color:var(--mut2);line-height:1.55"></div>
-    </div>
-  </div>
-
-  <div class="exec-strip">
-    <div class="es-cell"        ><div class="lbl">Direction</div>      <div class="val" id="es-dir">—</div></div>
-    <div class="es-cell"        ><div class="lbl">Entry</div>          <div class="val" id="es-entry">—</div><div class="sub" id="es-entry-sub"></div></div>
-    <div class="es-cell"        ><div class="lbl">Target / Exit</div>  <div class="val" id="es-target">—</div></div>
-    <div class="es-cell danger" ><div class="lbl">Stop Loss</div>      <div class="val" id="es-stop">—</div></div>
-    <div class="es-cell danger" ><div class="lbl">Extended Stop</div>  <div class="val" id="es-stop-ext">—</div></div>
-    <div class="es-cell dollar" ><div class="lbl">Risk ($)</div>       <div class="val" id="es-risk">—</div><div class="sub" id="es-risk-sub"></div></div>
-    <div class="es-cell target" ><div class="lbl">Target ($)</div>     <div class="val" id="es-tgt-d">—</div></div>
-    <div class="es-cell dollar" ><div class="lbl">Cost ($)</div>       <div class="val" id="es-cost">—</div></div>
-    <div class="es-cell"        ><div class="lbl">Validity</div>       <div class="val" id="es-validity">—</div></div>
-    <div class="es-cell"        ><div class="lbl">Cancellation Trigger</div><div class="val" id="es-cancel">—</div></div>
-    <div class="es-cell"        ><div class="lbl">Next Reassessment</div><div class="val" id="es-next">—</div></div>
-    <div class="es-cell"        ><div class="lbl">Asset Class</div>    <div class="val" id="es-assetclass">—</div></div>
-  </div>
-
-  <!-- CANDIDATE LEVELS (NOT ACTIVE) -->
-  <div class="candidate-row" id="candidate-row">
-    <div class="cand-hd">
-      <span class="cand-title">Candidate Levels</span>
-      <span class="cand-warning">NOT ACTIVE — no live order permitted yet</span>
-    </div>
-    <div class="cand-grid" id="cand-grid"></div>
-  </div>
-
-  <div class="cond-grid" id="cond-grid"></div>
-
-  <div class="fe-tm">
-    <div class="fe-card">
-      <h3>Forward Expectation — Next Session Window</h3>
-      <div id="fe-body"></div>
-    </div>
-    <div class="tm-card">
-      <h3>Trigger Map</h3>
-      <div id="tm-body"></div>
-    </div>
-  </div>
-
-  <nav class="sec-nav" id="sec-nav">
-    <button class="tab active" data-target="sec-charts">CHARTS</button>
-    <button class="tab"        data-target="sec-final">JANE FINAL ASSESSMENT</button>
-    <button class="tab"        data-target="sec-corey">COREY MACRO</button>
-    <button class="tab"        data-target="sec-spidey">SPIDEY STRUCTURE</button>
-    <button class="tab"        data-target="sec-historical">HISTORICAL CONTEXT</button>
-    <button class="tab"        data-target="sec-mechanism">MECHANISM CHAIN</button>
-    <button class="tab"        data-target="sec-scenario">SCENARIO ENGINE</button>
-    <button class="tab"        data-target="sec-events">EVENTS / CALENDAR</button>
-    <button class="tab"        data-target="sec-matrix">MATRIX</button>
-    <button class="tab"        data-target="sec-audit">SOURCE STATUS / AUDIT</button>
-    <button class="tab"        data-target="sec-glossary">GLOSSARY / INDEX</button>
-    <span class="badge">SURFACE COMPRESSED · v3.0</span>
-  </nav>
-
-  <section class="sec-body" id="sec-charts">
+  <section class="sec-body" id="sec-charts" style="padding-top:14px">
     <div class="sec-hd"><h2>CHARTS</h2><span class="sub">HTF: Weekly · Daily · 4H · 1H  ·  LTF: 30M · 15M · 5M · 1M</span></div>
     <div class="chart-grid" id="ch-htf-grid"></div>
     <div style="height:8px"></div>
     <div class="chart-grid" id="ch-ltf-grid"></div>
   </section>
 
+  <section class="sec-body" id="sec-analysed-targets" style="padding-top:0">
+    <div class="sec-hd">
+      <h2>ANALYSED TARGETS</h2>
+      <span class="sub" id="at-headline">No active read yet</span>
+    </div>
+    <div id="at-no-setup" class="at-no-setup" style="display:none">NO VALID BUY OR SELL TARGET IDENTIFIED</div>
+    <table class="at-table" aria-label="Analysed Targets">
+      <colgroup><col class="at-col-label"><col class="at-col-value"></colgroup>
+      <tbody>
+        <tr class="at-row xc-entry">
+          <td class="at-label">ENTRY POINT</td>
+          <td class="at-value"><div class="at-val-main" id="es-entry">—</div><div class="at-val-sub" id="es-entry-sub"></div></td>
+        </tr>
+        <tr class="at-row xc-entry-ext">
+          <td class="at-label">ENTRY EXTENDED</td>
+          <td class="at-value"><div class="at-val-main" id="es-entry-ext">—</div><div class="at-val-sub" id="es-entry-ext-sub"></div></td>
+        </tr>
+        <tr class="at-row xc-exit">
+          <td class="at-label">EXIT POINT</td>
+          <td class="at-value"><div class="at-val-main" id="es-target">—</div><div class="at-val-sub" id="es-target-sub"></div></td>
+        </tr>
+        <tr class="at-row xc-trend">
+          <td class="at-label">TREND</td>
+          <td class="at-value"><div class="at-val-main" id="es-dir">—</div><div class="at-val-sub" id="es-dir-sub"></div></td>
+        </tr>
+        <tr class="at-row xc-neutral" id="at-row-neutral" style="display:none">
+          <td class="at-label">NEUTRAL MARKET — NO BIAS / WAIT / HOLD</td>
+          <td class="at-value"><div class="at-val-main" id="es-neutral">—</div><div class="at-val-sub" id="es-neutral-sub"></div></td>
+        </tr>
+        <tr class="at-row xc-stop">
+          <td class="at-label">SET STOP LOSS</td>
+          <td class="at-value"><div class="at-val-main" id="es-stop">—</div><div class="at-val-sub" id="es-stop-sub"></div></td>
+        </tr>
+        <tr class="at-row xc-stop">
+          <td class="at-label">EXTENDED STOP LOSS</td>
+          <td class="at-value"><div class="at-val-main" id="es-stop-ext">—</div><div class="at-val-sub" id="es-stop-ext-sub"></div></td>
+        </tr>
+        <tr class="at-row xc-warn">
+          <td class="at-label">SELECT ONE STOP LOSS ONLY</td>
+          <td class="at-value"><div class="at-val-main">Use ONE stop, not both.</div><div class="at-val-sub">SET STOP LOSS is the primary protection. EXTENDED STOP LOSS is the wider alternative for higher-noise sessions. Holding both at once is conflicting risk and will be rejected.</div></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="at-greenhorn" id="at-greenhorn"></div>
+  </section>
+
+  <section class="sec-body" id="sec-trade-status" style="padding-top:0">
+    <div class="sec-hd">
+      <h2>TRADE STATUS / FINAL ASSESSMENT</h2>
+      <span class="sub">Final read attached to ANALYSED TARGETS — not a separate tab</span>
+    </div>
+    <div class="ts-pill" id="ts-pill" data-tone="amber">
+      <div class="ts-state-block">
+        <div class="ts-label">ATLAS Action State</div>
+        <div class="ts-state" id="action-state">ATLAS analysis pending</div>
+        <div class="ts-state-sub" id="action-subtitle"></div>
+      </div>
+      <div class="ts-strip">
+        <div class="ts-strip-item"><div class="vlbl">Trade Probability</div><div class="vval" id="vstrip-prob">—</div></div>
+        <div class="ts-strip-item"><div class="vlbl">Entry Status</div><div class="vval" id="vstrip-perm">—</div></div>
+        <div class="ts-strip-item"><div class="vlbl">Setup Quality</div><div class="vval" id="vstrip-quality">—</div></div>
+        <div class="ts-strip-item"><div class="vlbl">Execution Confidence</div><div class="vval" id="vstrip-confidence">—</div></div>
+        <div class="ts-strip-item"><div class="vlbl">Bias Direction</div><div class="vval" id="vstrip-bias">—</div></div>
+        <div class="ts-strip-item"><div class="vlbl">Bias Momentum</div><div class="vval" id="vstrip-momentum">—</div></div>
+        <div class="ts-strip-item"><div class="vlbl">Valid Until</div><div class="vval" id="vstrip-val">—</div></div>
+        <div class="ts-strip-item"><div class="vlbl">Reassess</div><div class="vval" id="vstrip-next">—</div></div>
+      </div>
+    </div>
+    <div class="ts-final-grid">
+      <div class="ts-final-card">
+        <h3>Final read</h3>
+        <div id="final-body" class="ts-final-body">Final assessment will appear once the decision layer publishes a packet for this symbol.</div>
+      </div>
+      <div class="ts-final-card">
+        <h3>Risk &amp; cost</h3>
+        <div class="ts-grid">
+          <div class="ts-k">Risk ($)</div>      <div class="ts-v" id="es-risk">—<span class="ts-v-sub" id="es-risk-sub"></span></div>
+          <div class="ts-k">Target ($)</div>    <div class="ts-v" id="es-tgt-d">—</div>
+          <div class="ts-k">Cost ($)</div>      <div class="ts-v" id="es-cost">—</div>
+          <div class="ts-k">Validity</div>      <div class="ts-v" id="es-validity">—</div>
+          <div class="ts-k">Next reassessment</div><div class="ts-v" id="es-next">—</div>
+          <div class="ts-k">If invalidated</div><div class="ts-v" id="es-cancel">—</div>
+          <div class="ts-k">Asset class</div>   <div class="ts-v" id="es-assetclass">—</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LEGACY DATA SINKS (kept in DOM, hidden from view).
+       These containers retain their data IDs so existing renderFromCtx /
+       Corey contribution / Forward Watch wiring keeps writing into them
+       without throwing. They are NEVER visible to the user; if a future
+       collapsible needs them, route content to it explicitly. -->
+  <div class="legacy-data-sinks" id="legacy-data-sinks" style="display:none" aria-hidden="true">
+    <!-- These elements remain in DOM only so existing JS writers don't
+         throw on getElementById(...). They have NO IDs (the canonical
+         IDs live in the new visible Trade Status / Analysed Targets
+         block). The bodies below DO have IDs because their JS writers
+         expect them; the surrounding wrappers carry the visible-spec
+         section content elsewhere now. -->
+    <div class="legacy-pill"><div class="legacy-state">—</div></div>
+
+    <div class="advisory-row" id="market-read-row">
+      <div class="fe-card"><h3>Market Read</h3><div id="market-read-body"></div></div>
+      <div class="fe-card"><h3>Forward Watch</h3><div id="forward-watch-body"></div></div>
+    </div>
+
+    <div class="advisory-row" id="incorego-row">
+      <div class="fe-card">
+        <h3>Macro context contribution</h3>
+        <div id="incorego-summary"></div>
+        <div id="incorego-grid"></div>
+      </div>
+      <div class="fe-card">
+        <h3>Macro impact on decision</h3>
+        <div id="corey-impact-body"></div>
+      </div>
+    </div>
+    <div class="advisory-row" id="corey-clone-row">
+      <div class="fe-card">
+        <h3>Historical second-pass validation</h3>
+        <div id="corey-clone-body"></div>
+      </div>
+    </div>
+
+    <div class="candidate-row" id="candidate-row">
+      <div class="cand-grid" id="cand-grid"></div>
+    </div>
+
+    <div class="cond-grid" id="cond-grid"></div>
+
+    <div class="fe-tm">
+      <div class="fe-card"><div id="fe-body"></div></div>
+      <div class="tm-card"><div id="tm-body"></div></div>
+    </div>
+  </div>
+
+  <nav class="sec-nav" id="sec-nav">
+    <button class="tab active" data-target="sec-historical">HISTORICAL CONTEXT</button>
+    <button class="tab"        data-target="sec-mechanism">MECHANISM CHAIN</button>
+    <button class="tab"        data-target="sec-scenario">SCENARIO ENGINE</button>
+    <button class="tab"        data-target="sec-events">EVENT INTELLIGENCE</button>
+    <button class="tab"        data-target="sec-matrix">PRICE MATRIX</button>
+    <button class="tab"        data-target="sec-glossary">TERMINOLOGY INDEX</button>
+    <button class="tab"        data-target="sec-audit">SOURCE STATUS / AUDIT</button>
+  </nav>
+
   <section class="sec-body hidden" id="sec-historical">
-    <div class="sec-hd"><h2>HISTORICAL</h2><span class="sub">Auditable analogues · trade-linked · colour-stamped</span></div>
+    <div class="sec-hd"><h2>HISTORICAL CONTEXT ENGINE</h2><span class="sub">Auditable analogues · trade-linked · colour-stamped</span></div>
     <div class="colour-key">
       <div class="ck green"><div class="sw"></div>SUPPORTIVE</div>
       <div class="ck red"  ><div class="sw"></div>ADVERSE</div>
@@ -444,48 +575,42 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   </section>
 
   <section class="sec-body hidden" id="sec-mechanism">
-    <div class="sec-hd"><h2>MECHANISM</h2><span class="sub">Driver → market mechanism → affected instrument → execution implication</span></div>
+    <div class="sec-hd"><h2>MECHANISM CHAIN</h2><span class="sub">Driver → market mechanism → affected instrument → execution implication</span></div>
     <div id="mech-body"></div>
   </section>
 
   <section class="sec-body hidden" id="sec-scenario">
-    <div class="sec-hd"><h2>SCENARIO</h2><span class="sub">Most likely behaviour — continuation / range / reversal</span></div>
+    <div class="sec-hd"><h2>SCENARIO ENGINE</h2><span class="sub">Most likely behaviour — continuation / range / reversal</span></div>
     <div id="scen-body"></div>
   </section>
 
   <section class="sec-body hidden" id="sec-events">
-    <div class="sec-hd"><h2>EVENTS</h2><span class="sub">Catalysts in active window</span></div>
+    <div class="sec-hd"><h2>EVENT INTELLIGENCE</h2><span class="sub">Catalysts in active window</span></div>
     <div id="events-body"></div>
   </section>
 
   <section class="sec-body hidden" id="sec-matrix">
-    <div class="sec-hd"><h2>MATRIX</h2><span class="sub">Cross-symbol price matrix</span></div>
+    <div class="sec-hd">
+      <h2>PRICE MATRIX</h2>
+      <span class="sub">Last 5 unique searches · click a row to reload that symbol</span>
+    </div>
     <div id="matrix-body"></div>
-  </section>
-
-  <section class="sec-body hidden" id="sec-final">
-    <div class="sec-hd"><h2>FINAL READ</h2><span class="sub">Same content as Final Assessment block above. Listed here only for reference.</span></div>
-    <div class="final-banner"><b>NOTE:</b> Final Assessment lives inside Trade Status / Live Plan above. This tab is a duplicate-summary surface only — never the source of truth.</div>
-    <div id="final-body"></div>
-  </section>
-
-  <section class="sec-body hidden" id="sec-corey">
-    <div class="sec-hd"><h2>COREY MACRO</h2><span class="sub">Macro driver read · USD / yields / vol / regime</span></div>
-    <div id="corey-body"></div>
-  </section>
-
-  <section class="sec-body hidden" id="sec-spidey">
-    <div class="sec-hd"><h2>SPIDEY STRUCTURE</h2><span class="sub">HTF / LTF structure · displacement · liquidity</span></div>
-    <div id="spidey-body"></div>
   </section>
 
   <section class="sec-body hidden" id="sec-audit">
     <div class="sec-hd"><h2>SOURCE STATUS / AUDIT</h2><span class="sub">All upstream sources, including pending-implementation</span></div>
     <div id="audit-body"></div>
+    <div class="legacy-data-sinks" style="display:none" aria-hidden="true">
+      <!-- Audit-only data sinks for upstream engine surfaces. Rendered only
+           inside the Source Status / Audit collapsible — not on the primary
+           user surface. -->
+      <div id="corey-body"></div>
+      <div id="spidey-body"></div>
+    </div>
   </section>
 
   <section class="sec-body hidden" id="sec-glossary">
-    <div class="sec-hd"><h2>GLOSSARY / INDEX</h2><span class="sub">Terminology · concept colours · dot scale</span></div>
+    <div class="sec-hd"><h2>TERMINOLOGY INDEX</h2><span class="sub">Terminology · concept colours · dot scale</span></div>
     <div class="colour-key" style="margin-bottom:14px">
       <div class="ck green"><div class="sw"></div>SUPPORTIVE — historical/event reinforces the current setup</div>
       <div class="ck red"  ><div class="sw"></div>ADVERSE — contradicts or invalidates the setup</div>
@@ -827,56 +952,46 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   }
 
   // ─────────────────────────────────────────────────────────────────────
-  // WITHHOLDING — when no Jane packet exists for this symbol, the
-  // execution-decision surface MUST NOT fake values. This function hides
-  // the action-pill, execution strip, candidate-levels, condition grid,
-  // forward expectation, and trigger map sections, replacing them with
-  // a single explicit banner. Charts, header, and source-status row stay.
+  // NO DECISION PACKET YET — when the decision layer has not produced a
+  // packet for this symbol, the visible Trade Status / ANALYSED TARGETS
+  // surfaces must NOT fabricate numbers. This collapses both into one
+  // calm "no read yet" message attached to the Trade Status block. Charts
+  // remain live. Internal-name labels (jane / spidey / corey) are NEVER
+  // surfaced here — only operator-facing language.
   // ─────────────────────────────────────────────────────────────────────
   function renderWithheldExecutionSurface(reason){
-    var hide = function(sel){ document.querySelectorAll(sel).forEach(function(el){ el.style.display = 'none'; }); };
-    hide('.action-row');
-    hide('.exec-strip');
-    hide('.candidate-row');
-    hide('.cond-grid');
-    hide('.fe-tm');
-
+    // Trade Status pill + Analysed Targets table remain in DOM but their
+    // values are flagged as "not identified yet" (see renderFromCtx).
+    var anchor = document.getElementById('sec-trade-status');
+    if (!anchor) return;
+    var existing = document.getElementById('atlas-no-read-banner');
+    if (existing) existing.remove();
     var banner = document.createElement('div');
+    banner.id = 'atlas-no-read-banner';
     banner.className = 'withhold-banner';
+    banner.style.margin = '0 22px 14px';
     banner.innerHTML =
-      '<div class="wb-title">JANE DECISION UNAVAILABLE — EXECUTION DECISION WITHHELD</div>' +
-      '<div class="wb-detail">No Jane packet has been posted for <b>' + activeSymbol + '</b>. ' +
-      'The execution-decision surface (action state, entry, target, stop, candidate levels, condition grid, ' +
-      'forward expectation, trigger map) is intentionally blank. The dashboard will not invent values that ' +
-      'Jane has not produced.</div>' +
-      '<div class="wb-detail" style="margin-top:8px"><b>Reason:</b> ' + escapeHtml(reason || 'no Jane packet for symbol') + '.</div>' +
+      '<div class="wb-title">NO ATLAS READ YET FOR THIS SYMBOL</div>' +
+      '<div class="wb-detail">Charts are live. The decision layer has not produced a read for <b>' + activeSymbol + '</b> yet, ' +
+      'so ANALYSED TARGETS and Trade Status read as "not identified yet". The dashboard never fabricates entry, exit, or stop values.</div>' +
       '<div class="wb-list"><b>To populate this surface:</b>' +
         '<ul>' +
           '<li>Run <code>!' + activeSymbol.toLowerCase() + ' analyse</code> in any FX Bot#3867 channel.</li>' +
-          '<li>The bot computes Corey + Spidey + Jane and POSTs the packet to <code>/load</code> on this service.</li>' +
+          '<li>The bot publishes the read packet to <code>/load</code> on this service.</li>' +
           '<li>This page will pick it up on next reload (or via SSE in a future pass).</li>' +
         '</ul></div>';
-    var anchor = document.querySelector('.action-row');
-    if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(banner, anchor);
-    else document.getElementById('dashboard-root').insertBefore(banner, document.getElementById('dashboard-root').firstChild);
+    anchor.parentNode.insertBefore(banner, anchor);
 
-    // Historical, Mechanism, Scenario, Events, Final Read, Corey, Spidey
-    // tabs are all Jane / upstream-derived. Hide them via the surrounding
-    // nav-tab buttons so the user cannot accidentally read fabricated
-    // content. The inner divs remain in the DOM so renderFromCtx(stub) can
-    // populate them harmlessly (invisibly).
-    //
-    // The Source Status / Audit tab stays VISIBLE — it is the diagnostic
-    // surface for "why is everything withheld", so hiding it would defeat
-    // its purpose.
-    ['sec-historical','sec-mechanism','sec-scenario','sec-events','sec-final','sec-corey','sec-spidey'].forEach(function(secId){
-      var navBtn = document.querySelector('.sec-nav .tab[data-target="' + secId + '"]');
-      if (navBtn) navBtn.style.display = 'none';
+    // Lower collapsibles whose body comes from the decision layer stay
+    // selectable in the nav but their bodies are empty until the packet
+    // arrives. Source Status / Audit and Terminology Index always stay
+    // available — they are diagnostic / reference surfaces.
+    ['sec-historical','sec-mechanism','sec-scenario','sec-events'].forEach(function(secId){
       var sec = document.getElementById(secId);
       if (sec) sec.classList.add('hidden');
     });
 
-    console.warn('[DASHBOARD] jane=withheld reason=' + reason + ' symbol=' + activeSymbol);
+    console.warn('[DASHBOARD] decision_packet=missing reason=' + reason + ' symbol=' + activeSymbol);
   }
 
   // ─────────────────────────────────────────────────────────────────────
@@ -889,38 +1004,27 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   // Charts, header price, source-status row, and audit tab remain visible.
   // ─────────────────────────────────────────────────────────────────────
   function renderAnalysisPendingSurface(reason){
-    var hide = function(sel){ document.querySelectorAll(sel).forEach(function(el){ el.style.display = 'none'; }); };
-    // Keep .action-row visible — the action pill carries the amber
-    // ANALYSIS PENDING state and the bias / probability / status strip.
-    hide('.exec-strip');
-    hide('.candidate-row');
-    hide('.cond-grid');
-    hide('.fe-tm');
-
+    var anchor = document.getElementById('sec-trade-status');
+    if (!anchor) return;
+    var existing = document.getElementById('atlas-no-read-banner');
+    if (existing) existing.remove();
     var banner = document.createElement('div');
+    banner.id = 'atlas-no-read-banner';
     banner.className = 'withhold-banner pending';
+    banner.style.margin = '0 22px 14px';
     banner.innerHTML =
-      '<div class="wb-title">ATLAS ANALYSIS PENDING</div>' +
-      '<div class="wb-detail">Market data is live and charts are ready. The decision layer has not been generated for this symbol yet.</div>' +
-      '<div class="wb-detail" style="margin-top:8px"><b>Next step:</b> Run <code>!' + activeSymbol.toLowerCase() + ' analyse</code> in Discord to generate the Corey + Spidey + Jane packet.</div>' +
-      '<div class="wb-detail" style="margin-top:8px;color:var(--mut)">Reason: ' + escapeHtml(reason || 'no_jane_packet_for_symbol') + '</div>';
-    var anchor = document.querySelector('.action-row');
-    if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(banner, anchor.nextSibling);
-    else document.getElementById('dashboard-root').insertBefore(banner, document.getElementById('dashboard-root').firstChild);
+      '<div class="wb-title">ATLAS READ PENDING</div>' +
+      '<div class="wb-detail">Charts are live. ATLAS has not produced a directional read for <b>' + activeSymbol + '</b> yet — ' +
+      'ANALYSED TARGETS will read as "not identified yet" until the read is published.</div>' +
+      '<div class="wb-detail" style="margin-top:8px"><b>Next step:</b> run <code>!' + activeSymbol.toLowerCase() + ' analyse</code> in Discord to publish the read for this symbol.</div>';
+    anchor.parentNode.insertBefore(banner, anchor);
 
-    // Hide the Jane / Corey / Spidey / Historical / Mechanism / Scenario
-    // / Events tabs until the packet exists. Charts + Audit + Glossary
-    // tabs stay visible so the user can still inspect live OHLC and the
-    // diagnostic source-state surface.
-    ['sec-historical','sec-mechanism','sec-scenario','sec-events','sec-final','sec-corey','sec-spidey'].forEach(function(secId){
-      var navBtn = document.querySelector('.sec-nav .tab[data-target="' + secId + '"]');
-      if (navBtn) navBtn.style.display = 'none';
+    ['sec-historical','sec-mechanism','sec-scenario','sec-events'].forEach(function(secId){
       var sec = document.getElementById(secId);
       if (sec) sec.classList.add('hidden');
     });
 
-    console.warn('[DASHBOARD-STATE] symbol=' + activeSymbol + ' marketData=live janePacket=missing state=analysis_pending');
-    console.warn('[DASHBOARD-STATE] redFailure=false reason=no_jane_packet_but_market_live');
+    console.warn('[DASHBOARD-STATE] symbol=' + activeSymbol + ' marketData=live read=pending');
   }
 
   // Asset-class inference for the chart layer (works without a Jane packet,
@@ -3161,12 +3265,19 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   } // ← close renderFromCtx
 
   // Tab switcher — wired once at IIFE scope (DOM elements always present).
+  // Only nav-controlled collapsibles toggle here; the always-open spec
+  // sections (CHARTS, ANALYSED TARGETS, TRADE STATUS / FINAL ASSESSMENT)
+  // are never hidden by clicking a tab.
+  var ALWAYS_OPEN_SECTIONS = { 'sec-charts':1, 'sec-analysed-targets':1, 'sec-trade-status':1 };
   document.querySelectorAll('.sec-nav .tab').forEach(function(btn){
     btn.addEventListener('click', function(){
       var target = btn.getAttribute('data-target');
       document.querySelectorAll('.sec-nav .tab').forEach(function(b){ b.classList.remove('active'); });
       btn.classList.add('active');
-      document.querySelectorAll('.sec-body').forEach(function(s){ s.classList.add('hidden'); });
+      document.querySelectorAll('.sec-body').forEach(function(s){
+        if (ALWAYS_OPEN_SECTIONS[s.id]) return;
+        s.classList.add('hidden');
+      });
       var el = document.getElementById(target);
       if(el) el.classList.remove('hidden');
     });
