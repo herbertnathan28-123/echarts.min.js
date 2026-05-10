@@ -386,18 +386,17 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
 
 <div id="dashboard-root">
   <!-- SOURCE STATUS ROW -->
+  <!-- Source-status row — operator-facing labels only (engine code-names
+       like the macro/structure/decision/history engines stay in the
+       Source Status / Audit collapsible). The element IDs are unchanged
+       so existing setSourcePill writers keep working. -->
   <div class="src-row" id="src-row">
-    <span class="pill"        id="src-marketData"><span class="pdot"></span><span class="pkey">marketData</span><span class="pval">loading</span></span>
-    <span class="pill"        id="src-corey"     ><span class="pdot"></span><span class="pkey">corey</span><span class="pval">loading</span></span>
-    <!-- CoreyClone is hidden from the operational execution surface until it is
-         actually implemented. Showing a red 'not implemented' pill here makes
-         the desk look like it has a live system failure when CoreyClone simply
-         is not wired yet. Status still emitted to console + visible inside the
-         Source Status / Audit tab. -->
-    <span class="pill"        id="src-coreyClone" style="display:none"><span class="pdot"></span><span class="pkey">coreyClone</span><span class="pval">loading</span></span>
-    <span class="pill"        id="src-spidey"    ><span class="pdot"></span><span class="pkey">spidey</span><span class="pval">loading</span></span>
-    <span class="pill"        id="src-jane"      ><span class="pdot"></span><span class="pkey">jane</span><span class="pval">loading</span></span>
-    <span class="pill"        id="src-historical"><span class="pdot"></span><span class="pkey">historical</span><span class="pval">loading</span></span>
+    <span class="pill"        id="src-marketData"><span class="pdot"></span><span class="pkey">market data</span><span class="pval">loading</span></span>
+    <span class="pill"        id="src-corey"     ><span class="pdot"></span><span class="pkey">macro</span><span class="pval">loading</span></span>
+    <span class="pill"        id="src-coreyClone" style="display:none"><span class="pdot"></span><span class="pkey">history</span><span class="pval">loading</span></span>
+    <span class="pill"        id="src-spidey"    ><span class="pdot"></span><span class="pkey">structure</span><span class="pval">loading</span></span>
+    <span class="pill"        id="src-jane"      ><span class="pdot"></span><span class="pkey">decision</span><span class="pval">loading</span></span>
+    <span class="pill"        id="src-historical"><span class="pdot"></span><span class="pkey">history cache</span><span class="pval">loading</span></span>
   </div>
 
   <!-- ============================================================
@@ -473,20 +472,17 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         <div class="ts-state-sub" id="action-subtitle"></div>
       </div>
       <div class="ts-strip">
-        <div class="ts-strip-item"><div class="vlbl">Trade Probability</div><div class="vval" id="vstrip-prob">—</div></div>
-        <div class="ts-strip-item"><div class="vlbl">Entry Status</div><div class="vval" id="vstrip-perm">—</div></div>
+        <div class="ts-strip-item"><div class="vlbl">Target Status</div><div class="vval" id="vstrip-target-status">—</div></div>
+        <div class="ts-strip-item"><div class="vlbl">Buyer / Seller Control</div><div class="vval" id="vstrip-control">—</div></div>
         <div class="ts-strip-item"><div class="vlbl">Setup Quality</div><div class="vval" id="vstrip-quality">—</div></div>
         <div class="ts-strip-item"><div class="vlbl">Execution Confidence</div><div class="vval" id="vstrip-confidence">—</div></div>
-        <div class="ts-strip-item"><div class="vlbl">Bias Direction</div><div class="vval" id="vstrip-bias">—</div></div>
-        <div class="ts-strip-item"><div class="vlbl">Bias Momentum</div><div class="vval" id="vstrip-momentum">—</div></div>
-        <div class="ts-strip-item"><div class="vlbl">Valid Until</div><div class="vval" id="vstrip-val">—</div></div>
-        <div class="ts-strip-item"><div class="vlbl">Reassess</div><div class="vval" id="vstrip-next">—</div></div>
+        <div class="ts-strip-item"><div class="vlbl">Next Review</div><div class="vval" id="vstrip-next">—</div></div>
       </div>
     </div>
     <div class="ts-final-grid">
       <div class="ts-final-card">
         <h3>Final read</h3>
-        <div id="final-body" class="ts-final-body">Final assessment will appear once the decision layer publishes a packet for this symbol.</div>
+        <div id="final-body" class="ts-final-body">Final assessment will appear once ATLAS publishes a read for this symbol.</div>
       </div>
       <div class="ts-final-card">
         <h3>Risk &amp; cost</h3>
@@ -663,215 +659,11 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     return;
   }
 
-  // STAGED_PLAN — execution-plan staging dictionary used until POST /load
-  // wires real plan context per session. The CHART data layer below is fully
-  // live (TwelveData via the /twelvedata server proxy on this same service).
-  var STAGED_PLAN = {
-    MU: {
-      assetClass: 'equity',
-      lastPrice: 92.40, lastChangePct: -1.85,
-      actionState: 'HOLD — NO ACTIVE TRADE', actionTone: 'amber',
-      biasDirection: 'Neutral / Mixed',
-      biasMomentum: 'Flat',
-      tradeProbability: 1,
-      tradeStatus: 'No active trade signal',
-      tradePermission: 'No active trade signal',
-      validityMinutes: 15,
-      reassessMinutes: 60,
-      direction: 'No directional read yet — macro neutral, structure mixed',
-      entry: 'Pending', entrySub: 'no active order',
-      stopLoss: 'Not yet defined',
-      extendedStopLoss: 'Not yet defined',
-      target: 'Not yet defined',
-      riskDollars: 'No active trade', riskSub: 'no entry / no invalidation',
-      targetDollars: 'No active trade',
-      costDollars: '~$0.05/share spread + commission',
-      cancellation: '15M close > $94.10 confirms bullish path · < $90.20 confirms bearish path',
-      bullishCandidate: {
-        candidateEntryArea: '$94.10 – $94.30',
-        candidateTarget:    '$96.40 (next liquidity cluster)',
-        candidateStop:      '$93.20 (15M close back below within 2 candles)',
-        requirement:        'Becomes valid only after a 15M body close above $94.10 with a fresh demand zone retained on the impulse, AND no high-impact event inside next 2h.'
-      },
-      bearishCandidate: {
-        candidateEntryArea: '$90.20 – $90.00',
-        candidateTarget:    '$87.80 (deeper demand)',
-        candidateStop:      '$91.20 (15M close back above within 2 candles)',
-        requirement:        'Becomes valid only after a 15M body close below $90.20 with a fresh supply zone retained on the impulse, AND no high-impact event inside next 2h.'
-      },
-      grid: { executionAuthority:1, structure:2, liquidityPressure:3, eventRisk:2, sessionEnergy:2, macroAlignment:2, conviction:1, regime:3 },
-      gridNotes: {
-        executionAuthority: 'no clean trigger',
-        structure:          'higher TF mixed',
-        liquidityPressure:  'building toward $94',
-        eventRisk:          'Fed speak inside 36h',
-        sessionEnergy:      'late session drift',
-        macroAlignment:     'neutral',
-        conviction:         'no authorised conviction',
-        regime:             'transition'
-      },
-      gridEffects: {
-        executionAuthority: 'Blocks live entry — no actionable trigger present.',
-        structure:          'Needs a clean 15M / 30M structure break with an imbalance left behind.',
-        liquidityPressure:  'Watch the $94.10 / $90.20 edges — first to break with imbalance retained authorises review.',
-        eventRisk:          'No fresh entry inside 2h of a high-impact catalyst window.',
-        sessionEnergy:      'Late-session drift — expect lower follow-through and more chop.',
-        macroAlignment:     'No directional macro vote — direction must come from structure alone.',
-        conviction:         'No conviction authorisation — system has no clean evidence to risk capital.',
-        regime:             'Transitional regime — false breaks more likely; require closes, not wicks.'
-      },
-      forward: {
-        behaviour: 'Price is expected to stay trapped between $90.20 and $94.10 until one side closes outside the range on a 15M candle. No live entry yet. A clean move only starts if price closes beyond one edge AND leaves a fresh demand or supply imbalance behind.',
-        boundaryUpper: '$94.10',
-        boundaryLower: '$90.20',
-        movement:  'Typical daily move ≈ $2.30/share · seen today ≈ $1.60 · est. remaining ≈ $0.70.',
-        tradability: 'Range absorption — remaining movement most likely wasted in chop between the boundaries unless a 15M close breaks one edge with imbalance retained.',
-        confirmsBullish: '15M body close above $94.10 + fresh demand zone retained on the impulse + no high-impact event inside next 2h.',
-        confirmsBearish: '15M body close below $90.20 + fresh supply zone retained on the impulse + no high-impact event inside next 2h.',
-        keepsBlocked:    'Price held inside $90.20 – $94.10 with no clean displacement, OR a high-impact event scheduled inside ±2h.'
-      },
-      triggers: {
-        bullish: { tf:'15M', level:'$94.10', close:'15M body close above $94.10', supply:'fresh demand zone left behind on the impulse', catalyst:'no high-impact event inside next 2h', invalidation:'15M close back below $93.20 within 2 candles' },
-        bearish: { tf:'15M', level:'$90.20', close:'15M body close below $90.20', supply:'fresh supply zone left behind on the impulse', catalyst:'no high-impact event inside next 2h', invalidation:'15M close back above $91.20 within 2 candles' },
-        noTrade: 'Inside the $90.20–$94.10 range with no clean displacement — no entry, no preempt limits.',
-        timeframeNote: '15M = aggressive intraday confirmation. 1H gives cleaner confirmation but slower triggers.'
-      },
-      historical: [
-        { name:'AI/Semiconductor consolidation pattern (post-rally cooling)', stamp:'amber', sample:'n=14 daily windows since 2024-Q4', timeframe:'1D', relevance:'Memory/semis after concentrated rally', continuation:'Range-bound; 60-70% retest of prior swing low first', confidence:'medium', supports:'context — no directional vote', suggests:'Expect range first, breakout second. Stand aside until a fresh structural break is left.', expires:'When a 15M close beyond $94.10 OR $90.20 is confirmed' },
-        { name:'NVDA earnings sympathy drag (T-3 → T-1)', stamp:'red', sample:'n=8 NVDA cycles 2023-2025', timeframe:'4H', relevance:'MU drifts lower into NVDA earnings windows', continuation:'62.5% drift down before reversal at NVDA print', confidence:'medium-high', supports:'adverse for buyers in T-3 to T-1', suggests:'Heavy short-side pressure if NVDA prints inside next 72h. Long entries are not justified by current evidence.', expires:'NVDA earnings window closes' },
-        { name:'Q-end rebalance reversal window', stamp:'green', sample:'n=12 quarter-end sessions, large-cap semis 2022-2025', timeframe:'1D', relevance:'Quarter-end can drive sharp last-day reversal', continuation:'58% sharp counter-trend close on quarter-end day', confidence:'medium', supports:'supportive only on a quarter-end calendar match', suggests:'If session falls on quarter-end and structure aligns, expect a sharp reversal candle.', expires:'Outside quarter-end ±1 day window' },
-        { name:'Generic "2017 reflation" comparison', stamp:'grey', sample:'unsupported — no clean denominator', timeframe:'unspecified', relevance:'low — different rate regime, different sector composition', continuation:'no audited rate', confidence:'rejected', supports:'neutral — should not influence the desk', suggests:'Disregard. Not a clean analogue.', expires:'n/a — analogue rejected' }
-      ],
-      mechanismDetail: {
-        cause: 'Memory-chip pricing softness combined with NVDA earnings overhang weighs on the broader semi sector.',
-        reaction: 'Investors rotate out of memory names into AI-infrastructure leaders (NVDA, AVGO); MU underperforms the semi index.',
-        impact: 'MU equity drifts within a $90.20–$94.10 band as buyers and sellers wait for the NVDA print and the next FOMC speak.',
-        outcome: 'No clean directional move expected until structure breaks one edge with imbalance retained, OR a high-impact catalyst shifts sentiment.',
-        changes: 'Mechanism flips bullish if AI-capex re-acceleration is confirmed (NVDA beats decisively + raises); flips bearish if memory pricing data prints another month of decline.'
-      },
-      mechanism: 'Memory pricing softness → margin compression risk → sell-side rerating → MU underperforms semi index. Counterforce: AI capex sustained → demand for HBM / DRAM remains structural → margin floor.',
-      scenarioDetail: {
-        primary:      { name:'Range absorption', prob:42, trigger:'Price respects $90.20–$94.10 with no 15M close beyond either edge.', window:'Next 1H close · or until first edge breaks.' },
-        alternative:  { name:'Bullish breakout', prob:38, trigger:'15M body close above $94.10 with fresh demand zone retained.',     window:'Next 4h.' },
-        invalidation: { name:'Bearish breakdown',prob:20, trigger:'15M body close below $90.20 with fresh supply zone retained.',     window:'Next 4h.' }
-      },
-      scenario: { continuation:38, range:42, reversal:20 },
-      events: [
-        { whenISO:'2026-05-08T13:30:00Z', what:'US NFP',         impact:'high',        channel:'rates → yields → growth-stock valuation', mechanism:'Strong print → yields up → growth-stock pressure', preRule:'No new entries inside ±2h of release.',      postRule:'Wait for fresh 15M structure after the print before any entry.', verdict:'BLOCK new entries inside ±2h window' },
-        { whenISO:'2026-05-06T18:00:00Z', what:'FOMC minutes',   impact:'high',        channel:'policy path → real yields',                mechanism:'Hawkish tone → growth-stock pressure',           preRule:'Reduce conviction inside ±1h.',               postRule:'Reassess after the second 15M close post-release.',              verdict:'CAUTION — reduce conviction' },
-        { whenISO:'2026-05-07T21:00:00Z', what:'NVDA earnings',  impact:'medium-high', channel:'sector sympathy / AI capex',               mechanism:'Sector sympathy — MU often drifts pre / reacts post', preRule:'No long entries T-3 to T-1.',                  postRule:'Wait for first 15M structure after the post-release tape.',     verdict:'CAUTION — sympathy risk pre/post' }
-      ],
-      matrix: [
-        { sym:'NVDA',   px:'124.80', chg:'-2.10%', range:'120.40 – 128.10' },
-        { sym:'AMD',    px:'113.20', chg:'-1.40%', range:'110.80 – 116.00' },
-        { sym:'AVGO',   px:'1640.50',chg:'-0.85%', range:'1610 – 1665' },
-        { sym:'SMCI',   px:'42.10',  chg:'-3.20%', range:'40.10 – 44.50' },
-        { sym:'NDX',    px:'21420',  chg:'-1.05%', range:'21200 – 21640' }
-      ]
-    },
-
-    EURUSD: {
-      assetClass: 'fx',
-      lastPrice: 1.07820, lastChangePct: 0.18,
-      actionState: 'ARMED — WAITING FOR CONFIRMATION', actionTone: 'gold',
-      biasDirection: 'Bullish',
-      biasMomentum: 'Building',
-      tradeProbability: 4,
-      tradeStatus: 'Armed — waiting for confirmation',
-      tradePermission: 'Armed — waiting for confirmation',
-      validityMinutes: 15,
-      reassessMinutes: 15,
-      direction: 'Mild USD weakness supports upside — buyers gaining control above 1.0780',
-      entry: '1.07900', entrySub: 'on 15M close above session high with retained demand',
-      stopLoss: '1.07550',
-      extendedStopLoss: '1.07350',
-      target: '1.08600',
-      riskDollars: '$350', riskSub: 'per 1.0 standard lot · 35 pips',
-      targetDollars: '$700',
-      costDollars: '~$8 per 1.0 lot (0.8 pip spread)',
-      cancellation: '15M close back below 1.07780 inside 2 candles — invalidates demand retention',
-      bullishCandidate: {
-        candidateEntryArea: '1.07900 – 1.07950',
-        candidateTarget:    '1.08600 (next liquidity cluster)',
-        candidateStop:      '1.07550 (extended 1.07350)',
-        requirement:        'Active armed setup — fires on 15M body close above session high with fresh demand zone retained on the impulse + no high-impact event inside next 2h.'
-      },
-      bearishCandidate: {
-        candidateEntryArea: '1.07550 – 1.07500',
-        candidateTarget:    '1.07000 (deeper demand)',
-        candidateStop:      '1.07700 (15M close back above within 2 candles)',
-        requirement:        'Activates only if the bullish setup fails — 15M body close below 1.07550 with a fresh supply zone retained on the impulse, AND no high-impact event inside next 2h.'
-      },
-      grid: { executionAuthority:3, structure:4, liquidityPressure:3, eventRisk:2, sessionEnergy:4, macroAlignment:3, conviction:3, regime:3 },
-      gridEffects: {
-        executionAuthority:'Armed — fires on the defined trigger; do not pre-empt.',
-        structure:         'HH/HL on 1H supports the long bias.',
-        liquidityPressure: 'Liquidity cluster at 1.0860 magnetises the move once the trigger fires.',
-        eventRisk:         'NFP in ~36h — reduce conviction inside the ±2h window before the print.',
-        sessionEnergy:     'London session active — best window for the trigger to fire cleanly.',
-        macroAlignment:    'USD soft, yields steady — background tailwind for EURUSD long.',
-        conviction:        'B — actionable with discipline; do not size up.',
-        regime:            'Risk-on lean — supports continuation if the trigger fires.'
-      },
-      gridNotes: {
-        executionAuthority:'armed; awaits trigger',
-        structure:         'HH/HL on 1H',
-        liquidityPressure: 'toward 1.0860 cluster',
-        eventRisk:         'NFP in 36h',
-        sessionEnergy:     'London session',
-        macroAlignment:    'USD soft; yields steady',
-        conviction:        'B — actionable',
-        regime:            'risk-on lean'
-      },
-      forward: {
-        behaviour: 'Price is expected to grind upward toward the 1.0860 liquidity cluster IF the 15M trigger above 1.07900 fires with a fresh demand zone left behind. If the trigger does not fire, expect range absorption between 1.07550 and 1.07900 until London close.',
-        boundaryUpper: '1.07900 (trigger) → 1.08600 (target)',
-        boundaryLower: '1.07550 (stop) → 1.07350 (extended)',
-        movement:  'ATR(14) ≈ 65 pips · seen today ≈ 22 pips · est. remaining ≈ 43 pips.',
-        tradability: 'Tradable upside — if the 15M body close above 1.07900 fires inside the active session, the move into 1.08600 is the working plan. If no trigger fires, remaining movement is absorbed sideways.',
-        confirmsBullish: '15M body close above 1.07900 + fresh demand zone retained on the impulse + no high-impact event inside next 2h.',
-        confirmsBearish: '15M body close below 1.07550 + fresh supply zone retained on the impulse + no high-impact event inside next 2h.',
-        keepsBlocked:    'Price held inside 1.07550 – 1.07900 with no fresh impulse, OR NFP / ECB inside ±2h.'
-      },
-      triggers: {
-        bullish: { tf:'15M', level:'1.07900', close:'15M body close above 1.07900', supply:'fresh demand zone retained on the impulse', catalyst:'no high-impact event inside next 2h', invalidation:'15M close back below 1.07780 within 2 candles' },
-        bearish: { tf:'15M', level:'1.07550', close:'15M body close below 1.07550', supply:'fresh supply zone retained on the impulse', catalyst:'no high-impact event inside next 2h', invalidation:'15M close back above 1.07700 within 2 candles' },
-        noTrade: 'Inside 1.07550 – 1.07900 with no fresh impulse and demand/supply not yet built.',
-        timeframeNote: '15M = aggressive intraday confirmation. 1H gives cleaner confirmation but slower entry.'
-      },
-      historical: [
-        { name:'London-session breakout above session high', stamp:'green', sample:'n=42 EURUSD London sessions 2024', timeframe:'15M', relevance:'directly comparable session profile', continuation:'68% follow-through to next liquidity cluster within 4h', confidence:'medium-high', supports:'supportive of the bullish trigger', suggests:'If the 15M trigger fires before NY open, target 1.0860 stop cluster.', expires:'When London session closes' },
-        { name:'Pre-NFP USD short squeeze (T-1 session)', stamp:'amber', sample:'n=18 NFP windows 2023-2025', timeframe:'1H', relevance:'mixed — outcome depends on prior week price action', continuation:'52% drift continuation pre-print; 48% reversal', confidence:'low-medium', supports:'mixed — do not trade based on this alone', suggests:'Reduce size into NFP window; expect spreads to widen.', expires:'Inside NFP ±2h window' },
-        { name:'Yield-curve disinversion phase EURUSD lift', stamp:'cyan', sample:'n=6 macro phases 2019-2025', timeframe:'1D', relevance:'broad context only', continuation:'EURUSD averages +1.4% in 60 days post-disinversion', confidence:'medium', supports:'context — does not authorise an entry', suggests:'Slow background tailwind for EURUSD long bias.', expires:'When yield curve re-inverts' }
-      ],
-      mechanismDetail: {
-        cause: 'UUP (DXY proxy) score -0.05 bias Neutral — USD softening on the margin without a strong safe-haven bid.',
-        reaction: 'Mild relief flow into EUR from cross flows; yields steady, so carry is not a blocker.',
-        impact: 'Background lift on EURUSD; primary driver is liquidity at 1.0860 cluster waiting to be tested.',
-        outcome: 'If 15M trigger above 1.07900 fires inside London session, the move into 1.0860 stops is the working plan.',
-        changes: 'Mechanism flips bearish if VIX spikes (full safe-haven flight) or NFP prints decisively strong (USD bid). Mechanism strengthens bullish on a sub-50 ISM print.'
-      },
-      mechanism: 'USD softening (UUP score -0.05, bias Neutral) → relief into EUR · VIX elevated but not extreme → no full safe-haven flight · Yield curve normal → carry not a blocker · Net: mild upside fuel until catalyst hits.',
-      scenarioDetail: {
-        primary:      { name:'Bullish breakout', prob:54, trigger:'15M body close above 1.07900 with fresh demand zone retained.', window:'Within active London session.' },
-        alternative:  { name:'Range absorption', prob:30, trigger:'Price held inside 1.07550–1.07900 with no fresh impulse.',     window:'Until London close.' },
-        invalidation: { name:'Bearish breakdown', prob:16, trigger:'15M body close below 1.07550 with fresh supply zone retained.', window:'Within active session.' }
-      },
-      scenario: { continuation:54, range:30, reversal:16 },
-      events: [
-        { whenISO:'2026-05-08T13:30:00Z', what:'US NFP',            impact:'high',   channel:'rates → USD',          mechanism:'Strong print → USD bid → EURUSD pressure',           preRule:'No new entries inside ±2h of release.',         postRule:'Wait for fresh 15M structure after the print before any entry.', verdict:'BLOCK new entries ±2h window' },
-        { whenISO:'2026-05-06T12:45:00Z', what:'ECB Rate Decision', impact:'high',   channel:'EUR rates / forward guidance', mechanism:'Hawkish ECB → EUR support; dovish → EUR sell', preRule:'Reduce conviction inside ±1h.',                postRule:'Reassess after the press conference at 13:30 UTC.',              verdict:'CAUTION — reduce conviction' },
-        { whenISO:'2026-05-07T12:30:00Z', what:'US PPI',            impact:'medium', channel:'inflation impulse',    mechanism:'Inflation read; minor USD impulse',                  preRule:'Trim size into the print.',                     postRule:'Resume normal entry rules after first 15M close.',               verdict:'OPEN — minor impact' }
-      ],
-      matrix: [
-        { sym:'EURUSD', px:'1.07820', chg:'+0.18%', range:'1.07550 – 1.08000' },
-        { sym:'GBPUSD', px:'1.26010', chg:'+0.22%', range:'1.25700 – 1.26210' },
-        { sym:'USDJPY', px:'149.40',  chg:'-0.15%', range:'149.10 – 149.85' },
-        { sym:'AUDUSD', px:'0.66180', chg:'+0.31%', range:'0.65920 – 0.66310' },
-        { sym:'USDCAD', px:'1.36420', chg:'-0.10%', range:'1.36200 – 1.36680' }
-      ]
-    }
-  };
+  // STAGED_PLAN — emptied. The dashboard renders only from real
+  // POST /load packets now. Demo seed data was removed because it
+  // contained user-facing wording the locked dashboard spec bans.
+  // The empty object preserves the lookup signature used elsewhere.
+  var STAGED_PLAN = {};
 
   var activeSymbol = requestedSymbol;
   var chartSymbol  = requestedSymbol;
@@ -913,12 +705,31 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   function setSourcePill(key, value){
     var el = document.getElementById('src-' + key);
     if (!el) return;
-    el.querySelector('.pval').textContent = value || 'unavailable';
+    var raw = String(value == null ? '' : value);
+    // Tone resolution uses the raw internal status string. Try exact
+    // match first, then prefix-up-to-colon, then first word.
+    var tone = STATUS_TONE[raw] || STATUS_TONE[raw.split(':')[0]] || STATUS_TONE[raw.split(/[: ]/)[0]];
     el.classList.remove('ok','partial','warn','fail');
-    var v = String(value || 'unavailable');
-    // Try exact match first, then prefix-up-to-colon, then first word.
-    var tone = STATUS_TONE[v] || STATUS_TONE[v.split(':')[0]] || STATUS_TONE[v.split(/[: ]/)[0]];
     el.classList.add(tone || 'fail');
+    // Map the internal status string to operator-facing copy so banned
+    // tokens (unavailable / withheld / not implemented / authorised /
+    // blocked / packet) NEVER reach the rendered pill value.
+    var label;
+    if (!raw) label = '—';
+    else if (/^live$|^ok$/i.test(raw))                         label = 'LIVE';
+    else if (/^final/i.test(raw))                              label = 'READY';
+    else if (/^confirms/i.test(raw))                           label = 'CONFIRMS';
+    else if (/^pending|loading|awaiting|analysis/i.test(raw))  label = 'PENDING';
+    else if (/^partial/i.test(raw))                            label = 'PARTIAL';
+    else if (/^sample/i.test(raw))                             label = 'SAMPLE';
+    else if (/^degraded/i.test(raw))                           label = 'DEGRADED';
+    else if (/^withheld/i.test(raw))                           label = 'PAUSED';
+    else if (/^conflicts|^no-?match/i.test(raw))               label = 'CONFLICT';
+    else if (/^unavailable/i.test(raw))                        label = 'OFF';
+    else if (/^fail/i.test(raw))                               label = 'OFF';
+    else if (/cache|cached|cache:/.test(raw))                  label = 'CACHED';
+    else                                                       label = raw.toUpperCase().replace(/[_:]/g, ' ').replace(/\b(NOT IMPLEMENTED|WITHHELD|UNAVAILABLE|AUTHORISED|BLOCKED|TRIGGER|PACKET|JANE|COREY|SPIDEY)\b/g, '—');
+    el.querySelector('.pval').textContent = label;
   }
   function setSourceStatusFromPacket(sources){
     var s = sources || {};
@@ -1400,28 +1211,21 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         var janeStatusVal = (ctx.sources && ctx.sources.jane) || 'final';
         console.log('[DASHBOARD] jane=' + janeStatusVal + ' session=' + jane.packet.session_id + ' age=' + jane.ageMs + 'ms');
 
-        // Spec: when jane=withheld:empty_decision_packet, surface a diagnostic
-        // banner above the action pill listing the exact missing fields.
+        // When the upstream returns an incomplete decision payload, show
+        // the operator a calm "read pending" banner above Trade Status.
+        // Internal field names and engine names are kept out of the
+        // user-rendered text — they remain in console diagnostics only.
         if (/^withheld:/.test(janeStatusVal) || /^unavailable:/.test(janeStatusVal)) {
-          var missing = (jane.packet.missingDecisionFields || []).join(', ') || 'all decision fields';
-          var headline = janeStatusVal === 'withheld:empty_decision_packet'
-            ? 'JANE WITHHELD — CORE/SPIDEY STATUS PRESENT BUT DECISION PACKET EMPTY'
-            : (janeStatusVal === 'withheld:source_incomplete'
-                ? 'JANE WITHHELD — SOURCE CHAIN INCOMPLETE'
-                : 'JANE DIAGNOSTIC — ' + janeStatusVal.toUpperCase());
           var diag = document.createElement('div');
-          diag.className = 'withhold-banner';
-          diag.style.borderColor = 'var(--amber-d)';
-          diag.style.background = 'rgba(255,145,0,0.06)';
-          diag.innerHTML = '<div class="wb-title" style="color:var(--amber)">' + headline + '</div>' +
-            '<div class="wb-detail">Jane status: <code>' + janeStatusVal + '</code>. ' +
-            'Source pills above show the upstream chain. The execution-decision packet did not contain enough fields for Jane to issue a real action state.</div>' +
-            '<div class="wb-list"><b>Missing decision fields:</b>' +
-              '<ul>' + (jane.packet.missingDecisionFields || ['actionState','triggerMap','conditionGrid','forwardExpectation','candidates']).map(function(f){ return '<li>' + escapeHtml(f) + '</li>'; }).join('') + '</ul>' +
-            '</div>' +
-            '<div class="wb-detail" style="margin-top:8px"><b>Why this matters:</b> the system shows source statuses present but no Jane decision payload. Re-run <code>!' + activeSymbol.toLowerCase() + ' analyse</code> after the missing engines populate, OR Jane needs to start posting these fields.</div>';
-          var anchor = document.querySelector('.action-row');
+          diag.className = 'withhold-banner pending';
+          diag.style.margin = '0 22px 14px';
+          diag.innerHTML = '<div class="wb-title">ATLAS READ PENDING</div>' +
+            '<div class="wb-detail">Charts are live. ATLAS has not produced a complete read for <b>' + activeSymbol + '</b> yet.</div>' +
+            '<div class="wb-detail" style="margin-top:8px"><b>Next step:</b> re-run <code>!' + activeSymbol.toLowerCase() + ' analyse</code> in Discord. The dashboard will pick up the read on next reload.</div>';
+          var anchor = document.getElementById('sec-trade-status');
           if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(diag, anchor);
+          // Diagnostic detail goes to console only — never the user surface.
+          console.warn('[DASHBOARD] read_status=' + janeStatusVal + ' missingFields=' + ((jane.packet.missingDecisionFields || []).join(',') || 'unknown'));
         }
       } else if (allowFakeMode && STAGED_PLAN[activeSymbol]) {
         ctx = STAGED_PLAN[activeSymbol];
@@ -1466,8 +1270,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
           window.ATLAS.activeSymbol = activeSymbol;
           window.ATLAS.dashboardState = 'analysis_pending';
           renderFromCtx(ctx);
-          document.getElementById('ses-id').textContent =
-            'state=analysis_pending reason=' + reasonCode + ' sourceReason=' + sourceReasonCode;
+          document.getElementById('ses-id').textContent = 'read pending';
           console.log('[DASHBOARD-STATE] symbol=' + activeSymbol +
             ' marketData=live janePacket=missing state=analysis_pending');
           console.log('[DASHBOARD-STATE] redFailure=false reason=no_jane_packet_but_market_live' + diag);
@@ -1482,8 +1285,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
           window.ATLAS.activeSymbol = activeSymbol;
           window.ATLAS.dashboardState = 'true_failure';
           renderFromCtx(ctx);
-          document.getElementById('ses-id').textContent =
-            'jane=' + janeStatus + ' reason=' + reasonCode + ' sourceReason=' + sourceReasonCode;
+          document.getElementById('ses-id').textContent = 'read paused';
           console.warn('[DASHBOARD-STATE] symbol=' + activeSymbol +
             ' state=true_failure redFailure=true reason=' + reasonCode +
             ' sourceReason=' + sourceReasonCode + diag);
@@ -1505,80 +1307,87 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     return {
       assetClass: inferAssetClass(activeSymbol),
       lastPrice: null, lastChangePct: 0,
-      actionState: 'WITHHELD', actionTone: 'red',
-      biasDirection: 'Withheld', biasMomentum: 'Withheld',
-      tradeProbability: 0, tradeStatus: 'Withheld — no Jane packet',
-      tradePermission: 'Withheld — no Jane packet',
+      actionState: 'ATLAS analysis pending', actionTone: 'amber',
+      biasDirection: 'Neutral', biasMomentum: 'Steady',
+      tradeProbability: 0,
+      tradeStatus: 'No active read yet',
+      tradePermission: 'No active read yet',
       validityMinutes: 15, reassessMinutes: 60,
-      direction: 'Withheld',
-      entry: 'Withheld', entrySub: 'no Jane packet',
-      stopLoss: 'Withheld', extendedStopLoss: 'Withheld', target: 'Withheld',
-      riskDollars: 'Withheld', riskSub: '', targetDollars: 'Withheld',
-      costDollars: 'Withheld', cancellation: 'Withheld',
+      direction: '',
+      entry: null, entrySub: '',
+      stopLoss: null, extendedStopLoss: null, target: null,
+      riskDollars: null, riskSub: '', targetDollars: null,
+      costDollars: '—', cancellation: 'No active read to invalidate yet',
       bullishCandidate: null, bearishCandidate: null,
       grid: { executionAuthority:0, structure:0, liquidityPressure:0, eventRisk:0, sessionEnergy:0, macroAlignment:0, conviction:0, regime:0 },
       gridNotes: {}, gridEffects: {},
-      forward: { behaviour:'Withheld — no Jane packet for this symbol.' },
-      triggers: { bullish:null, bearish:null, noTrade:'Withheld', timeframeNote:'Withheld' },
+      forward: { behaviour:'No active read for this symbol yet.' },
+      triggers: { bullish:null, bearish:null, noTrade:'', timeframeNote:'' },
       historical: [], mechanism: '', mechanismDetail: null,
       scenario: { continuation:0, range:0, reversal:0 }, scenarioDetail: null,
       events: [], matrix: [],
-      sources: { jane:'unavailable', corey:'unavailable', spidey:'unavailable', historical:'unavailable', coreyClone:'unavailable: not implemented' }
+      sources: { jane:'pending', corey:'pending', spidey:'pending', historical:'pending', coreyClone:'pending' }
     };
   }
 
-  // Pending stub — used when state=analysis_pending. Action pill stays
-  // amber with text "ATLAS ANALYSIS PENDING". The deep execution surface
-  // is hidden by renderAnalysisPendingSurface; renderFromCtx still runs
-  // so the chart layer fires + populates the (hidden) DOM nodes safely.
+  // Pending stub — used when state=analysis_pending. The Trade Status
+  // pill stays amber with operator copy. Deep ANALYSED TARGETS rows
+  // resolve to "Not identified yet" via valOrNotId in renderFromCtx.
   function pendingStub(){
     return {
       assetClass: inferAssetClass(activeSymbol),
       lastPrice: null, lastChangePct: 0,
-      actionState: 'ATLAS ANALYSIS PENDING', actionTone: 'amber',
-      biasDirection: 'Pending analysis',
-      biasMomentum: 'Pending analysis',
+      actionState: 'ATLAS analysis pending', actionTone: 'amber',
+      biasDirection: 'Neutral',
+      biasMomentum: 'Steady',
       tradeProbability: 0,
-      tradeStatus: 'Awaiting Jane packet',
-      tradePermission: 'Awaiting Jane packet',
+      tradeStatus: 'No active read yet',
+      tradePermission: 'No active read yet',
       validityMinutes: 15, reassessMinutes: 60,
-      direction: 'Pending — run !' + activeSymbol.toLowerCase() + ' analyse to generate the Jane packet',
-      entry: 'Pending', entrySub: 'no Jane packet generated yet',
-      stopLoss: 'Pending', extendedStopLoss: 'Pending', target: 'Pending',
-      riskDollars: 'Pending', riskSub: '', targetDollars: 'Pending',
-      costDollars: 'Pending', cancellation: 'Pending',
+      direction: '',
+      entry: null, entrySub: '',
+      stopLoss: null, extendedStopLoss: null, target: null,
+      riskDollars: null, riskSub: '', targetDollars: null,
+      costDollars: '—', cancellation: 'No active read to invalidate yet',
       bullishCandidate: null, bearishCandidate: null,
       grid: { executionAuthority:0, structure:0, liquidityPressure:0, eventRisk:0, sessionEnergy:0, macroAlignment:0, conviction:0, regime:0 },
       gridNotes: {}, gridEffects: {},
-      forward: { behaviour:'Decision layer pending. Charts and live market data are streaming.' },
-      triggers: { bullish:null, bearish:null, noTrade:'Pending', timeframeNote:'Pending' },
+      forward: { behaviour:'Charts are live. ATLAS read pending.' },
+      triggers: { bullish:null, bearish:null, noTrade:'', timeframeNote:'' },
       historical: [], mechanism: '', mechanismDetail: null,
       scenario: { continuation:0, range:0, reversal:0 }, scenarioDetail: null,
       events: [], matrix: [],
-      sources: { jane:'pending', corey:'pending', spidey:'pending', historical:'pending', coreyClone:'unavailable: not implemented' }
+      sources: { jane:'pending', corey:'pending', spidey:'pending', historical:'pending', coreyClone:'pending' }
     };
   }
 
-  // Adapter: Jane packet (server shape) → ctx (renderer shape).
+  // Adapter: read packet (server shape) → ctx (renderer shape).
   // Tolerates partial packets — missing fields fall through to the existing
   // renderer's own null-safe handling.
   //
-  // Wording standard:
-  //   - No "authorised" / "permission" language. Replaced with advisory
-  //     wording (HOLD / OBSERVE / ENGAGE / TRIGGER / NO ENTRY / etc.).
-  //   - Trade Probability is a 1–5 integer scale (0 = withheld).
-  //   - Bias Direction + Bias Momentum are independent fields.
-  //   - Market Read summarises the current condition; Forward Watch lists
-  //     the price/time/bias/confidence triggers to watch next.
+  // Wording standard (locked dashboard spec):
+  //   - No "authorised" / "permission" / "trigger" / "blocked" / "withheld"
+  //     language reaches the user surface. Internal action-state values are
+  //     translated to operator copy here and re-checked downstream.
+  //   - Verdict strip = Target Status / Buyer-Seller Control / Setup Quality
+  //     / Execution Confidence / Next Review.
   function remapAdvisory(state){
     if (!state) return 'HOLD — NO ACTIVE TRADE';
     var s = String(state);
-    // Backward-compat remap of legacy "authorised" wording.
-    s = s.replace(/ENTRY AUTHORISED/gi, 'ENTRY TRIGGERED')
-         .replace(/AUTHORISED/gi, 'TRIGGERED')
-         .replace(/NOT AUTHORISED/gi, 'NO ENTRY')
-         .replace(/WAIT\s*[—-]\s*NO TRADE/gi, 'HOLD — NO ACTIVE TRADE')
-         .replace(/PERMISSION/gi, 'STATUS');
+    // Translate internal enum strings to operator-facing copy.
+    s = s.replace(/ENTRY[ _]AUTHORIS(ED|E)/gi,        'ENTRY CONFIRMED')
+         .replace(/ENTRY[ _]AUTHORIZ(ED|E)/gi,        'ENTRY CONFIRMED')
+         .replace(/AUTHORIS(ED|E)/gi,                  'CONFIRMED')
+         .replace(/AUTHORIZ(ED|E)/gi,                  'CONFIRMED')
+         .replace(/NOT[ _]CONFIRMED/gi,                'NO ENTRY')
+         .replace(/WAIT\s*[—-]\s*NO TRADE/gi,         'HOLD — NO ACTIVE TRADE')
+         .replace(/PERMISSION/gi,                      'STATUS')
+         .replace(/PERMITTED/gi,                       'AVAILABLE')
+         .replace(/BLOCKED/gi,                         'PAUSED')
+         .replace(/WITHHELD[ _]?[A-Z]*/gi,             'NO ACTIVE READ')
+         .replace(/WAITING\s+FOR\s+TRIGGER/gi,         'WAITING FOR CONFIRMATION')
+         .replace(/\bTRIGGERED\b/gi,                   'CONFIRMED')
+         .replace(/\bTRIGGERS?\b/gi,                   'CONFIRMATION');
     return s;
   }
   function janePacketToCtx(p){
@@ -1590,15 +1399,15 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       lastChangePct: p.lastChangePct != null ? p.lastChangePct : 0,
       actionState: actionState,
       actionTone:  p.actionTone  || (
-        /TRIGGERED|CONFIRMED|ENGAGE/i.test(actionState) ? 'green'
-        : /ARMED|TRIGGER|OBSERV/i.test(actionState) ? 'gold'
+        /CONFIRMED|ENGAGE/i.test(actionState) ? 'green'
+        : /ARMED|OBSERV/i.test(actionState) ? 'gold'
         : /HOLD|PENDING/i.test(actionState) ? 'amber'
         : 'red'),
       biasDirection: p.biasDirection || p.bias || 'Neutral',
       biasMomentum:  p.biasMomentum  || 'Steady',
       tradeProbability: (p.tradeProbability != null) ? Math.max(0, Math.min(5, parseInt(p.tradeProbability,10) || 0)) : 0,
-      tradeStatus:     p.tradeStatus     || p.tradePermission || 'No active trade signal',
-      tradePermission: p.tradePermission || p.tradeStatus     || 'No active trade signal',
+      tradeStatus:     remapAdvisory(p.tradeStatus     || p.tradePermission || 'No active read yet'),
+      tradePermission: remapAdvisory(p.tradePermission || p.tradeStatus     || 'No active read yet'),
       marketRead:      p.marketRead      || null,
       forwardWatch:    p.forwardWatch    || null,
       coreyContribution: p.coreyContribution || p.incorego || null,
@@ -1730,12 +1539,19 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     conviction:         { chip:'AMBER', state:'INSUFFICIENT',                     note:'Not enough evidence for a live order.',                               effect:'Stand aside until evidence stacks.' },
     regime:             { chip:'GOLD',  state:'NEUTRAL / UNCLASSIFIED FOR TRADE', note:'Regime is not driving a valid setup.',                                effect:'No regime-coherent edge present.' }
   };
+  // CLEAN_NO_TRADE_SUBTITLE — operator-facing copy ONLY. No engine
+  // narration, no "authorised" / "trigger" / "Jane" / "Corey" / "Spidey".
+  var biasWord = (function(){
+    var b = String(ctx.biasDirection || 'neutral').toLowerCase();
+    if (/bull|long|up\b|buy/.test(b))         return 'buyers slightly favoured';
+    if (/bear|short|down\b|sell/.test(b))     return 'sellers slightly favoured';
+    if (/neutral|mixed|flat|range/.test(b))   return 'balanced';
+    return 'unclear';
+  })();
   var CLEAN_NO_TRADE_SUBTITLE =
-    'No trade-quality setup is authorised at this time. ' +
-    'Market data is live. Corey and Spidey are active. ' +
-    'Jane has issued ' + ((ctx.sources && ctx.sources.jane) || 'final:no_trade') +
-    ' because bias is ' + (String(ctx.biasDirection || 'neutral').toLowerCase()) +
-    ' and no approved entry trigger / candidate level is present.';
+    'ATLAS has not identified a valid buy or sell target on this symbol. ' +
+    'Market data is live; the read is calm-stood-down because price action is ' + biasWord + ' ' +
+    'and no confirmation level has been established. Reassess at the next review time.';
 
   // ---------- Trade Status / Final Assessment pill + verdict strip ----------
   // Strip carries: Trade Probability, Entry Status, Setup Quality,
@@ -1767,26 +1583,68 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   var subEl = document.getElementById('action-subtitle');
   if (subEl) subEl.textContent = (COMPRESSION === 'clean_no_trade') ? CLEAN_NO_TRADE_SUBTITLE : '';
 
-  setText('vstrip-bias',     ctx.biasDirection || 'Neutral');
-  setText('vstrip-momentum', ctx.biasMomentum || 'Steady');
+  // Compute hasValidEntry EARLY so the verdict strip can use it for the
+  // Target Status field (later code re-uses the same constant).
+  var hasValidEntry = ctx.entry != null && ctx.entry !== 'Pending' && ctx.entry !== 'Withheld' &&
+                      String(ctx.entry).trim() !== '' && String(ctx.entry).trim() !== '—';
+
+  // Five-field verdict strip (locked dashboard wording standard):
+  //   Target Status / Buyer-Seller Control / Setup Quality /
+  //   Execution Confidence / Next Review.
+  // No "Trade Probability", "Entry Status", "Bias", "Validity", "Reassess",
+  // "Permission" labels (all banned per spec).
   var pn = parseInt(ctx.tradeProbability, 10) || 0;
-  setText('vstrip-prob',     (pn > 0 ? pn : '—') + ' / 5');
-  setText('vstrip-perm',     ctx.tradeStatus || ctx.tradePermission || 'No active read yet');
+  // Target Status — what the ANALYSED TARGETS read currently is.
+  // Sourced from ctx.targetStatus / ctx.tradeStatus, otherwise derived
+  // from whether a valid entry exists.
+  var targetStatus = ctx.targetStatus || ctx.target_status || ctx.tradeStatus || '';
+  if (!targetStatus){
+    targetStatus = hasValidEntry
+      ? 'Active read'
+      : (pn >= 3 ? 'Building' : 'No valid target identified yet');
+  }
+  // Sanitise — never allow banned terms to surface here even if upstream sends them.
+  targetStatus = String(targetStatus)
+    .replace(/withheld[^\.]*$/i, 'No valid target identified yet')
+    .replace(/\bauthoris(ed|e)\b/ig, 'confirmed')
+    .replace(/\bauthoriz(ed|e)\b/ig, 'confirmed')
+    .replace(/\bpermitted\b/ig, 'available')
+    .replace(/\bblocked\b/ig, 'paused')
+    .replace(/\btrigger(ed|s)?\b/ig, 'confirmation');
+
+  // Buyer / Seller Control — directional descriptor sourced from
+  // ctx.bias (or biasDirection / momentum), translated to operator copy.
+  var bias = String(ctx.biasDirection || '').toLowerCase();
+  var control = ctx.buyerSellerControl || ctx.controlState || '';
+  if (!control){
+    if (/bull|long|up\b|buy/.test(bias))      control = 'Buyers in control';
+    else if (/bear|short|down\b|sell/.test(bias)) control = 'Sellers in control';
+    else if (/neutral|mixed|flat|range/.test(bias)) control = 'Balanced — neither side in control';
+    else control = '—';
+  }
   // Setup Quality + Execution Confidence — derived from ctx if present,
-  // otherwise neutral fallback. These replace the old "permission" label.
-  var sq = ctx.setupQuality || ctx.setup_quality || (pn >= 4 ? 'High' : pn >= 3 ? 'Medium' : pn >= 1 ? 'Low' : '—');
-  var ec = ctx.executionConfidence || ctx.execution_confidence || (pn >= 4 ? 'High' : pn >= 3 ? 'Medium' : pn >= 1 ? 'Low' : '—');
-  setText('vstrip-quality',    sq);
-  setText('vstrip-confidence', ec);
-  setText('vstrip-val',        validityStr);
-  setText('vstrip-next',       reassessStr);
+  // otherwise neutral fallback. Banned-token sanitiser applied.
+  function cleanQual(v, derived){
+    var s = String(v == null ? '' : v).trim();
+    if (!s) return derived;
+    return s.replace(/\bwithheld\b/ig, '—')
+            .replace(/\bauthoris(ed|e)\b/ig, 'confirmed')
+            .replace(/\bblocked\b/ig, 'paused');
+  }
+  var sq = cleanQual(ctx.setupQuality || ctx.setup_quality, (pn >= 4 ? 'High' : pn >= 3 ? 'Medium' : pn >= 1 ? 'Low' : '—'));
+  var ec = cleanQual(ctx.executionConfidence || ctx.execution_confidence, (pn >= 4 ? 'High' : pn >= 3 ? 'Medium' : pn >= 1 ? 'Low' : '—'));
+
+  setText('vstrip-target-status', targetStatus);
+  setText('vstrip-control',       control);
+  setText('vstrip-quality',       sq);
+  setText('vstrip-confidence',    ec);
+  setText('vstrip-next',          reassessStr);
 
   // ---------- ANALYSED TARGETS values + sub-context ----------
   // Sub rows carry the per-row Greenhorn context (cancel + reassess
   // wording). Where ctx provides direct fields they are used; otherwise
   // a calm "not identified yet" fallback is used. NEVER fake numbers.
-  var hasValidEntry = ctx.entry != null && ctx.entry !== 'Pending' && ctx.entry !== 'Withheld' &&
-                      String(ctx.entry).trim() !== '' && String(ctx.entry).trim() !== '—';
+  // (hasValidEntry was computed above the verdict strip.)
   var notId = 'Not identified yet';
 
   function valOrNotId(raw){
@@ -2868,7 +2726,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       srcTxt.textContent = (blockedCount === 0) ? 'DATA · LIVE' : 'DATA · LIVE (' + liveCount + '/' + (liveCount + blockedCount) + ')';
     } else {
       src.className = 'src fail';
-      srcTxt.textContent = 'DATA · UNAVAILABLE';
+      srcTxt.textContent = 'DATA · OFF';
     }
 
     // Source-status row — flip the marketData pill the moment the chart layer
@@ -2993,12 +2851,12 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
             hdChg.classList.add(pct >= 0 ? 'pos' : 'neg');
             console.log('[HEADER-CHG] symbol=' + activeSymbol + ' baseline=prevClose prevClose=' + prevClose + ' current=' + raw + ' pct=' + pct.toFixed(2) + '%');
           } else {
-            hdChg.textContent = 'change unavailable';
+            hdChg.textContent = '—';
             hdChg.classList.remove('pos','neg');
             console.warn('[HEADER-CHG] symbol=' + activeSymbol + ' baseline=missing prevClose=' + prevClose + ' status=suppressed');
           }
         } else if (raw != null) {
-          hdChg.textContent = 'change unavailable';
+          hdChg.textContent = '—';
           hdChg.classList.remove('pos','neg');
           console.warn('[HEADER-CHG] symbol=' + activeSymbol + ' baseline=missing daily=' + (daily ? daily.length : 'null') + ' status=suppressed');
         }
@@ -3156,12 +3014,12 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   // and otherwise emit a structured withheld block that names the upstream
   // source and the exact missing field — never an empty pane on a live screen.
   function structuredWithheldCard(title, sourceLabel, sourceVal, missing){
-    var statusTxt = sourceVal ? String(sourceVal) : 'unavailable';
-    return '<div class="withhold-banner" style="margin:0">' +
-      '<div class="wb-title">' + escapeHtml(title) + ' WITHHELD</div>' +
-      '<div class="wb-detail"><b>Source:</b> ' + escapeHtml(sourceLabel) + ' · status <code>' + escapeHtml(statusTxt) + '</code></div>' +
-      '<div class="wb-detail" style="margin-top:6px"><b>Missing:</b> ' + escapeHtml(missing) + '</div>' +
-      '<div class="wb-detail" style="margin-top:8px;color:var(--mut2);font-style:italic">Pending — this section will populate once the upstream source posts the required fields.</div>' +
+    // Operator-facing — never surfaces banned tokens (withheld /
+    // unavailable / authorised / etc.). Diagnostic detail goes to the
+    // Source Status / Audit collapsible, not here.
+    return '<div class="withhold-banner pending" style="margin:0">' +
+      '<div class="wb-title">' + escapeHtml(title) + ' — PENDING</div>' +
+      '<div class="wb-detail" style="color:var(--mut2);font-style:italic">This section populates once the read for this symbol is published.</div>' +
       '</div>';
   }
   function kvBlock(rows){
@@ -3510,21 +3368,24 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   // wording regressions surface immediately.
   // ============================================================
   (function installQa(){
-    // Banned terms — case-insensitive. The label "Trade Probability"
-    // is intentionally NOT in this list because the dashboard spec
-    // authorises it as a column header on the verdict strip; the
-    // narrative phrasing "trade probability is …" is still flagged
-    // by 'probability low' / 'no clear edge'.
+    // Banned user-facing terms (locked dashboard wording standard).
+    // "Trade Probability" is in the list — Nathan rejected it as a
+    // user-facing label. The verdict strip uses Target Status /
+    // Buyer-Seller Control / Setup Quality / Execution Confidence /
+    // Next Review instead.
     var BANNED = [
       'trigger','authorised','authorized','permitted','permission',
       'blocked','withheld','no clear edge','probability low',
-      'trade range','execution map',
+      'trade probability','trade range','execution map',
       'no_jane_packet','sourcereason','packet','unavailable',
       'incomplete','not implemented',
       'corey clone','corey','spidey','jane'
     ];
-    // Collapsibles that are allowed to surface engine names (audit/dev only).
-    var DEV_ONLY_IDS = { 'sec-audit':1, 'src-row':1, 'legacy-data-sinks':1 };
+    // Engine names (corey/spidey/jane/etc.) are allowed only in the
+    // Source Status / Audit collapsible and inside the hidden legacy
+    // data sinks. The src-row is now operator-friendly and gets
+    // scanned like the rest of the visible surface.
+    var DEV_ONLY_IDS = { 'sec-audit':1, 'legacy-data-sinks':1 };
     function isInDevOnly(node){
       while (node && node !== document.body){
         if (node.id && DEV_ONLY_IDS[node.id]) return true;
