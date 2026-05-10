@@ -216,15 +216,19 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
 .chart-pane .tf-tag{position:absolute;top:6px;left:8px;font-size:9px;letter-spacing:2px;color:var(--gold);font-weight:700}
 .chart-pane .sym-tag{position:absolute;top:6px;right:8px;font-size:9px;letter-spacing:2px;color:var(--fg);font-weight:700;font-family:"SF Mono",monospace}
 .chart-pane svg{width:100%;height:100%;opacity:0.85}
-/* Per-pane right-side price boxes — LOCKED CLAUDE.md hex colours.
+/* Per-pane right-side price boxes — LOCKED dashboard-spec hex colours.
    Each pane carries its own independent state (no shared CSS class
-   instance), and the colours never derive dynamically. */
+   instance), and the colours never derive dynamically. ENTRY does NOT
+   appear in the chart ladder (per spec it belongs in ANALYSED TARGETS
+   only). */
 .chart-pane .price-box-stack{position:absolute;top:0;right:0;bottom:0;width:0;pointer-events:none;z-index:55}
 .chart-pane .price-box{position:absolute;right:0;font-family:"SF Mono",Menlo,Consolas,monospace;font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 6px;transform:translateY(-50%);box-shadow:-1px 0 0 rgba(0,0,0,0.45);white-space:nowrap;pointer-events:none;border-radius:0 0 0 1px}
-.chart-pane .price-box.high   {background:#FFD600;color:#000000}
-.chart-pane .price-box.current{background:#00FF5A;color:#000000}
-.chart-pane .price-box.entry  {background:#FF9100;color:#000000}
-.chart-pane .price-box.low    {background:#00B0FF;color:#FFFFFF}
+.chart-pane .price-box.high   {background:#2962ff;color:#ffffff}
+.chart-pane .price-box.ask    {background:#b22833;color:#ffffff}
+.chart-pane .price-box.current{background:#66bb6a;color:#000000}
+.chart-pane .price-box.bid    {background:#ffee58;color:#000000}
+.chart-pane .price-box.prev   {background:#fb8c00;color:#000000}
+.chart-pane .price-box.low    {background:#2962ff;color:#ffffff}
 
 .hist-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .hist-card{background:var(--cell);border:1px solid var(--line2);border-left:3px solid var(--mut);border-radius:3px;padding:14px}
@@ -273,6 +277,89 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   .fe-tm{grid-template-columns:1fr}
   .chart-grid{grid-template-columns:repeat(2,1fr)}
 }
+
+/* ============================================================
+   ANALYSED TARGETS — two-column institutional table directly under
+   the charts. Always-open per dashboard spec. Row left-borders use
+   the locked colour map.
+   ============================================================ */
+.at-table{width:calc(100% - 44px);margin:0 22px 14px;border-collapse:separate;border-spacing:0;background:var(--bg2);border:1px solid var(--line2);border-radius:4px;overflow:hidden;font-size:13px}
+.at-table .at-row td{padding:14px 16px;vertical-align:top;border-bottom:1px solid var(--line)}
+.at-table .at-row:last-child td{border-bottom:0}
+.at-table colgroup col.at-col-label{width:32%;min-width:240px}
+.at-table .at-label{font-size:11px;letter-spacing:2px;color:var(--mut);text-transform:uppercase;font-weight:700;font-family:"SF Mono",monospace;border-left:3px solid var(--line2);padding-left:14px}
+.at-table .at-value .at-val-main{font-family:"SF Mono",monospace;font-size:14px;font-weight:700;color:var(--fg);line-height:1.4}
+.at-table .at-value .at-val-sub{font-size:11px;color:var(--mut2);margin-top:4px;line-height:1.5;font-style:italic}
+/* Row colour map (LOCKED, dashboard spec):
+     Entry           = green  (#00b450 via --green)
+     Entry Extended  = orange (#FF9100 via --amber)
+     Exit Point      = red    (#ff0015 via --red)
+     Trend           = yellow (#FFD600 via --gold)
+     Neutral         = grey
+     Stop Loss       = red
+     Warning         = yellow
+*/
+.at-table .at-row.xc-entry      .at-label{border-left-color:var(--green)}
+.at-table .at-row.xc-entry-ext  .at-label{border-left-color:var(--amber)}
+.at-table .at-row.xc-exit       .at-label{border-left-color:var(--red)}
+.at-table .at-row.xc-trend      .at-label{border-left-color:var(--gold)}
+.at-table .at-row.xc-neutral    .at-label{border-left-color:var(--mut)}
+.at-table .at-row.xc-stop       .at-label{border-left-color:var(--red)}
+.at-table .at-row.xc-warn       .at-label{border-left-color:var(--gold)}
+
+.at-no-setup{margin:0 22px 12px;padding:14px 16px;border:2px dashed var(--mut);border-radius:4px;background:var(--bg2);font-family:"SF Mono",monospace;font-size:13px;letter-spacing:2px;font-weight:800;color:var(--mut2);text-transform:uppercase;text-align:center}
+.at-headline{font-size:11px;color:var(--mut2);letter-spacing:1px}
+
+.at-greenhorn{margin:0 22px 14px;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.gh-card{background:var(--cell);border:1px solid var(--line2);border-left:3px solid var(--mut);border-radius:3px;padding:10px 12px;font-size:11px;line-height:1.55;color:var(--mut2)}
+.gh-card .gh-row-label{display:block;font-size:10px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;font-weight:800;margin-bottom:4px}
+.gh-card .gh-line{display:block;margin:3px 0}
+.gh-card .gh-k{color:var(--mut);font-weight:700;letter-spacing:1px;text-transform:uppercase;font-size:9px;margin-right:6px}
+.gh-card .gh-v{color:var(--fg)}
+
+/* ============================================================
+   TRADE STATUS / FINAL ASSESSMENT — merged block (replaces the
+   old separate Final Read tab and the action-row pill).
+   Always-open. Attached visually to the ANALYSED TARGETS section
+   above so the entry / exit / stop / validity / next reassessment
+   answer is read in one continuous surface.
+   ============================================================ */
+.ts-pill{display:flex;align-items:flex-start;gap:18px;padding:18px 22px;margin:0 22px 12px;border-radius:6px;border:1px solid var(--line2);background:var(--cell)}
+.ts-pill .ts-state-block{flex:1;min-width:0}
+.ts-pill .ts-label{font-size:10px;letter-spacing:3px;color:var(--mut);text-transform:uppercase;font-weight:700;margin-bottom:6px}
+.ts-pill .ts-state{font-size:24px;font-weight:900;letter-spacing:2px;font-family:"SF Mono",monospace;color:var(--fg);line-height:1.2}
+.ts-pill .ts-state-sub{font-size:12px;color:var(--mut2);margin-top:8px;line-height:1.55;max-width:680px}
+.ts-pill[data-tone="green"]{border-color:var(--green-d);background:linear-gradient(90deg,rgba(0,180,80,0.10) 0%,var(--cell) 60%)}
+.ts-pill[data-tone="green"] .ts-state{color:var(--green)}
+.ts-pill[data-tone="gold"]{border-color:var(--gold-d);background:linear-gradient(90deg,rgba(255,214,0,0.08) 0%,var(--cell) 60%)}
+.ts-pill[data-tone="gold"] .ts-state{color:var(--gold)}
+.ts-pill[data-tone="amber"]{border-color:var(--amber-d);background:linear-gradient(90deg,rgba(255,145,0,0.08) 0%,var(--cell) 60%)}
+.ts-pill[data-tone="amber"] .ts-state{color:var(--amber)}
+.ts-pill[data-tone="red"]{border-color:var(--red-d);background:linear-gradient(90deg,rgba(255,0,21,0.10) 0%,var(--cell) 60%)}
+.ts-pill[data-tone="red"] .ts-state{color:var(--red)}
+.ts-strip{display:grid;grid-template-columns:repeat(4,minmax(120px,auto));gap:14px 22px;align-content:start}
+.ts-strip .ts-strip-item{display:flex;flex-direction:column;gap:3px;font-size:10px;letter-spacing:1.5px;text-transform:uppercase}
+.ts-strip .vlbl{color:var(--mut)}
+.ts-strip .vval{color:var(--fg);font-weight:700;font-family:"SF Mono",monospace;font-size:12px;letter-spacing:1px}
+
+.ts-final-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 22px 14px}
+.ts-final-card{background:var(--cell);border:1px solid var(--line2);border-radius:4px;padding:14px 16px}
+.ts-final-card h3{font-size:10px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--line2)}
+.ts-final-card .ts-final-body{font-size:13px;color:var(--fg);line-height:1.55}
+.ts-final-card .ts-grid{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;font-size:12px}
+.ts-final-card .ts-grid .ts-k{color:var(--mut);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;font-weight:600;padding-top:2px}
+.ts-final-card .ts-grid .ts-v{color:var(--fg);font-family:"SF Mono",monospace;font-size:12px}
+.ts-final-card .ts-grid .ts-v-sub{display:block;color:var(--mut2);font-style:italic;font-size:10px;margin-top:2px}
+
+@media (max-width:1100px){
+  .at-greenhorn{grid-template-columns:1fr}
+  .ts-pill{flex-direction:column}
+  .ts-strip{grid-template-columns:repeat(2,1fr)}
+  .ts-final-grid{grid-template-columns:1fr}
+}
+
+/* Keep the legacy data sinks completely out of the visual flow. */
+.legacy-data-sinks{display:none !important}
 </style>
 </head>
 <body>
@@ -299,136 +386,180 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
 
 <div id="dashboard-root">
   <!-- SOURCE STATUS ROW -->
+  <!-- Source-status row — operator-facing labels only (engine code-names
+       like the macro/structure/decision/history engines stay in the
+       Source Status / Audit collapsible). The element IDs are unchanged
+       so existing setSourcePill writers keep working. -->
   <div class="src-row" id="src-row">
-    <span class="pill"        id="src-marketData"><span class="pdot"></span><span class="pkey">marketData</span><span class="pval">loading</span></span>
-    <span class="pill"        id="src-corey"     ><span class="pdot"></span><span class="pkey">corey</span><span class="pval">loading</span></span>
-    <!-- CoreyClone is hidden from the operational execution surface until it is
-         actually implemented. Showing a red 'not implemented' pill here makes
-         the desk look like it has a live system failure when CoreyClone simply
-         is not wired yet. Status still emitted to console + visible inside the
-         Source Status / Audit tab. -->
-    <span class="pill"        id="src-coreyClone" style="display:none"><span class="pdot"></span><span class="pkey">coreyClone</span><span class="pval">loading</span></span>
-    <span class="pill"        id="src-spidey"    ><span class="pdot"></span><span class="pkey">spidey</span><span class="pval">loading</span></span>
-    <span class="pill"        id="src-jane"      ><span class="pdot"></span><span class="pkey">jane</span><span class="pval">loading</span></span>
-    <span class="pill"        id="src-historical"><span class="pdot"></span><span class="pkey">historical</span><span class="pval">loading</span></span>
+    <span class="pill"        id="src-marketData"><span class="pdot"></span><span class="pkey">market data</span><span class="pval">loading</span></span>
+    <span class="pill"        id="src-corey"     ><span class="pdot"></span><span class="pkey">macro</span><span class="pval">loading</span></span>
+    <span class="pill"        id="src-coreyClone" style="display:none"><span class="pdot"></span><span class="pkey">history</span><span class="pval">loading</span></span>
+    <span class="pill"        id="src-spidey"    ><span class="pdot"></span><span class="pkey">structure</span><span class="pval">loading</span></span>
+    <span class="pill"        id="src-jane"      ><span class="pdot"></span><span class="pkey">decision</span><span class="pval">loading</span></span>
+    <span class="pill"        id="src-historical"><span class="pdot"></span><span class="pkey">history cache</span><span class="pval">loading</span></span>
   </div>
 
-  <div class="action-row">
-    <div class="action-pill" id="action-pill" data-tone="amber">
-      <div>
-        <div class="label">ATLAS Action State</div>
-        <div class="state" id="action-state">ATLAS ANALYSIS PENDING</div>
-      </div>
-      <div class="verdict-strip">
-        <div class="vstrip-item"><div class="vlbl">Bias Direction</div><div class="vval" id="vstrip-bias">—</div></div>
-        <div class="vstrip-item"><div class="vlbl">Bias Momentum</div><div class="vval" id="vstrip-momentum">—</div></div>
-        <div class="vstrip-item"><div class="vlbl">Trade Probability</div><div class="vval" id="vstrip-prob">—</div></div>
-        <div class="vstrip-item"><div class="vlbl">Trade Status</div><div class="vval" id="vstrip-perm">—</div></div>
-        <div class="vstrip-item"><div class="vlbl">Valid Until</div><div class="vval" id="vstrip-val">—</div></div>
-        <div class="vstrip-item"><div class="vlbl">Reassess</div><div class="vval" id="vstrip-next">—</div></div>
-      </div>
-    </div>
-  </div>
+  <!-- ============================================================
+       SPEC-COMPLIANT VISIBLE SURFACE (always-open)
+       1) CHARTS  →  2) ANALYSED TARGETS  →  3) TRADE STATUS / FINAL ASSESSMENT
+       The collapsibles (Historical / Mechanism / Scenario / Event Intel /
+       Price Matrix / Terminology Index) live below. Source Status / Audit
+       remains as the developer collapsible.
+       ============================================================ -->
 
-  <!-- MARKET READ + FORWARD WATCH (advisory teaching layer) -->
-  <div class="advisory-row" id="market-read-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:14px 22px 0">
-    <div class="fe-card" id="market-read-card">
-      <h3>Market Read</h3>
-      <div id="market-read-body" style="font-size:12px;color:var(--mut2);line-height:1.55">Pending — run <code>!<span class="mr-sym"></span> analyse</code> to generate the Jane packet.</div>
-    </div>
-    <div class="fe-card" id="forward-watch-card">
-      <h3>Forward Watch — Price · Time · Bias · Confidence</h3>
-      <div id="forward-watch-body" style="font-size:12px;color:var(--mut2);line-height:1.55">Pending — Jane will publish the watchlist (price level · time window · bias context · confidence rating) once analysis fires.</div>
-    </div>
-  </div>
-
-  <!-- COREY · INCOREGO contribution (IN / CO / RE / GO) +
-       COREY IMPACT ON JANE +
-       COREY CLONE (second-pass validation; explicit active or unavailable)
-       Corey is a load-bearing input — never a cosmetic OK pill. The
-       renderers in renderFromCtx will downgrade the COREY pill if no
-       contribution is provided, and force the Clone surface to read
-       "unavailable / not implemented" unless the packet explicitly
-       wires Clone validation. -->
-  <div class="advisory-row" id="incorego-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:6px 22px 0">
-    <div class="fe-card" id="incorego-card">
-      <h3>Corey · INCOREGO Contribution</h3>
-      <div id="incorego-summary" style="font-size:12px;color:var(--mut2);line-height:1.55;margin-bottom:10px"></div>
-      <div id="incorego-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
-    </div>
-    <div class="fe-card" id="corey-impact-card">
-      <h3>Corey Impact on Jane</h3>
-      <div id="corey-impact-body" style="font-size:12px;color:var(--mut2);line-height:1.55"></div>
-    </div>
-  </div>
-  <div class="advisory-row" id="corey-clone-row" style="display:grid;grid-template-columns:1fr;gap:12px;padding:6px 22px 0">
-    <div class="fe-card" id="corey-clone-card">
-      <h3>Corey Clone — Second-Pass Validation</h3>
-      <div id="corey-clone-body" style="font-size:12px;color:var(--mut2);line-height:1.55"></div>
-    </div>
-  </div>
-
-  <div class="exec-strip">
-    <div class="es-cell"        ><div class="lbl">Direction</div>      <div class="val" id="es-dir">—</div></div>
-    <div class="es-cell"        ><div class="lbl">Entry</div>          <div class="val" id="es-entry">—</div><div class="sub" id="es-entry-sub"></div></div>
-    <div class="es-cell"        ><div class="lbl">Target / Exit</div>  <div class="val" id="es-target">—</div></div>
-    <div class="es-cell danger" ><div class="lbl">Stop Loss</div>      <div class="val" id="es-stop">—</div></div>
-    <div class="es-cell danger" ><div class="lbl">Extended Stop</div>  <div class="val" id="es-stop-ext">—</div></div>
-    <div class="es-cell dollar" ><div class="lbl">Risk ($)</div>       <div class="val" id="es-risk">—</div><div class="sub" id="es-risk-sub"></div></div>
-    <div class="es-cell target" ><div class="lbl">Target ($)</div>     <div class="val" id="es-tgt-d">—</div></div>
-    <div class="es-cell dollar" ><div class="lbl">Cost ($)</div>       <div class="val" id="es-cost">—</div></div>
-    <div class="es-cell"        ><div class="lbl">Validity</div>       <div class="val" id="es-validity">—</div></div>
-    <div class="es-cell"        ><div class="lbl">Cancellation Trigger</div><div class="val" id="es-cancel">—</div></div>
-    <div class="es-cell"        ><div class="lbl">Next Reassessment</div><div class="val" id="es-next">—</div></div>
-    <div class="es-cell"        ><div class="lbl">Asset Class</div>    <div class="val" id="es-assetclass">—</div></div>
-  </div>
-
-  <!-- CANDIDATE LEVELS (NOT ACTIVE) -->
-  <div class="candidate-row" id="candidate-row">
-    <div class="cand-hd">
-      <span class="cand-title">Candidate Levels</span>
-      <span class="cand-warning">NOT ACTIVE — no live order permitted yet</span>
-    </div>
-    <div class="cand-grid" id="cand-grid"></div>
-  </div>
-
-  <div class="cond-grid" id="cond-grid"></div>
-
-  <div class="fe-tm">
-    <div class="fe-card">
-      <h3>Forward Expectation — Next Session Window</h3>
-      <div id="fe-body"></div>
-    </div>
-    <div class="tm-card">
-      <h3>Trigger Map</h3>
-      <div id="tm-body"></div>
-    </div>
-  </div>
-
-  <nav class="sec-nav" id="sec-nav">
-    <button class="tab active" data-target="sec-charts">CHARTS</button>
-    <button class="tab"        data-target="sec-final">JANE FINAL ASSESSMENT</button>
-    <button class="tab"        data-target="sec-corey">COREY MACRO</button>
-    <button class="tab"        data-target="sec-spidey">SPIDEY STRUCTURE</button>
-    <button class="tab"        data-target="sec-historical">HISTORICAL CONTEXT</button>
-    <button class="tab"        data-target="sec-mechanism">MECHANISM CHAIN</button>
-    <button class="tab"        data-target="sec-scenario">SCENARIO ENGINE</button>
-    <button class="tab"        data-target="sec-events">EVENTS / CALENDAR</button>
-    <button class="tab"        data-target="sec-matrix">MATRIX</button>
-    <button class="tab"        data-target="sec-audit">SOURCE STATUS / AUDIT</button>
-    <button class="tab"        data-target="sec-glossary">GLOSSARY / INDEX</button>
-    <span class="badge">SURFACE COMPRESSED · v3.0</span>
-  </nav>
-
-  <section class="sec-body" id="sec-charts">
+  <section class="sec-body" id="sec-charts" style="padding-top:14px">
     <div class="sec-hd"><h2>CHARTS</h2><span class="sub">HTF: Weekly · Daily · 4H · 1H  ·  LTF: 30M · 15M · 5M · 1M</span></div>
     <div class="chart-grid" id="ch-htf-grid"></div>
     <div style="height:8px"></div>
     <div class="chart-grid" id="ch-ltf-grid"></div>
   </section>
 
+  <section class="sec-body" id="sec-analysed-targets" style="padding-top:0">
+    <div class="sec-hd">
+      <h2>ANALYSED TARGETS</h2>
+      <span class="sub" id="at-headline">No active read yet</span>
+    </div>
+    <div id="at-no-setup" class="at-no-setup" style="display:none">NO VALID BUY OR SELL TARGET IDENTIFIED</div>
+    <table class="at-table" aria-label="Analysed Targets">
+      <colgroup><col class="at-col-label"><col class="at-col-value"></colgroup>
+      <tbody>
+        <tr class="at-row xc-entry">
+          <td class="at-label">ENTRY POINT</td>
+          <td class="at-value"><div class="at-val-main" id="es-entry">—</div><div class="at-val-sub" id="es-entry-sub"></div></td>
+        </tr>
+        <tr class="at-row xc-entry-ext">
+          <td class="at-label">ENTRY EXTENDED</td>
+          <td class="at-value"><div class="at-val-main" id="es-entry-ext">—</div><div class="at-val-sub" id="es-entry-ext-sub"></div></td>
+        </tr>
+        <tr class="at-row xc-exit">
+          <td class="at-label">EXIT POINT</td>
+          <td class="at-value"><div class="at-val-main" id="es-target">—</div><div class="at-val-sub" id="es-target-sub"></div></td>
+        </tr>
+        <tr class="at-row xc-trend">
+          <td class="at-label">TREND</td>
+          <td class="at-value"><div class="at-val-main" id="es-dir">—</div><div class="at-val-sub" id="es-dir-sub"></div></td>
+        </tr>
+        <tr class="at-row xc-neutral" id="at-row-neutral" style="display:none">
+          <td class="at-label">NEUTRAL MARKET — NO BIAS / WAIT / HOLD</td>
+          <td class="at-value"><div class="at-val-main" id="es-neutral">—</div><div class="at-val-sub" id="es-neutral-sub"></div></td>
+        </tr>
+        <tr class="at-row xc-stop">
+          <td class="at-label">SET STOP LOSS</td>
+          <td class="at-value"><div class="at-val-main" id="es-stop">—</div><div class="at-val-sub" id="es-stop-sub"></div></td>
+        </tr>
+        <tr class="at-row xc-stop">
+          <td class="at-label">EXTENDED STOP LOSS</td>
+          <td class="at-value"><div class="at-val-main" id="es-stop-ext">—</div><div class="at-val-sub" id="es-stop-ext-sub"></div></td>
+        </tr>
+        <tr class="at-row xc-warn">
+          <td class="at-label">SELECT ONE STOP LOSS ONLY</td>
+          <td class="at-value"><div class="at-val-main">Use ONE stop, not both.</div><div class="at-val-sub">SET STOP LOSS is the primary protection. EXTENDED STOP LOSS is the wider alternative for higher-noise sessions. Holding both at once is conflicting risk and will be rejected.</div></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="at-greenhorn" id="at-greenhorn"></div>
+  </section>
+
+  <section class="sec-body" id="sec-trade-status" style="padding-top:0">
+    <div class="sec-hd">
+      <h2>TRADE STATUS / FINAL ASSESSMENT</h2>
+      <span class="sub">Final read attached to ANALYSED TARGETS — not a separate tab</span>
+    </div>
+    <div class="ts-pill" id="ts-pill" data-tone="amber">
+      <div class="ts-state-block">
+        <div class="ts-label">ATLAS Action State</div>
+        <div class="ts-state" id="action-state">ATLAS analysis pending</div>
+        <div class="ts-state-sub" id="action-subtitle"></div>
+      </div>
+      <div class="ts-strip">
+        <div class="ts-strip-item"><div class="vlbl">Target Status</div><div class="vval" id="vstrip-target-status">—</div></div>
+        <div class="ts-strip-item"><div class="vlbl">Buyer / Seller Control</div><div class="vval" id="vstrip-control">—</div></div>
+        <div class="ts-strip-item"><div class="vlbl">Setup Quality</div><div class="vval" id="vstrip-quality">—</div></div>
+        <div class="ts-strip-item"><div class="vlbl">Execution Confidence</div><div class="vval" id="vstrip-confidence">—</div></div>
+        <div class="ts-strip-item"><div class="vlbl">Next Review</div><div class="vval" id="vstrip-next">—</div></div>
+      </div>
+    </div>
+    <div class="ts-final-grid">
+      <div class="ts-final-card">
+        <h3>Final read</h3>
+        <div id="final-body" class="ts-final-body">Final assessment will appear once ATLAS publishes a read for this symbol.</div>
+      </div>
+      <div class="ts-final-card">
+        <h3>Risk &amp; cost</h3>
+        <div class="ts-grid">
+          <div class="ts-k">Risk ($)</div>      <div class="ts-v" id="es-risk">—<span class="ts-v-sub" id="es-risk-sub"></span></div>
+          <div class="ts-k">Target ($)</div>    <div class="ts-v" id="es-tgt-d">—</div>
+          <div class="ts-k">Cost ($)</div>      <div class="ts-v" id="es-cost">—</div>
+          <div class="ts-k">Validity</div>      <div class="ts-v" id="es-validity">—</div>
+          <div class="ts-k">Next reassessment</div><div class="ts-v" id="es-next">—</div>
+          <div class="ts-k">If invalidated</div><div class="ts-v" id="es-cancel">—</div>
+          <div class="ts-k">Asset class</div>   <div class="ts-v" id="es-assetclass">—</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LEGACY DATA SINKS (kept in DOM, hidden from view).
+       These containers retain their data IDs so existing renderFromCtx /
+       Corey contribution / Forward Watch wiring keeps writing into them
+       without throwing. They are NEVER visible to the user; if a future
+       collapsible needs them, route content to it explicitly. -->
+  <div class="legacy-data-sinks" id="legacy-data-sinks" style="display:none" aria-hidden="true">
+    <!-- These elements remain in DOM only so existing JS writers don't
+         throw on getElementById(...). They have NO IDs (the canonical
+         IDs live in the new visible Trade Status / Analysed Targets
+         block). The bodies below DO have IDs because their JS writers
+         expect them; the surrounding wrappers carry the visible-spec
+         section content elsewhere now. -->
+    <div class="legacy-pill"><div class="legacy-state">—</div></div>
+
+    <div class="advisory-row" id="market-read-row">
+      <div class="fe-card"><h3>Market Read</h3><div id="market-read-body"></div></div>
+      <div class="fe-card"><h3>Forward Watch</h3><div id="forward-watch-body"></div></div>
+    </div>
+
+    <div class="advisory-row" id="incorego-row">
+      <div class="fe-card">
+        <h3>Macro context contribution</h3>
+        <div id="incorego-summary"></div>
+        <div id="incorego-grid"></div>
+      </div>
+      <div class="fe-card">
+        <h3>Macro impact on decision</h3>
+        <div id="corey-impact-body"></div>
+      </div>
+    </div>
+    <div class="advisory-row" id="corey-clone-row">
+      <div class="fe-card">
+        <h3>Historical second-pass validation</h3>
+        <div id="corey-clone-body"></div>
+      </div>
+    </div>
+
+    <div class="candidate-row" id="candidate-row">
+      <div class="cand-grid" id="cand-grid"></div>
+    </div>
+
+    <div class="cond-grid" id="cond-grid"></div>
+
+    <div class="fe-tm">
+      <div class="fe-card"><div id="fe-body"></div></div>
+      <div class="tm-card"><div id="tm-body"></div></div>
+    </div>
+  </div>
+
+  <nav class="sec-nav" id="sec-nav">
+    <button class="tab active" data-target="sec-historical">HISTORICAL CONTEXT</button>
+    <button class="tab"        data-target="sec-mechanism">MECHANISM CHAIN</button>
+    <button class="tab"        data-target="sec-scenario">SCENARIO ENGINE</button>
+    <button class="tab"        data-target="sec-events">EVENT INTELLIGENCE</button>
+    <button class="tab"        data-target="sec-matrix">PRICE MATRIX</button>
+    <button class="tab"        data-target="sec-glossary">TERMINOLOGY INDEX</button>
+    <button class="tab"        data-target="sec-audit">SOURCE STATUS / AUDIT</button>
+  </nav>
+
   <section class="sec-body hidden" id="sec-historical">
-    <div class="sec-hd"><h2>HISTORICAL</h2><span class="sub">Auditable analogues · trade-linked · colour-stamped</span></div>
+    <div class="sec-hd"><h2>HISTORICAL CONTEXT ENGINE</h2><span class="sub">Auditable analogues · trade-linked · colour-stamped</span></div>
     <div class="colour-key">
       <div class="ck green"><div class="sw"></div>SUPPORTIVE</div>
       <div class="ck red"  ><div class="sw"></div>ADVERSE</div>
@@ -440,48 +571,42 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   </section>
 
   <section class="sec-body hidden" id="sec-mechanism">
-    <div class="sec-hd"><h2>MECHANISM</h2><span class="sub">Driver → market mechanism → affected instrument → execution implication</span></div>
+    <div class="sec-hd"><h2>MECHANISM CHAIN</h2><span class="sub">Driver → market mechanism → affected instrument → execution implication</span></div>
     <div id="mech-body"></div>
   </section>
 
   <section class="sec-body hidden" id="sec-scenario">
-    <div class="sec-hd"><h2>SCENARIO</h2><span class="sub">Most likely behaviour — continuation / range / reversal</span></div>
+    <div class="sec-hd"><h2>SCENARIO ENGINE</h2><span class="sub">Most likely behaviour — continuation / range / reversal</span></div>
     <div id="scen-body"></div>
   </section>
 
   <section class="sec-body hidden" id="sec-events">
-    <div class="sec-hd"><h2>EVENTS</h2><span class="sub">Catalysts in active window</span></div>
+    <div class="sec-hd"><h2>EVENT INTELLIGENCE</h2><span class="sub">Catalysts in active window</span></div>
     <div id="events-body"></div>
   </section>
 
   <section class="sec-body hidden" id="sec-matrix">
-    <div class="sec-hd"><h2>MATRIX</h2><span class="sub">Cross-symbol price matrix</span></div>
+    <div class="sec-hd">
+      <h2>PRICE MATRIX</h2>
+      <span class="sub">Last 5 unique searches · click a row to reload that symbol</span>
+    </div>
     <div id="matrix-body"></div>
-  </section>
-
-  <section class="sec-body hidden" id="sec-final">
-    <div class="sec-hd"><h2>FINAL READ</h2><span class="sub">Same content as Final Assessment block above. Listed here only for reference.</span></div>
-    <div class="final-banner"><b>NOTE:</b> Final Assessment lives inside Trade Status / Live Plan above. This tab is a duplicate-summary surface only — never the source of truth.</div>
-    <div id="final-body"></div>
-  </section>
-
-  <section class="sec-body hidden" id="sec-corey">
-    <div class="sec-hd"><h2>COREY MACRO</h2><span class="sub">Macro driver read · USD / yields / vol / regime</span></div>
-    <div id="corey-body"></div>
-  </section>
-
-  <section class="sec-body hidden" id="sec-spidey">
-    <div class="sec-hd"><h2>SPIDEY STRUCTURE</h2><span class="sub">HTF / LTF structure · displacement · liquidity</span></div>
-    <div id="spidey-body"></div>
   </section>
 
   <section class="sec-body hidden" id="sec-audit">
     <div class="sec-hd"><h2>SOURCE STATUS / AUDIT</h2><span class="sub">All upstream sources, including pending-implementation</span></div>
     <div id="audit-body"></div>
+    <div class="legacy-data-sinks" style="display:none" aria-hidden="true">
+      <!-- Audit-only data sinks for upstream engine surfaces. Rendered only
+           inside the Source Status / Audit collapsible — not on the primary
+           user surface. -->
+      <div id="corey-body"></div>
+      <div id="spidey-body"></div>
+    </div>
   </section>
 
   <section class="sec-body hidden" id="sec-glossary">
-    <div class="sec-hd"><h2>GLOSSARY / INDEX</h2><span class="sub">Terminology · concept colours · dot scale</span></div>
+    <div class="sec-hd"><h2>TERMINOLOGY INDEX</h2><span class="sub">Terminology · concept colours · dot scale</span></div>
     <div class="colour-key" style="margin-bottom:14px">
       <div class="ck green"><div class="sw"></div>SUPPORTIVE — historical/event reinforces the current setup</div>
       <div class="ck red"  ><div class="sw"></div>ADVERSE — contradicts or invalidates the setup</div>
@@ -534,215 +659,11 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     return;
   }
 
-  // STAGED_PLAN — execution-plan staging dictionary used until POST /load
-  // wires real plan context per session. The CHART data layer below is fully
-  // live (TwelveData via the /twelvedata server proxy on this same service).
-  var STAGED_PLAN = {
-    MU: {
-      assetClass: 'equity',
-      lastPrice: 92.40, lastChangePct: -1.85,
-      actionState: 'HOLD — NO ACTIVE TRADE', actionTone: 'amber',
-      biasDirection: 'Neutral / Mixed',
-      biasMomentum: 'Flat',
-      tradeProbability: 1,
-      tradeStatus: 'No active trade signal',
-      tradePermission: 'No active trade signal',
-      validityMinutes: 15,
-      reassessMinutes: 60,
-      direction: 'No directional read yet — macro neutral, structure mixed',
-      entry: 'Pending', entrySub: 'no active order',
-      stopLoss: 'Not yet defined',
-      extendedStopLoss: 'Not yet defined',
-      target: 'Not yet defined',
-      riskDollars: 'No active trade', riskSub: 'no entry / no invalidation',
-      targetDollars: 'No active trade',
-      costDollars: '~$0.05/share spread + commission',
-      cancellation: '15M close > $94.10 confirms bullish path · < $90.20 confirms bearish path',
-      bullishCandidate: {
-        candidateEntryArea: '$94.10 – $94.30',
-        candidateTarget:    '$96.40 (next liquidity cluster)',
-        candidateStop:      '$93.20 (15M close back below within 2 candles)',
-        requirement:        'Becomes valid only after a 15M body close above $94.10 with a fresh demand zone retained on the impulse, AND no high-impact event inside next 2h.'
-      },
-      bearishCandidate: {
-        candidateEntryArea: '$90.20 – $90.00',
-        candidateTarget:    '$87.80 (deeper demand)',
-        candidateStop:      '$91.20 (15M close back above within 2 candles)',
-        requirement:        'Becomes valid only after a 15M body close below $90.20 with a fresh supply zone retained on the impulse, AND no high-impact event inside next 2h.'
-      },
-      grid: { executionAuthority:1, structure:2, liquidityPressure:3, eventRisk:2, sessionEnergy:2, macroAlignment:2, conviction:1, regime:3 },
-      gridNotes: {
-        executionAuthority: 'no clean trigger',
-        structure:          'higher TF mixed',
-        liquidityPressure:  'building toward $94',
-        eventRisk:          'Fed speak inside 36h',
-        sessionEnergy:      'late session drift',
-        macroAlignment:     'neutral',
-        conviction:         'no authorised conviction',
-        regime:             'transition'
-      },
-      gridEffects: {
-        executionAuthority: 'Blocks live entry — no actionable trigger present.',
-        structure:          'Needs a clean 15M / 30M structure break with an imbalance left behind.',
-        liquidityPressure:  'Watch the $94.10 / $90.20 edges — first to break with imbalance retained authorises review.',
-        eventRisk:          'No fresh entry inside 2h of a high-impact catalyst window.',
-        sessionEnergy:      'Late-session drift — expect lower follow-through and more chop.',
-        macroAlignment:     'No directional macro vote — direction must come from structure alone.',
-        conviction:         'No conviction authorisation — system has no clean evidence to risk capital.',
-        regime:             'Transitional regime — false breaks more likely; require closes, not wicks.'
-      },
-      forward: {
-        behaviour: 'Price is expected to stay trapped between $90.20 and $94.10 until one side closes outside the range on a 15M candle. No live entry yet. A clean move only starts if price closes beyond one edge AND leaves a fresh demand or supply imbalance behind.',
-        boundaryUpper: '$94.10',
-        boundaryLower: '$90.20',
-        movement:  'Typical daily move ≈ $2.30/share · seen today ≈ $1.60 · est. remaining ≈ $0.70.',
-        tradability: 'Range absorption — remaining movement most likely wasted in chop between the boundaries unless a 15M close breaks one edge with imbalance retained.',
-        confirmsBullish: '15M body close above $94.10 + fresh demand zone retained on the impulse + no high-impact event inside next 2h.',
-        confirmsBearish: '15M body close below $90.20 + fresh supply zone retained on the impulse + no high-impact event inside next 2h.',
-        keepsBlocked:    'Price held inside $90.20 – $94.10 with no clean displacement, OR a high-impact event scheduled inside ±2h.'
-      },
-      triggers: {
-        bullish: { tf:'15M', level:'$94.10', close:'15M body close above $94.10', supply:'fresh demand zone left behind on the impulse', catalyst:'no high-impact event inside next 2h', invalidation:'15M close back below $93.20 within 2 candles' },
-        bearish: { tf:'15M', level:'$90.20', close:'15M body close below $90.20', supply:'fresh supply zone left behind on the impulse', catalyst:'no high-impact event inside next 2h', invalidation:'15M close back above $91.20 within 2 candles' },
-        noTrade: 'Inside the $90.20–$94.10 range with no clean displacement — no entry, no preempt limits.',
-        timeframeNote: '15M = aggressive intraday confirmation. 1H gives cleaner confirmation but slower triggers.'
-      },
-      historical: [
-        { name:'AI/Semiconductor consolidation pattern (post-rally cooling)', stamp:'amber', sample:'n=14 daily windows since 2024-Q4', timeframe:'1D', relevance:'Memory/semis after concentrated rally', continuation:'Range-bound; 60-70% retest of prior swing low first', confidence:'medium', supports:'context — no directional vote', suggests:'Expect range first, breakout second. Stand aside until a fresh structural break is left.', expires:'When a 15M close beyond $94.10 OR $90.20 is confirmed' },
-        { name:'NVDA earnings sympathy drag (T-3 → T-1)', stamp:'red', sample:'n=8 NVDA cycles 2023-2025', timeframe:'4H', relevance:'MU drifts lower into NVDA earnings windows', continuation:'62.5% drift down before reversal at NVDA print', confidence:'medium-high', supports:'adverse for buyers in T-3 to T-1', suggests:'Heavy short-side pressure if NVDA prints inside next 72h. Not authorised to long.', expires:'NVDA earnings window closes' },
-        { name:'Q-end rebalance reversal window', stamp:'green', sample:'n=12 quarter-end sessions, large-cap semis 2022-2025', timeframe:'1D', relevance:'Quarter-end can drive sharp last-day reversal', continuation:'58% sharp counter-trend close on quarter-end day', confidence:'medium', supports:'supportive only on a quarter-end calendar match', suggests:'If session falls on quarter-end and structure aligns, expect a sharp reversal candle.', expires:'Outside quarter-end ±1 day window' },
-        { name:'Generic "2017 reflation" comparison', stamp:'grey', sample:'unsupported — no clean denominator', timeframe:'unspecified', relevance:'low — different rate regime, different sector composition', continuation:'no audited rate', confidence:'rejected', supports:'neutral — should not influence the desk', suggests:'Disregard. Not a clean analogue.', expires:'n/a — analogue rejected' }
-      ],
-      mechanismDetail: {
-        cause: 'Memory-chip pricing softness combined with NVDA earnings overhang weighs on the broader semi sector.',
-        reaction: 'Investors rotate out of memory names into AI-infrastructure leaders (NVDA, AVGO); MU underperforms the semi index.',
-        impact: 'MU equity drifts within a $90.20–$94.10 band as buyers and sellers wait for the NVDA print and the next FOMC speak.',
-        outcome: 'No clean directional move expected until structure breaks one edge with imbalance retained, OR a high-impact catalyst shifts sentiment.',
-        changes: 'Mechanism flips bullish if AI-capex re-acceleration is confirmed (NVDA beats decisively + raises); flips bearish if memory pricing data prints another month of decline.'
-      },
-      mechanism: 'Memory pricing softness → margin compression risk → sell-side rerating → MU underperforms semi index. Counterforce: AI capex sustained → demand for HBM / DRAM remains structural → margin floor.',
-      scenarioDetail: {
-        primary:      { name:'Range absorption', prob:42, trigger:'Price respects $90.20–$94.10 with no 15M close beyond either edge.', window:'Next 1H close · or until first edge breaks.' },
-        alternative:  { name:'Bullish breakout', prob:38, trigger:'15M body close above $94.10 with fresh demand zone retained.',     window:'Next 4h.' },
-        invalidation: { name:'Bearish breakdown',prob:20, trigger:'15M body close below $90.20 with fresh supply zone retained.',     window:'Next 4h.' }
-      },
-      scenario: { continuation:38, range:42, reversal:20 },
-      events: [
-        { whenISO:'2026-05-08T13:30:00Z', what:'US NFP',         impact:'high',        channel:'rates → yields → growth-stock valuation', mechanism:'Strong print → yields up → growth-stock pressure', preRule:'No new entries inside ±2h of release.',      postRule:'Wait for fresh 15M structure after the print before any entry.', verdict:'BLOCK new entries inside ±2h window' },
-        { whenISO:'2026-05-06T18:00:00Z', what:'FOMC minutes',   impact:'high',        channel:'policy path → real yields',                mechanism:'Hawkish tone → growth-stock pressure',           preRule:'Reduce conviction inside ±1h.',               postRule:'Reassess after the second 15M close post-release.',              verdict:'CAUTION — reduce conviction' },
-        { whenISO:'2026-05-07T21:00:00Z', what:'NVDA earnings',  impact:'medium-high', channel:'sector sympathy / AI capex',               mechanism:'Sector sympathy — MU often drifts pre / reacts post', preRule:'No long entries T-3 to T-1.',                  postRule:'Wait for first 15M structure after the post-release tape.',     verdict:'CAUTION — sympathy risk pre/post' }
-      ],
-      matrix: [
-        { sym:'NVDA',   px:'124.80', chg:'-2.10%', range:'120.40 – 128.10' },
-        { sym:'AMD',    px:'113.20', chg:'-1.40%', range:'110.80 – 116.00' },
-        { sym:'AVGO',   px:'1640.50',chg:'-0.85%', range:'1610 – 1665' },
-        { sym:'SMCI',   px:'42.10',  chg:'-3.20%', range:'40.10 – 44.50' },
-        { sym:'NDX',    px:'21420',  chg:'-1.05%', range:'21200 – 21640' }
-      ]
-    },
-
-    EURUSD: {
-      assetClass: 'fx',
-      lastPrice: 1.07820, lastChangePct: 0.18,
-      actionState: 'ARMED — WAITING FOR TRIGGER', actionTone: 'gold',
-      biasDirection: 'Bullish',
-      biasMomentum: 'Building',
-      tradeProbability: 4,
-      tradeStatus: 'Armed — waiting for confirmation',
-      tradePermission: 'Armed — waiting for confirmation',
-      validityMinutes: 15,
-      reassessMinutes: 15,
-      direction: 'Mild USD weakness supports upside — buyers gaining control above 1.0780',
-      entry: '1.07900', entrySub: 'on 15M close above session high with retained demand',
-      stopLoss: '1.07550',
-      extendedStopLoss: '1.07350',
-      target: '1.08600',
-      riskDollars: '$350', riskSub: 'per 1.0 standard lot · 35 pips',
-      targetDollars: '$700',
-      costDollars: '~$8 per 1.0 lot (0.8 pip spread)',
-      cancellation: '15M close back below 1.07780 inside 2 candles — invalidates demand retention',
-      bullishCandidate: {
-        candidateEntryArea: '1.07900 – 1.07950',
-        candidateTarget:    '1.08600 (next liquidity cluster)',
-        candidateStop:      '1.07550 (extended 1.07350)',
-        requirement:        'Active armed setup — fires on 15M body close above session high with fresh demand zone retained on the impulse + no high-impact event inside next 2h.'
-      },
-      bearishCandidate: {
-        candidateEntryArea: '1.07550 – 1.07500',
-        candidateTarget:    '1.07000 (deeper demand)',
-        candidateStop:      '1.07700 (15M close back above within 2 candles)',
-        requirement:        'Activates only if the bullish setup fails — 15M body close below 1.07550 with a fresh supply zone retained on the impulse, AND no high-impact event inside next 2h.'
-      },
-      grid: { executionAuthority:3, structure:4, liquidityPressure:3, eventRisk:2, sessionEnergy:4, macroAlignment:3, conviction:3, regime:3 },
-      gridEffects: {
-        executionAuthority:'Armed — fires on the defined trigger; do not pre-empt.',
-        structure:         'HH/HL on 1H supports the long bias.',
-        liquidityPressure: 'Liquidity cluster at 1.0860 magnetises the move once the trigger fires.',
-        eventRisk:         'NFP in ~36h — reduce conviction inside the ±2h window before the print.',
-        sessionEnergy:     'London session active — best window for the trigger to fire cleanly.',
-        macroAlignment:    'USD soft, yields steady — background tailwind for EURUSD long.',
-        conviction:        'B — actionable with discipline; do not size up.',
-        regime:            'Risk-on lean — supports continuation if the trigger fires.'
-      },
-      gridNotes: {
-        executionAuthority:'armed; awaits trigger',
-        structure:         'HH/HL on 1H',
-        liquidityPressure: 'toward 1.0860 cluster',
-        eventRisk:         'NFP in 36h',
-        sessionEnergy:     'London session',
-        macroAlignment:    'USD soft; yields steady',
-        conviction:        'B — actionable',
-        regime:            'risk-on lean'
-      },
-      forward: {
-        behaviour: 'Price is expected to grind upward toward the 1.0860 liquidity cluster IF the 15M trigger above 1.07900 fires with a fresh demand zone left behind. If the trigger does not fire, expect range absorption between 1.07550 and 1.07900 until London close.',
-        boundaryUpper: '1.07900 (trigger) → 1.08600 (target)',
-        boundaryLower: '1.07550 (stop) → 1.07350 (extended)',
-        movement:  'ATR(14) ≈ 65 pips · seen today ≈ 22 pips · est. remaining ≈ 43 pips.',
-        tradability: 'Tradable upside — if the 15M body close above 1.07900 fires inside the active session, the move into 1.08600 is the working plan. If no trigger fires, remaining movement is absorbed sideways.',
-        confirmsBullish: '15M body close above 1.07900 + fresh demand zone retained on the impulse + no high-impact event inside next 2h.',
-        confirmsBearish: '15M body close below 1.07550 + fresh supply zone retained on the impulse + no high-impact event inside next 2h.',
-        keepsBlocked:    'Price held inside 1.07550 – 1.07900 with no fresh impulse, OR NFP / ECB inside ±2h.'
-      },
-      triggers: {
-        bullish: { tf:'15M', level:'1.07900', close:'15M body close above 1.07900', supply:'fresh demand zone retained on the impulse', catalyst:'no high-impact event inside next 2h', invalidation:'15M close back below 1.07780 within 2 candles' },
-        bearish: { tf:'15M', level:'1.07550', close:'15M body close below 1.07550', supply:'fresh supply zone retained on the impulse', catalyst:'no high-impact event inside next 2h', invalidation:'15M close back above 1.07700 within 2 candles' },
-        noTrade: 'Inside 1.07550 – 1.07900 with no fresh impulse and demand/supply not yet built.',
-        timeframeNote: '15M = aggressive intraday confirmation. 1H gives cleaner confirmation but slower entry.'
-      },
-      historical: [
-        { name:'London-session breakout above session high', stamp:'green', sample:'n=42 EURUSD London sessions 2024', timeframe:'15M', relevance:'directly comparable session profile', continuation:'68% follow-through to next liquidity cluster within 4h', confidence:'medium-high', supports:'supportive of the bullish trigger', suggests:'If the 15M trigger fires before NY open, target 1.0860 stop cluster.', expires:'When London session closes' },
-        { name:'Pre-NFP USD short squeeze (T-1 session)', stamp:'amber', sample:'n=18 NFP windows 2023-2025', timeframe:'1H', relevance:'mixed — outcome depends on prior week price action', continuation:'52% drift continuation pre-print; 48% reversal', confidence:'low-medium', supports:'mixed — do not trade based on this alone', suggests:'Reduce size into NFP window; expect spreads to widen.', expires:'Inside NFP ±2h window' },
-        { name:'Yield-curve disinversion phase EURUSD lift', stamp:'cyan', sample:'n=6 macro phases 2019-2025', timeframe:'1D', relevance:'broad context only', continuation:'EURUSD averages +1.4% in 60 days post-disinversion', confidence:'medium', supports:'context — does not authorise an entry', suggests:'Slow background tailwind for EURUSD long bias.', expires:'When yield curve re-inverts' }
-      ],
-      mechanismDetail: {
-        cause: 'UUP (DXY proxy) score -0.05 bias Neutral — USD softening on the margin without a strong safe-haven bid.',
-        reaction: 'Mild relief flow into EUR from cross flows; yields steady, so carry is not a blocker.',
-        impact: 'Background lift on EURUSD; primary driver is liquidity at 1.0860 cluster waiting to be tested.',
-        outcome: 'If 15M trigger above 1.07900 fires inside London session, the move into 1.0860 stops is the working plan.',
-        changes: 'Mechanism flips bearish if VIX spikes (full safe-haven flight) or NFP prints decisively strong (USD bid). Mechanism strengthens bullish on a sub-50 ISM print.'
-      },
-      mechanism: 'USD softening (UUP score -0.05, bias Neutral) → relief into EUR · VIX elevated but not extreme → no full safe-haven flight · Yield curve normal → carry not a blocker · Net: mild upside fuel until catalyst hits.',
-      scenarioDetail: {
-        primary:      { name:'Bullish breakout', prob:54, trigger:'15M body close above 1.07900 with fresh demand zone retained.', window:'Within active London session.' },
-        alternative:  { name:'Range absorption', prob:30, trigger:'Price held inside 1.07550–1.07900 with no fresh impulse.',     window:'Until London close.' },
-        invalidation: { name:'Bearish breakdown', prob:16, trigger:'15M body close below 1.07550 with fresh supply zone retained.', window:'Within active session.' }
-      },
-      scenario: { continuation:54, range:30, reversal:16 },
-      events: [
-        { whenISO:'2026-05-08T13:30:00Z', what:'US NFP',            impact:'high',   channel:'rates → USD',          mechanism:'Strong print → USD bid → EURUSD pressure',           preRule:'No new entries inside ±2h of release.',         postRule:'Wait for fresh 15M structure after the print before any entry.', verdict:'BLOCK new entries ±2h window' },
-        { whenISO:'2026-05-06T12:45:00Z', what:'ECB Rate Decision', impact:'high',   channel:'EUR rates / forward guidance', mechanism:'Hawkish ECB → EUR support; dovish → EUR sell', preRule:'Reduce conviction inside ±1h.',                postRule:'Reassess after the press conference at 13:30 UTC.',              verdict:'CAUTION — reduce conviction' },
-        { whenISO:'2026-05-07T12:30:00Z', what:'US PPI',            impact:'medium', channel:'inflation impulse',    mechanism:'Inflation read; minor USD impulse',                  preRule:'Trim size into the print.',                     postRule:'Resume normal entry rules after first 15M close.',               verdict:'OPEN — minor impact' }
-      ],
-      matrix: [
-        { sym:'EURUSD', px:'1.07820', chg:'+0.18%', range:'1.07550 – 1.08000' },
-        { sym:'GBPUSD', px:'1.26010', chg:'+0.22%', range:'1.25700 – 1.26210' },
-        { sym:'USDJPY', px:'149.40',  chg:'-0.15%', range:'149.10 – 149.85' },
-        { sym:'AUDUSD', px:'0.66180', chg:'+0.31%', range:'0.65920 – 0.66310' },
-        { sym:'USDCAD', px:'1.36420', chg:'-0.10%', range:'1.36200 – 1.36680' }
-      ]
-    }
-  };
+  // STAGED_PLAN — emptied. The dashboard renders only from real
+  // POST /load packets now. Demo seed data was removed because it
+  // contained user-facing wording the locked dashboard spec bans.
+  // The empty object preserves the lookup signature used elsewhere.
+  var STAGED_PLAN = {};
 
   var activeSymbol = requestedSymbol;
   var chartSymbol  = requestedSymbol;
@@ -784,12 +705,31 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   function setSourcePill(key, value){
     var el = document.getElementById('src-' + key);
     if (!el) return;
-    el.querySelector('.pval').textContent = value || 'unavailable';
+    var raw = String(value == null ? '' : value);
+    // Tone resolution uses the raw internal status string. Try exact
+    // match first, then prefix-up-to-colon, then first word.
+    var tone = STATUS_TONE[raw] || STATUS_TONE[raw.split(':')[0]] || STATUS_TONE[raw.split(/[: ]/)[0]];
     el.classList.remove('ok','partial','warn','fail');
-    var v = String(value || 'unavailable');
-    // Try exact match first, then prefix-up-to-colon, then first word.
-    var tone = STATUS_TONE[v] || STATUS_TONE[v.split(':')[0]] || STATUS_TONE[v.split(/[: ]/)[0]];
     el.classList.add(tone || 'fail');
+    // Map the internal status string to operator-facing copy so banned
+    // tokens (unavailable / withheld / not implemented / authorised /
+    // blocked / packet) NEVER reach the rendered pill value.
+    var label;
+    if (!raw) label = '—';
+    else if (/^live$|^ok$/i.test(raw))                         label = 'LIVE';
+    else if (/^final/i.test(raw))                              label = 'READY';
+    else if (/^confirms/i.test(raw))                           label = 'CONFIRMS';
+    else if (/^pending|loading|awaiting|analysis/i.test(raw))  label = 'PENDING';
+    else if (/^partial/i.test(raw))                            label = 'PARTIAL';
+    else if (/^sample/i.test(raw))                             label = 'SAMPLE';
+    else if (/^degraded/i.test(raw))                           label = 'DEGRADED';
+    else if (/^withheld/i.test(raw))                           label = 'PAUSED';
+    else if (/^conflicts|^no-?match/i.test(raw))               label = 'CONFLICT';
+    else if (/^unavailable/i.test(raw))                        label = 'OFF';
+    else if (/^fail/i.test(raw))                               label = 'OFF';
+    else if (/cache|cached|cache:/.test(raw))                  label = 'CACHED';
+    else                                                       label = raw.toUpperCase().replace(/[_:]/g, ' ').replace(/\b(NOT IMPLEMENTED|WITHHELD|UNAVAILABLE|AUTHORISED|BLOCKED|TRIGGER|PACKET|JANE|COREY|SPIDEY)\b/g, '—');
+    el.querySelector('.pval').textContent = label;
   }
   function setSourceStatusFromPacket(sources){
     var s = sources || {};
@@ -823,56 +763,46 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   }
 
   // ─────────────────────────────────────────────────────────────────────
-  // WITHHOLDING — when no Jane packet exists for this symbol, the
-  // execution-decision surface MUST NOT fake values. This function hides
-  // the action-pill, execution strip, candidate-levels, condition grid,
-  // forward expectation, and trigger map sections, replacing them with
-  // a single explicit banner. Charts, header, and source-status row stay.
+  // NO DECISION PACKET YET — when the decision layer has not produced a
+  // packet for this symbol, the visible Trade Status / ANALYSED TARGETS
+  // surfaces must NOT fabricate numbers. This collapses both into one
+  // calm "no read yet" message attached to the Trade Status block. Charts
+  // remain live. Internal-name labels (jane / spidey / corey) are NEVER
+  // surfaced here — only operator-facing language.
   // ─────────────────────────────────────────────────────────────────────
   function renderWithheldExecutionSurface(reason){
-    var hide = function(sel){ document.querySelectorAll(sel).forEach(function(el){ el.style.display = 'none'; }); };
-    hide('.action-row');
-    hide('.exec-strip');
-    hide('.candidate-row');
-    hide('.cond-grid');
-    hide('.fe-tm');
-
+    // Trade Status pill + Analysed Targets table remain in DOM but their
+    // values are flagged as "not identified yet" (see renderFromCtx).
+    var anchor = document.getElementById('sec-trade-status');
+    if (!anchor) return;
+    var existing = document.getElementById('atlas-no-read-banner');
+    if (existing) existing.remove();
     var banner = document.createElement('div');
+    banner.id = 'atlas-no-read-banner';
     banner.className = 'withhold-banner';
+    banner.style.margin = '0 22px 14px';
     banner.innerHTML =
-      '<div class="wb-title">JANE DECISION UNAVAILABLE — EXECUTION DECISION WITHHELD</div>' +
-      '<div class="wb-detail">No Jane packet has been posted for <b>' + activeSymbol + '</b>. ' +
-      'The execution-decision surface (action state, entry, target, stop, candidate levels, condition grid, ' +
-      'forward expectation, trigger map) is intentionally blank. The dashboard will not invent values that ' +
-      'Jane has not produced.</div>' +
-      '<div class="wb-detail" style="margin-top:8px"><b>Reason:</b> ' + escapeHtml(reason || 'no Jane packet for symbol') + '.</div>' +
+      '<div class="wb-title">NO ATLAS READ YET FOR THIS SYMBOL</div>' +
+      '<div class="wb-detail">Charts are live. The decision layer has not produced a read for <b>' + activeSymbol + '</b> yet, ' +
+      'so ANALYSED TARGETS and Trade Status read as "not identified yet". The dashboard never fabricates entry, exit, or stop values.</div>' +
       '<div class="wb-list"><b>To populate this surface:</b>' +
         '<ul>' +
           '<li>Run <code>!' + activeSymbol.toLowerCase() + ' analyse</code> in any FX Bot#3867 channel.</li>' +
-          '<li>The bot computes Corey + Spidey + Jane and POSTs the packet to <code>/load</code> on this service.</li>' +
+          '<li>The bot publishes the read to <code>/load</code> on this service.</li>' +
           '<li>This page will pick it up on next reload (or via SSE in a future pass).</li>' +
         '</ul></div>';
-    var anchor = document.querySelector('.action-row');
-    if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(banner, anchor);
-    else document.getElementById('dashboard-root').insertBefore(banner, document.getElementById('dashboard-root').firstChild);
+    anchor.parentNode.insertBefore(banner, anchor);
 
-    // Historical, Mechanism, Scenario, Events, Final Read, Corey, Spidey
-    // tabs are all Jane / upstream-derived. Hide them via the surrounding
-    // nav-tab buttons so the user cannot accidentally read fabricated
-    // content. The inner divs remain in the DOM so renderFromCtx(stub) can
-    // populate them harmlessly (invisibly).
-    //
-    // The Source Status / Audit tab stays VISIBLE — it is the diagnostic
-    // surface for "why is everything withheld", so hiding it would defeat
-    // its purpose.
-    ['sec-historical','sec-mechanism','sec-scenario','sec-events','sec-final','sec-corey','sec-spidey'].forEach(function(secId){
-      var navBtn = document.querySelector('.sec-nav .tab[data-target="' + secId + '"]');
-      if (navBtn) navBtn.style.display = 'none';
+    // Lower collapsibles whose body comes from the decision layer stay
+    // selectable in the nav but their bodies are empty until the packet
+    // arrives. Source Status / Audit and Terminology Index always stay
+    // available — they are diagnostic / reference surfaces.
+    ['sec-historical','sec-mechanism','sec-scenario','sec-events'].forEach(function(secId){
       var sec = document.getElementById(secId);
       if (sec) sec.classList.add('hidden');
     });
 
-    console.warn('[DASHBOARD] jane=withheld reason=' + reason + ' symbol=' + activeSymbol);
+    console.warn('[DASHBOARD] decision_packet=missing reason=' + reason + ' symbol=' + activeSymbol);
   }
 
   // ─────────────────────────────────────────────────────────────────────
@@ -885,38 +815,27 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   // Charts, header price, source-status row, and audit tab remain visible.
   // ─────────────────────────────────────────────────────────────────────
   function renderAnalysisPendingSurface(reason){
-    var hide = function(sel){ document.querySelectorAll(sel).forEach(function(el){ el.style.display = 'none'; }); };
-    // Keep .action-row visible — the action pill carries the amber
-    // ANALYSIS PENDING state and the bias / probability / status strip.
-    hide('.exec-strip');
-    hide('.candidate-row');
-    hide('.cond-grid');
-    hide('.fe-tm');
-
+    var anchor = document.getElementById('sec-trade-status');
+    if (!anchor) return;
+    var existing = document.getElementById('atlas-no-read-banner');
+    if (existing) existing.remove();
     var banner = document.createElement('div');
+    banner.id = 'atlas-no-read-banner';
     banner.className = 'withhold-banner pending';
+    banner.style.margin = '0 22px 14px';
     banner.innerHTML =
-      '<div class="wb-title">ATLAS ANALYSIS PENDING</div>' +
-      '<div class="wb-detail">Market data is live and charts are ready. The decision layer has not been generated for this symbol yet.</div>' +
-      '<div class="wb-detail" style="margin-top:8px"><b>Next step:</b> Run <code>!' + activeSymbol.toLowerCase() + ' analyse</code> in Discord to generate the Corey + Spidey + Jane packet.</div>' +
-      '<div class="wb-detail" style="margin-top:8px;color:var(--mut)">Reason: ' + escapeHtml(reason || 'no_jane_packet_for_symbol') + '</div>';
-    var anchor = document.querySelector('.action-row');
-    if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(banner, anchor.nextSibling);
-    else document.getElementById('dashboard-root').insertBefore(banner, document.getElementById('dashboard-root').firstChild);
+      '<div class="wb-title">ATLAS READ PENDING</div>' +
+      '<div class="wb-detail">Charts are live. ATLAS has not produced a directional read for <b>' + activeSymbol + '</b> yet — ' +
+      'ANALYSED TARGETS will read as "not identified yet" until the read is published.</div>' +
+      '<div class="wb-detail" style="margin-top:8px"><b>Next step:</b> run <code>!' + activeSymbol.toLowerCase() + ' analyse</code> in Discord to publish the read for this symbol.</div>';
+    anchor.parentNode.insertBefore(banner, anchor);
 
-    // Hide the Jane / Corey / Spidey / Historical / Mechanism / Scenario
-    // / Events tabs until the packet exists. Charts + Audit + Glossary
-    // tabs stay visible so the user can still inspect live OHLC and the
-    // diagnostic source-state surface.
-    ['sec-historical','sec-mechanism','sec-scenario','sec-events','sec-final','sec-corey','sec-spidey'].forEach(function(secId){
-      var navBtn = document.querySelector('.sec-nav .tab[data-target="' + secId + '"]');
-      if (navBtn) navBtn.style.display = 'none';
+    ['sec-historical','sec-mechanism','sec-scenario','sec-events'].forEach(function(secId){
       var sec = document.getElementById(secId);
       if (sec) sec.classList.add('hidden');
     });
 
-    console.warn('[DASHBOARD-STATE] symbol=' + activeSymbol + ' marketData=live janePacket=missing state=analysis_pending');
-    console.warn('[DASHBOARD-STATE] redFailure=false reason=no_jane_packet_but_market_live');
+    console.warn('[DASHBOARD-STATE] symbol=' + activeSymbol + ' marketData=live read=pending');
   }
 
   // Asset-class inference for the chart layer (works without a Jane packet,
@@ -1043,16 +962,24 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       currentSource = 'tf-last';
     }
 
-    // ENTRY level — read from per-symbol ctx if present (Jane packet).
-    var entry = null;
+    // ASK / BID / PREV CLOSE for the chart ladder. ENTRY is intentionally
+    // excluded here (spec: ENTRY belongs in ANALYSED TARGETS only, never
+    // in the chart ladder). BID / ASK are derived from CURRENT ± half the
+    // typical instrument spread (the same approximation charts-engine.js
+    // uses); PREV is the second-to-last full bar's close in the visible
+    // window — i.e. the prior session/bar reference, not the live tape.
+    var ask = null, bid = null, prev = null;
     try {
-      var aCtx = (window.ATLAS && window.ATLAS.ctx) || null;
-      var aSym = (window.ATLAS && window.ATLAS.activeSymbol) || null;
-      if (aCtx && aSym === paneSym && aCtx.entry != null && aCtx.entry !== 'Pending' && aCtx.entry !== 'Withheld'){
-        var n = parseFloat(aCtx.entry);
-        if (isFinite(n)) entry = n;
+      var spread = spreadPxLocal(paneSym, currentPrice);
+      if (isFinite(spread) && spread > 0 && isFinite(currentPrice)){
+        ask = currentPrice + spread / 2;
+        bid = currentPrice - spread / 2;
       }
-    } catch (_e) { entry = null; }
+    } catch (_es) { ask = null; bid = null; }
+    if (slice.length >= 2){
+      var p = slice[slice.length - 2].c;
+      if (isFinite(p)) prev = p;
+    }
 
     // The vertical placement scale uses the PANE's HIGH/LOW (its own
     // visible window) so each box sits at the correct y-coordinate
@@ -1095,8 +1022,10 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     var MIN_Y = 6, MAX_Y = 90;
     var labels = [
       { cls: 'high',    lbl: 'HIGH',         price: hi },
+      { cls: 'ask',     lbl: 'ASK',          price: ask },
       { cls: 'current', lbl: currentLabel,   price: currentPrice },
-      { cls: 'entry',   lbl: 'ENTRY',        price: entry },
+      { cls: 'bid',     lbl: 'BID',          price: bid },
+      { cls: 'prev',    lbl: 'PREV CLOSE',   price: prev },
       { cls: 'low',     lbl: 'LOW',          price: lo }
     ].filter(function(it){ return it.price != null && isFinite(it.price); });
     labels.forEach(function(it){ it.y = yOf(it.price); });
@@ -1141,7 +1070,8 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
 
     // Per-pane state lives on the DOM node — never on a shared object.
     pane._priceBoxState = {
-      hi: hi, low: lo, entry: entry, dg: dg,
+      hi: hi, low: lo, dg: dg,
+      ask: ask, bid: bid, prev: prev,
       current: currentPrice,
       currentLabel: currentLabel,
       currentSource: currentSource,
@@ -1150,11 +1080,30 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
 
     console.log('[PRICE-BOX] symbol=' + paneSym + ' tf=' + tf +
       ' high=' + hi.toFixed(dg) +
+      ' ask=' + (ask == null ? 'n/a' : ask.toFixed(dg)) +
       ' current=' + currentPrice.toFixed(dg) +
       ' source=' + currentSource +
+      ' bid=' + (bid == null ? 'n/a' : bid.toFixed(dg)) +
+      ' prev=' + (prev == null ? 'n/a' : prev.toFixed(dg)) +
       ' tfLast=' + tfLast.toFixed(dg) +
-      ' entry=' + (entry == null ? 'withheld' : entry.toFixed(dg)) +
       ' low=' + lo.toFixed(dg));
+  }
+
+  // Spread approximation used to derive BID/ASK for the chart ladder
+  // when no real top-of-book quote is available. Mirrors the convention
+  // used by charts-engine.js renderLadder so both rendering paths stay
+  // consistent. FX uses pip-based spreads; equities use dollar-based.
+  function spreadPxLocal(sym, px){
+    if (!isFinite(px)) return 0;
+    if (/^[A-Z]{6}$/.test(sym)){
+      // FX 6-char like EURUSD/USDJPY — JPY pairs use 0.01 pip, others 0.0001
+      return /JPY$/.test(sym) ? 0.02 : 0.0002;
+    }
+    // equity / index / commodity — half-cent for sub-$10, scaling up
+    if (px < 10)    return 0.01;
+    if (px < 100)   return 0.02;
+    if (px < 1000)  return 0.05;
+    return 0.20;
   }
 
   // Price-integrity sweep. Runs once after all panes have rendered
@@ -1262,28 +1211,21 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         var janeStatusVal = (ctx.sources && ctx.sources.jane) || 'final';
         console.log('[DASHBOARD] jane=' + janeStatusVal + ' session=' + jane.packet.session_id + ' age=' + jane.ageMs + 'ms');
 
-        // Spec: when jane=withheld:empty_decision_packet, surface a diagnostic
-        // banner above the action pill listing the exact missing fields.
+        // When the upstream returns an incomplete decision payload, show
+        // the operator a calm "read pending" banner above Trade Status.
+        // Internal field names and engine names are kept out of the
+        // user-rendered text — they remain in console diagnostics only.
         if (/^withheld:/.test(janeStatusVal) || /^unavailable:/.test(janeStatusVal)) {
-          var missing = (jane.packet.missingDecisionFields || []).join(', ') || 'all decision fields';
-          var headline = janeStatusVal === 'withheld:empty_decision_packet'
-            ? 'JANE WITHHELD — CORE/SPIDEY STATUS PRESENT BUT DECISION PACKET EMPTY'
-            : (janeStatusVal === 'withheld:source_incomplete'
-                ? 'JANE WITHHELD — SOURCE CHAIN INCOMPLETE'
-                : 'JANE DIAGNOSTIC — ' + janeStatusVal.toUpperCase());
           var diag = document.createElement('div');
-          diag.className = 'withhold-banner';
-          diag.style.borderColor = 'var(--amber-d)';
-          diag.style.background = 'rgba(255,145,0,0.06)';
-          diag.innerHTML = '<div class="wb-title" style="color:var(--amber)">' + headline + '</div>' +
-            '<div class="wb-detail">Jane status: <code>' + janeStatusVal + '</code>. ' +
-            'Source pills above show the upstream chain. The execution-decision packet did not contain enough fields for Jane to issue a real action state.</div>' +
-            '<div class="wb-list"><b>Missing decision fields:</b>' +
-              '<ul>' + (jane.packet.missingDecisionFields || ['actionState','triggerMap','conditionGrid','forwardExpectation','candidates']).map(function(f){ return '<li>' + escapeHtml(f) + '</li>'; }).join('') + '</ul>' +
-            '</div>' +
-            '<div class="wb-detail" style="margin-top:8px"><b>Why this matters:</b> the system shows source statuses present but no Jane decision payload. Re-run <code>!' + activeSymbol.toLowerCase() + ' analyse</code> after the missing engines populate, OR Jane needs to start posting these fields.</div>';
-          var anchor = document.querySelector('.action-row');
+          diag.className = 'withhold-banner pending';
+          diag.style.margin = '0 22px 14px';
+          diag.innerHTML = '<div class="wb-title">ATLAS READ PENDING</div>' +
+            '<div class="wb-detail">Charts are live. ATLAS has not produced a complete read for <b>' + activeSymbol + '</b> yet.</div>' +
+            '<div class="wb-detail" style="margin-top:8px"><b>Next step:</b> re-run <code>!' + activeSymbol.toLowerCase() + ' analyse</code> in Discord. The dashboard will pick up the read on next reload.</div>';
+          var anchor = document.getElementById('sec-trade-status');
           if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(diag, anchor);
+          // Diagnostic detail goes to console only — never the user surface.
+          console.warn('[DASHBOARD] read_status=' + janeStatusVal + ' missingFields=' + ((jane.packet.missingDecisionFields || []).join(',') || 'unknown'));
         }
       } else if (allowFakeMode && STAGED_PLAN[activeSymbol]) {
         ctx = STAGED_PLAN[activeSymbol];
@@ -1328,8 +1270,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
           window.ATLAS.activeSymbol = activeSymbol;
           window.ATLAS.dashboardState = 'analysis_pending';
           renderFromCtx(ctx);
-          document.getElementById('ses-id').textContent =
-            'state=analysis_pending reason=' + reasonCode + ' sourceReason=' + sourceReasonCode;
+          document.getElementById('ses-id').textContent = 'read pending';
           console.log('[DASHBOARD-STATE] symbol=' + activeSymbol +
             ' marketData=live janePacket=missing state=analysis_pending');
           console.log('[DASHBOARD-STATE] redFailure=false reason=no_jane_packet_but_market_live' + diag);
@@ -1344,8 +1285,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
           window.ATLAS.activeSymbol = activeSymbol;
           window.ATLAS.dashboardState = 'true_failure';
           renderFromCtx(ctx);
-          document.getElementById('ses-id').textContent =
-            'jane=' + janeStatus + ' reason=' + reasonCode + ' sourceReason=' + sourceReasonCode;
+          document.getElementById('ses-id').textContent = 'read paused';
           console.warn('[DASHBOARD-STATE] symbol=' + activeSymbol +
             ' state=true_failure redFailure=true reason=' + reasonCode +
             ' sourceReason=' + sourceReasonCode + diag);
@@ -1367,80 +1307,87 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     return {
       assetClass: inferAssetClass(activeSymbol),
       lastPrice: null, lastChangePct: 0,
-      actionState: 'WITHHELD', actionTone: 'red',
-      biasDirection: 'Withheld', biasMomentum: 'Withheld',
-      tradeProbability: 0, tradeStatus: 'Withheld — no Jane packet',
-      tradePermission: 'Withheld — no Jane packet',
+      actionState: 'ATLAS analysis pending', actionTone: 'amber',
+      biasDirection: 'Neutral', biasMomentum: 'Steady',
+      tradeProbability: 0,
+      tradeStatus: 'No active read yet',
+      tradePermission: 'No active read yet',
       validityMinutes: 15, reassessMinutes: 60,
-      direction: 'Withheld',
-      entry: 'Withheld', entrySub: 'no Jane packet',
-      stopLoss: 'Withheld', extendedStopLoss: 'Withheld', target: 'Withheld',
-      riskDollars: 'Withheld', riskSub: '', targetDollars: 'Withheld',
-      costDollars: 'Withheld', cancellation: 'Withheld',
+      direction: '',
+      entry: null, entrySub: '',
+      stopLoss: null, extendedStopLoss: null, target: null,
+      riskDollars: null, riskSub: '', targetDollars: null,
+      costDollars: '—', cancellation: 'No active read to invalidate yet',
       bullishCandidate: null, bearishCandidate: null,
       grid: { executionAuthority:0, structure:0, liquidityPressure:0, eventRisk:0, sessionEnergy:0, macroAlignment:0, conviction:0, regime:0 },
       gridNotes: {}, gridEffects: {},
-      forward: { behaviour:'Withheld — no Jane packet for this symbol.' },
-      triggers: { bullish:null, bearish:null, noTrade:'Withheld', timeframeNote:'Withheld' },
+      forward: { behaviour:'No active read for this symbol yet.' },
+      triggers: { bullish:null, bearish:null, noTrade:'', timeframeNote:'' },
       historical: [], mechanism: '', mechanismDetail: null,
       scenario: { continuation:0, range:0, reversal:0 }, scenarioDetail: null,
       events: [], matrix: [],
-      sources: { jane:'unavailable', corey:'unavailable', spidey:'unavailable', historical:'unavailable', coreyClone:'unavailable: not implemented' }
+      sources: { jane:'pending', corey:'pending', spidey:'pending', historical:'pending', coreyClone:'pending' }
     };
   }
 
-  // Pending stub — used when state=analysis_pending. Action pill stays
-  // amber with text "ATLAS ANALYSIS PENDING". The deep execution surface
-  // is hidden by renderAnalysisPendingSurface; renderFromCtx still runs
-  // so the chart layer fires + populates the (hidden) DOM nodes safely.
+  // Pending stub — used when state=analysis_pending. The Trade Status
+  // pill stays amber with operator copy. Deep ANALYSED TARGETS rows
+  // resolve to "Not identified yet" via valOrNotId in renderFromCtx.
   function pendingStub(){
     return {
       assetClass: inferAssetClass(activeSymbol),
       lastPrice: null, lastChangePct: 0,
-      actionState: 'ATLAS ANALYSIS PENDING', actionTone: 'amber',
-      biasDirection: 'Pending analysis',
-      biasMomentum: 'Pending analysis',
+      actionState: 'ATLAS analysis pending', actionTone: 'amber',
+      biasDirection: 'Neutral',
+      biasMomentum: 'Steady',
       tradeProbability: 0,
-      tradeStatus: 'Awaiting Jane packet',
-      tradePermission: 'Awaiting Jane packet',
+      tradeStatus: 'No active read yet',
+      tradePermission: 'No active read yet',
       validityMinutes: 15, reassessMinutes: 60,
-      direction: 'Pending — run !' + activeSymbol.toLowerCase() + ' analyse to generate the Jane packet',
-      entry: 'Pending', entrySub: 'no Jane packet generated yet',
-      stopLoss: 'Pending', extendedStopLoss: 'Pending', target: 'Pending',
-      riskDollars: 'Pending', riskSub: '', targetDollars: 'Pending',
-      costDollars: 'Pending', cancellation: 'Pending',
+      direction: '',
+      entry: null, entrySub: '',
+      stopLoss: null, extendedStopLoss: null, target: null,
+      riskDollars: null, riskSub: '', targetDollars: null,
+      costDollars: '—', cancellation: 'No active read to invalidate yet',
       bullishCandidate: null, bearishCandidate: null,
       grid: { executionAuthority:0, structure:0, liquidityPressure:0, eventRisk:0, sessionEnergy:0, macroAlignment:0, conviction:0, regime:0 },
       gridNotes: {}, gridEffects: {},
-      forward: { behaviour:'Decision layer pending. Charts and live market data are streaming.' },
-      triggers: { bullish:null, bearish:null, noTrade:'Pending', timeframeNote:'Pending' },
+      forward: { behaviour:'Charts are live. ATLAS read pending.' },
+      triggers: { bullish:null, bearish:null, noTrade:'', timeframeNote:'' },
       historical: [], mechanism: '', mechanismDetail: null,
       scenario: { continuation:0, range:0, reversal:0 }, scenarioDetail: null,
       events: [], matrix: [],
-      sources: { jane:'pending', corey:'pending', spidey:'pending', historical:'pending', coreyClone:'unavailable: not implemented' }
+      sources: { jane:'pending', corey:'pending', spidey:'pending', historical:'pending', coreyClone:'pending' }
     };
   }
 
-  // Adapter: Jane packet (server shape) → ctx (renderer shape).
+  // Adapter: read packet (server shape) → ctx (renderer shape).
   // Tolerates partial packets — missing fields fall through to the existing
   // renderer's own null-safe handling.
   //
-  // Wording standard:
-  //   - No "authorised" / "permission" language. Replaced with advisory
-  //     wording (HOLD / OBSERVE / ENGAGE / TRIGGER / NO ENTRY / etc.).
-  //   - Trade Probability is a 1–5 integer scale (0 = withheld).
-  //   - Bias Direction + Bias Momentum are independent fields.
-  //   - Market Read summarises the current condition; Forward Watch lists
-  //     the price/time/bias/confidence triggers to watch next.
+  // Wording standard (locked dashboard spec):
+  //   - No "authorised" / "permission" / "trigger" / "blocked" / "withheld"
+  //     language reaches the user surface. Internal action-state values are
+  //     translated to operator copy here and re-checked downstream.
+  //   - Verdict strip = Target Status / Buyer-Seller Control / Setup Quality
+  //     / Execution Confidence / Next Review.
   function remapAdvisory(state){
     if (!state) return 'HOLD — NO ACTIVE TRADE';
     var s = String(state);
-    // Backward-compat remap of legacy "authorised" wording.
-    s = s.replace(/ENTRY AUTHORISED/gi, 'ENTRY TRIGGERED')
-         .replace(/AUTHORISED/gi, 'TRIGGERED')
-         .replace(/NOT AUTHORISED/gi, 'NO ENTRY')
-         .replace(/WAIT\s*[—-]\s*NO TRADE/gi, 'HOLD — NO ACTIVE TRADE')
-         .replace(/PERMISSION/gi, 'STATUS');
+    // Translate internal enum strings to operator-facing copy.
+    s = s.replace(/ENTRY[ _]AUTHORIS(ED|E)/gi,        'ENTRY CONFIRMED')
+         .replace(/ENTRY[ _]AUTHORIZ(ED|E)/gi,        'ENTRY CONFIRMED')
+         .replace(/AUTHORIS(ED|E)/gi,                  'CONFIRMED')
+         .replace(/AUTHORIZ(ED|E)/gi,                  'CONFIRMED')
+         .replace(/NOT[ _]CONFIRMED/gi,                'NO ENTRY')
+         .replace(/WAIT\s*[—-]\s*NO TRADE/gi,         'HOLD — NO ACTIVE TRADE')
+         .replace(/PERMISSION/gi,                      'STATUS')
+         .replace(/PERMITTED/gi,                       'AVAILABLE')
+         .replace(/BLOCKED/gi,                         'PAUSED')
+         .replace(/WITHHELD[ _]?[A-Z]*/gi,             'NO ACTIVE READ')
+         .replace(/WAITING\s+FOR\s+TRIGGER/gi,         'WAITING FOR CONFIRMATION')
+         .replace(/\bTRIGGERED\b/gi,                   'CONFIRMED')
+         .replace(/\bTRIGGERS?\b/gi,                   'CONFIRMATION');
     return s;
   }
   function janePacketToCtx(p){
@@ -1452,15 +1399,15 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       lastChangePct: p.lastChangePct != null ? p.lastChangePct : 0,
       actionState: actionState,
       actionTone:  p.actionTone  || (
-        /TRIGGERED|CONFIRMED|ENGAGE/i.test(actionState) ? 'green'
-        : /ARMED|TRIGGER|OBSERV/i.test(actionState) ? 'gold'
+        /CONFIRMED|ENGAGE/i.test(actionState) ? 'green'
+        : /ARMED|OBSERV/i.test(actionState) ? 'gold'
         : /HOLD|PENDING/i.test(actionState) ? 'amber'
         : 'red'),
       biasDirection: p.biasDirection || p.bias || 'Neutral',
       biasMomentum:  p.biasMomentum  || 'Steady',
       tradeProbability: (p.tradeProbability != null) ? Math.max(0, Math.min(5, parseInt(p.tradeProbability,10) || 0)) : 0,
-      tradeStatus:     p.tradeStatus     || p.tradePermission || 'No active trade signal',
-      tradePermission: p.tradePermission || p.tradeStatus     || 'No active trade signal',
+      tradeStatus:     remapAdvisory(p.tradeStatus     || p.tradePermission || 'No active read yet'),
+      tradePermission: remapAdvisory(p.tradePermission || p.tradeStatus     || 'No active read yet'),
       marketRead:      p.marketRead      || null,
       forwardWatch:    p.forwardWatch    || null,
       coreyContribution: p.coreyContribution || p.incorego || null,
@@ -1592,69 +1539,255 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     conviction:         { chip:'AMBER', state:'INSUFFICIENT',                     note:'Not enough evidence for a live order.',                               effect:'Stand aside until evidence stacks.' },
     regime:             { chip:'GOLD',  state:'NEUTRAL / UNCLASSIFIED FOR TRADE', note:'Regime is not driving a valid setup.',                                effect:'No regime-coherent edge present.' }
   };
-  var CLEAN_NO_TRADE_SUBTITLE =
-    'No trade-quality setup is authorised at this time. ' +
-    'Market data is live. Corey and Spidey are active. ' +
-    'Jane has issued ' + ((ctx.sources && ctx.sources.jane) || 'final:no_trade') +
-    ' because bias is ' + (String(ctx.biasDirection || 'neutral').toLowerCase()) +
-    ' and no approved entry trigger / candidate level is present.';
-
-  // ---------- action pill — advisory state strip ----------
-  // Strip carries: Bias Direction, Bias Momentum, Trade Probability (1–5),
-  // Trade Status (advisory; not "permission"), Valid Until, Reassess.
-  document.getElementById('action-state').textContent = ctx.actionState;
-  // Compression mode forces an AMBER tone for clean no_trade — calm-stand-down
-  // colour, NOT alarming red. Real RED is reserved for mismatch / failure /
-  // hard breach (handled by the PRICE-GUARD code path).
-  var pill = document.getElementById('action-pill');
-  pill.setAttribute('data-tone', COMPRESSION === 'clean_no_trade' ? 'amber' : ctx.actionTone);
-
-  // Insert / refresh the "deliberate stand-down" subtitle under the action state.
-  (function(){
-    var stateEl = document.getElementById('action-state');
-    var sub = document.getElementById('action-subtitle');
-    if (!sub) {
-      sub = document.createElement('div');
-      sub.id = 'action-subtitle';
-      sub.style.cssText = 'font-size:12px;color:var(--mut2);margin-top:6px;line-height:1.5;max-width:680px';
-      stateEl.parentNode.appendChild(sub);
-    }
-    sub.textContent = (COMPRESSION === 'clean_no_trade') ? CLEAN_NO_TRADE_SUBTITLE : '';
+  // CLEAN_NO_TRADE_SUBTITLE — operator-facing copy ONLY. No engine
+  // narration, no "authorised" / "trigger" / "Jane" / "Corey" / "Spidey".
+  var biasWord = (function(){
+    var b = String(ctx.biasDirection || 'neutral').toLowerCase();
+    if (/bull|long|up\b|buy/.test(b))         return 'buyers slightly favoured';
+    if (/bear|short|down\b|sell/.test(b))     return 'sellers slightly favoured';
+    if (/neutral|mixed|flat|range/.test(b))   return 'balanced';
+    return 'unclear';
   })();
+  var CLEAN_NO_TRADE_SUBTITLE =
+    'ATLAS has not identified a valid buy or sell target on this symbol. ' +
+    'Market data is live; the read is calm-stood-down because price action is ' + biasWord + ' ' +
+    'and no confirmation level has been established. Reassess at the next review time.';
 
-  document.getElementById('vstrip-bias').textContent     = ctx.biasDirection || 'Neutral';
-  var vMom = document.getElementById('vstrip-momentum');
-  if (vMom) vMom.textContent = ctx.biasMomentum || 'Steady';
-  var vProb = document.getElementById('vstrip-prob');
-  if (vProb) {
-    var pn = parseInt(ctx.tradeProbability, 10) || 0;
-    vProb.textContent = (pn > 0 ? pn : '—') + ' / 5';
-  }
-  document.getElementById('vstrip-perm').textContent  = ctx.tradeStatus || ctx.tradePermission || 'Pending';
-  document.getElementById('vstrip-val').textContent   = validityStr;
-  document.getElementById('vstrip-next').textContent  = reassessStr;
+  // ---------- Trade Status / Final Assessment pill + verdict strip ----------
+  // Strip carries: Trade Probability, Entry Status, Setup Quality,
+  // Execution Confidence, Bias Direction, Bias Momentum, Valid Until,
+  // Reassess. No "permission" / "authorised" / "blocked" wording — those
+  // are internal state names mapped to clean user-facing labels here.
+  function setText(id, val){ var el = document.getElementById(id); if (el) el.textContent = (val == null ? '—' : val); }
 
-  // Exec-strip values — compress raw nulls into trader-grade copy when the
-  // engine is in clean stand-down. "Pending" → "Waiting", "Not authorised" →
-  // "Inactive — no entry exists", etc. ctx is never mutated.
-  function compressVal(rawVal, fallback) {
-    if (COMPRESSION === 'clean_no_trade' && /pending|not authorised|withheld|—|not active|^\s*$/i.test(String(rawVal || ''))) return fallback;
-    return rawVal;
+  // Map raw internal action-state strings to clean operator-facing copy.
+  // Internal enums like 'final:entry_authorised' MUST NOT reach the user.
+  function mapActionState(raw){
+    var s = String(raw || '').trim();
+    if (!s) return 'ATLAS analysis pending';
+    var low = s.toLowerCase();
+    if (/(^|[\s—-])no\s*active\s*trade|hold\s*[—-]\s*no/i.test(s)) return 'HOLD — NO ACTIVE TRADE';
+    if (/^waiting$|^observe$|conditions\s*building/i.test(low))    return 'OBSERVE — CONDITIONS BUILDING';
+    if (/^armed|^arm\b/i.test(low))                                return 'ARMED — WAITING FOR CONFIRMATION';
+    if (/entry_?authorised|entry\s*confirmed|entry\s*ok/i.test(low)) return 'ENTRY CONFIRMED';
+    if (/trade_?confirmed|live_?trade/i.test(low))                  return 'TRADE CONFIRMED';
+    if (/invalid|cancel/i.test(low))                                return 'TRADE INVALID — STAND DOWN';
+    if (/analysis\s*pending|pending|loading/i.test(low))            return 'ATLAS analysis pending';
+    if (/no_?jane|withheld|missing|empty_?decision/i.test(low))     return 'ATLAS analysis pending';
+    return s;   // already operator-facing
   }
-  document.getElementById('es-dir').textContent       = ctx.directionShort || ctx.direction || (COMPRESSION === 'clean_no_trade' ? 'No directional read for entry yet' : '—');
-  document.getElementById('es-entry').textContent     = compressVal(ctx.entry,            CLEAN_NO_TRADE_EXEC.entry);
-  document.getElementById('es-entry-sub').textContent = ctx.entrySub || (COMPRESSION === 'clean_no_trade' ? 'no live order permitted yet' : '');
-  document.getElementById('es-target').textContent    = compressVal(ctx.target,           CLEAN_NO_TRADE_EXEC.target);
-  document.getElementById('es-stop').textContent      = compressVal(ctx.stopLoss,         CLEAN_NO_TRADE_EXEC.stopLoss);
-  document.getElementById('es-stop-ext').textContent  = compressVal(ctx.extendedStopLoss, CLEAN_NO_TRADE_EXEC.extendedStop);
-  document.getElementById('es-risk').textContent      = compressVal(ctx.riskDollars,      CLEAN_NO_TRADE_EXEC.riskDollars);
-  document.getElementById('es-risk-sub').textContent  = ctx.riskSub || (COMPRESSION === 'clean_no_trade' ? CLEAN_NO_TRADE_EXEC.riskSub : '');
-  document.getElementById('es-tgt-d').textContent     = compressVal(ctx.targetDollars,    CLEAN_NO_TRADE_EXEC.targetDollars);
-  document.getElementById('es-cost').textContent      = ctx.costDollars;
-  document.getElementById('es-validity').textContent  = validityStr;
-  document.getElementById('es-cancel').textContent    = ctx.cancellation;
-  document.getElementById('es-next').textContent      = reassessStr;
-  document.getElementById('es-assetclass').textContent= ctx.assetClass.toUpperCase();
+  setText('action-state', mapActionState(ctx.actionState));
+  var pill = document.getElementById('ts-pill');
+  if (pill) pill.setAttribute('data-tone', COMPRESSION === 'clean_no_trade' ? 'amber' : (ctx.actionTone || 'amber'));
+
+  var subEl = document.getElementById('action-subtitle');
+  if (subEl) subEl.textContent = (COMPRESSION === 'clean_no_trade') ? CLEAN_NO_TRADE_SUBTITLE : '';
+
+  // Compute hasValidEntry EARLY so the verdict strip can use it for the
+  // Target Status field (later code re-uses the same constant).
+  var hasValidEntry = ctx.entry != null && ctx.entry !== 'Pending' && ctx.entry !== 'Withheld' &&
+                      String(ctx.entry).trim() !== '' && String(ctx.entry).trim() !== '—';
+
+  // Five-field verdict strip (locked dashboard wording standard):
+  //   Target Status / Buyer-Seller Control / Setup Quality /
+  //   Execution Confidence / Next Review.
+  // No "Trade Probability", "Entry Status", "Bias", "Validity", "Reassess",
+  // "Permission" labels (all banned per spec).
+  var pn = parseInt(ctx.tradeProbability, 10) || 0;
+  // Target Status — what the ANALYSED TARGETS read currently is.
+  // Sourced from ctx.targetStatus / ctx.tradeStatus, otherwise derived
+  // from whether a valid entry exists.
+  var targetStatus = ctx.targetStatus || ctx.target_status || ctx.tradeStatus || '';
+  if (!targetStatus){
+    targetStatus = hasValidEntry
+      ? 'Active read'
+      : (pn >= 3 ? 'Building' : 'No valid target identified yet');
+  }
+  // Sanitise — never allow banned terms to surface here even if upstream sends them.
+  targetStatus = String(targetStatus)
+    .replace(/withheld[^\.]*$/i, 'No valid target identified yet')
+    .replace(/\bauthoris(ed|e)\b/ig, 'confirmed')
+    .replace(/\bauthoriz(ed|e)\b/ig, 'confirmed')
+    .replace(/\bpermitted\b/ig, 'available')
+    .replace(/\bblocked\b/ig, 'paused')
+    .replace(/\btrigger(ed|s)?\b/ig, 'confirmation');
+
+  // Buyer / Seller Control — directional descriptor sourced from
+  // ctx.bias (or biasDirection / momentum), translated to operator copy.
+  var bias = String(ctx.biasDirection || '').toLowerCase();
+  var control = ctx.buyerSellerControl || ctx.controlState || '';
+  if (!control){
+    if (/bull|long|up\b|buy/.test(bias))      control = 'Buyers in control';
+    else if (/bear|short|down\b|sell/.test(bias)) control = 'Sellers in control';
+    else if (/neutral|mixed|flat|range/.test(bias)) control = 'Balanced — neither side in control';
+    else control = '—';
+  }
+  // Setup Quality + Execution Confidence — derived from ctx if present,
+  // otherwise neutral fallback. Banned-token sanitiser applied.
+  function cleanQual(v, derived){
+    var s = String(v == null ? '' : v).trim();
+    if (!s) return derived;
+    return s.replace(/\bwithheld\b/ig, '—')
+            .replace(/\bauthoris(ed|e)\b/ig, 'confirmed')
+            .replace(/\bblocked\b/ig, 'paused');
+  }
+  var sq = cleanQual(ctx.setupQuality || ctx.setup_quality, (pn >= 4 ? 'High' : pn >= 3 ? 'Medium' : pn >= 1 ? 'Low' : '—'));
+  var ec = cleanQual(ctx.executionConfidence || ctx.execution_confidence, (pn >= 4 ? 'High' : pn >= 3 ? 'Medium' : pn >= 1 ? 'Low' : '—'));
+
+  setText('vstrip-target-status', targetStatus);
+  setText('vstrip-control',       control);
+  setText('vstrip-quality',       sq);
+  setText('vstrip-confidence',    ec);
+  setText('vstrip-next',          reassessStr);
+
+  // ---------- ANALYSED TARGETS values + sub-context ----------
+  // Sub rows carry the per-row Greenhorn context (cancel + reassess
+  // wording). Where ctx provides direct fields they are used; otherwise
+  // a calm "not identified yet" fallback is used. NEVER fake numbers.
+  // (hasValidEntry was computed above the verdict strip.)
+  var notId = 'Not identified yet';
+
+  function valOrNotId(raw){
+    if (raw == null) return notId;
+    var s = String(raw).trim();
+    if (!s || /^—$|^pending$|^withheld$|^not\s*authorised$|^waiting$|^inactive/i.test(s)) return notId;
+    return s;
+  }
+
+  setText('es-entry',           valOrNotId(ctx.entry));
+  setText('es-entry-sub',       ctx.entrySub || '');
+  setText('es-entry-ext',       valOrNotId(ctx.entryExtended || ctx.entry_extended));
+  setText('es-entry-ext-sub',   ctx.entryExtendedSub || (hasValidEntry ? 'Wider primary-zone fill if price retraces deeper before confirming' : ''));
+  setText('es-target',          valOrNotId(ctx.target));
+  setText('es-target-sub',      ctx.targetSub || (hasValidEntry ? 'Where the primary plan exits and books risk-reward' : ''));
+  setText('es-dir',             ctx.directionShort || ctx.direction || (COMPRESSION === 'clean_no_trade' ? 'No directional read yet' : notId));
+  setText('es-dir-sub',         ctx.directionSub || (hasValidEntry ? 'Current trend frame for this symbol on the primary timeframe' : ''));
+  setText('es-stop',            valOrNotId(ctx.stopLoss));
+  setText('es-stop-sub',        ctx.stopLossSub || (hasValidEntry ? 'Primary protection — if price closes here on the primary TF, the read is invalidated' : ''));
+  setText('es-stop-ext',        valOrNotId(ctx.extendedStopLoss));
+  setText('es-stop-ext-sub',    ctx.extendedStopLossSub || (hasValidEntry ? 'Wider alternative protection for higher-noise sessions' : ''));
+
+  // NEUTRAL MARKET row appears only when there is no usable bias.
+  var biasIsNeutral = !ctx.biasDirection || /^neutral|^mixed|^flat|^range/i.test(String(ctx.biasDirection));
+  var neutralRow = document.getElementById('at-row-neutral');
+  if (neutralRow){
+    if (biasIsNeutral && !hasValidEntry){
+      neutralRow.style.display = '';
+      setText('es-neutral',     'Buyers and sellers balanced');
+      setText('es-neutral-sub', 'No directional bias is being signalled yet — wait for a clean break/hold before treating any level as a buy or sell.');
+    } else {
+      neutralRow.style.display = 'none';
+    }
+  }
+
+  // ANALYSED TARGETS hero / no-setup state.
+  var noSetupEl = document.getElementById('at-no-setup');
+  var headlineEl = document.getElementById('at-headline');
+  if (noSetupEl){
+    if (!hasValidEntry){
+      noSetupEl.style.display = '';
+      noSetupEl.textContent = 'NO VALID BUY OR SELL TARGET IDENTIFIED';
+      if (headlineEl) headlineEl.textContent = (biasIsNeutral
+        ? 'Buyers and sellers are balanced. ATLAS has not identified a valid buy or sell target yet.'
+        : 'ATLAS has not identified a valid buy or sell target yet on this symbol.');
+    } else {
+      noSetupEl.style.display = 'none';
+      if (headlineEl) headlineEl.textContent = (ctx.directionShort || ctx.direction || 'Active read');
+    }
+  }
+
+  // Risk / cost / validity / next-reassessment / cancellation grid.
+  setText('es-risk',       valOrNotId(ctx.riskDollars));
+  setText('es-risk-sub',   ctx.riskSub || '');
+  setText('es-tgt-d',      valOrNotId(ctx.targetDollars));
+  setText('es-cost',       ctx.costDollars || '—');
+  setText('es-validity',   validityStr);
+  setText('es-cancel',     ctx.cancellation || (hasValidEntry ? 'Read invalidated when invalidation level is closed against on the primary timeframe' : 'No read to invalidate yet'));
+  setText('es-next',       reassessStr);
+  setText('es-assetclass', String(ctx.assetClass || 'unknown').toUpperCase());
+
+  // Final-read body inside the Trade Status / Final Assessment block.
+  // Pulls from ctx.finalRead / ctx.finalAssessment / ctx.summary, falling
+  // back to a clean "no read yet" message. No engine narration.
+  var finalEl = document.getElementById('final-body');
+  if (finalEl){
+    var finalText = ctx.finalRead || ctx.finalAssessment || ctx.summary || '';
+    if (!finalText){
+      finalText = hasValidEntry
+        ? ('ATLAS read for ' + activeSymbol + ' is active. Use the entry, exit, and stop values above. Reassess at the next reassessment time.')
+        : ('No active read for ' + activeSymbol + ' yet. Charts are live; ANALYSED TARGETS will populate once the read is published.');
+    }
+    finalEl.textContent = finalText;
+  }
+
+  // ---------- Greenhorn block (per ANALYSED TARGETS row) ----------
+  // Each card explains: meaning · why it matters · action implied · what
+  // cancels it · next reassessment. Sourced from packet fields where
+  // available; static fallback copy otherwise. Never invents prices.
+  (function renderGreenhorn(){
+    var host = document.getElementById('at-greenhorn');
+    if (!host) return;
+    var cards = [
+      {
+        label: 'ENTRY POINT',
+        meaning: 'Primary price where the read is triggered.',
+        why:     'Wrong entry breaks the entire risk-to-reward maths — this is the single number that decides whether the trade is worth taking.',
+        action:  hasValidEntry ? ('Place a working order at ' + escapeHtml(String(ctx.entry)) + ' (limit/stop per session rules).') : 'No live action yet — no entry has been identified.',
+        cancels: ctx.cancellation || 'A close against the invalidation level on the primary timeframe.',
+        next:    reassessStr
+      },
+      {
+        label: 'ENTRY EXTENDED',
+        meaning: 'Wider/secondary entry zone for deeper retracements.',
+        why:     'Lets the trader catch the same idea at a better price if the primary entry is missed but the read still holds.',
+        action:  hasValidEntry ? 'Optional only. Use the primary ENTRY POINT first; extend ONLY if the primary fills the wider zone.' : 'No extended entry until ATLAS publishes a read.',
+        cancels: 'Same invalidation as ENTRY POINT — the read is one idea, not two.',
+        next:    reassessStr
+      },
+      {
+        label: 'EXIT POINT',
+        meaning: 'Where the primary plan books risk-to-reward.',
+        why:     'Defines what the trade is being paid for. If the price reaches this level, the idea is realised.',
+        action:  hasValidEntry ? ('Take the planned profit at ' + escapeHtml(String(ctx.target || '—')) + '.') : 'No exit until an entry exists.',
+        cancels: 'A close against the invalidation level before the exit is reached.',
+        next:    reassessStr
+      },
+      {
+        label: 'TREND',
+        meaning: 'The current directional frame for this symbol on the primary timeframe.',
+        why:     'Trade in line with the trend until it changes. Counter-trend ideas need additional evidence.',
+        action:  'Read the trend value above and compare to the bias / momentum strip in Trade Status.',
+        cancels: 'A confirmed structural break against the current direction on the primary timeframe.',
+        next:    reassessStr
+      },
+      {
+        label: 'SET STOP LOSS',
+        meaning: 'Primary protection level for the read.',
+        why:     'A trade without a stop is not a trade. This is the single price that ends the idea.',
+        action:  hasValidEntry ? ('Place stop at ' + escapeHtml(String(ctx.stopLoss || '—')) + '. Use ONLY this stop OR the extended stop, never both.') : 'No stop required — no entry has been identified.',
+        cancels: 'A confirmed close against this level on the primary timeframe.',
+        next:    reassessStr
+      },
+      {
+        label: 'EXTENDED STOP LOSS',
+        meaning: 'Wider alternative protection for higher-noise sessions.',
+        why:     'Reduces stop-out frequency in volatile conditions at the cost of larger maximum risk.',
+        action:  hasValidEntry ? ('Use ' + escapeHtml(String(ctx.extendedStopLoss || '—')) + ' instead of the primary stop ONLY when session volatility justifies it. Never both stops at once.') : 'No extended stop until an entry exists.',
+        cancels: 'Same invalidation logic as primary stop, just at a wider price.',
+        next:    reassessStr
+      }
+    ];
+    host.innerHTML = cards.map(function(c){
+      return '<div class="gh-card">' +
+        '<span class="gh-row-label">' + escapeHtml(c.label) + '</span>' +
+        '<span class="gh-line"><span class="gh-k">Meaning</span><span class="gh-v">' + escapeHtml(c.meaning) + '</span></span>' +
+        '<span class="gh-line"><span class="gh-k">Why it matters</span><span class="gh-v">' + escapeHtml(c.why) + '</span></span>' +
+        '<span class="gh-line"><span class="gh-k">Action</span><span class="gh-v">' + escapeHtml(c.action) + '</span></span>' +
+        '<span class="gh-line"><span class="gh-k">What cancels it</span><span class="gh-v">' + escapeHtml(c.cancels) + '</span></span>' +
+        '<span class="gh-line"><span class="gh-k">Next review</span><span class="gh-v">' + escapeHtml(c.next) + '</span></span>' +
+      '</div>';
+    }).join('');
+  })();
 
   // ---------- Market Read · Forward Watch · INCOREGO ----------
   // Market Read: Jane's plain-language read of the current condition.
@@ -2542,7 +2675,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         } else {
           console.warn('[DATA] source=twelvedata symbol=' + activeSymbol + ' timeframe=' + tf + ' status=fail reason=' + r.reason + ' provider=' + r.provSym);
           console.warn('[CHART] panel=' + tf + ' symbol=' + activeSymbol + ' validation=blocked source=unavailable');
-          resolvedHtml[tf] = panelHtml(tf, activeSymbol, '', 'Live chart data unavailable for ' + activeSymbol + ' ' + tf + ' — chart withheld.');
+          resolvedHtml[tf] = panelHtml(tf, activeSymbol, '', 'No live chart for ' + activeSymbol + ' ' + tf + ' yet — retrying. Charts auto-refresh on the next load.');
           blockedCount++;
         }
       });
@@ -2593,7 +2726,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       srcTxt.textContent = (blockedCount === 0) ? 'DATA · LIVE' : 'DATA · LIVE (' + liveCount + '/' + (liveCount + blockedCount) + ')';
     } else {
       src.className = 'src fail';
-      srcTxt.textContent = 'DATA · UNAVAILABLE';
+      srcTxt.textContent = 'DATA · OFF';
     }
 
     // Source-status row — flip the marketData pill the moment the chart layer
@@ -2686,20 +2819,21 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
         if (mismatch) hdPrice.style.color = 'var(--red)';
       }
       if (mismatch) {
-        if (hdChg) { hdChg.textContent = 'BLOCKED'; hdChg.classList.remove('pos','neg'); hdChg.classList.add('neg'); }
-        // Stamp the surface so the user knows decisions are blocked.
-        var pill = document.getElementById('action-pill');
+        if (hdChg) { hdChg.textContent = 'CHECK PRICE'; hdChg.classList.remove('pos','neg'); hdChg.classList.add('neg'); }
+        // Stamp the surface so the user knows the read is paused on this symbol.
+        var pill = document.getElementById('ts-pill');
         var state = document.getElementById('action-state');
         if (pill) pill.setAttribute('data-tone', 'red');
-        if (state) state.textContent = 'PRICE DATA MISMATCH — DECISION BLOCKED';
-        // Add a banner above the action pill
+        if (state) state.textContent = 'PRICE DATA MISMATCH — READ PAUSED';
+        // Add a banner above the Trade Status block
         var banner = document.createElement('div');
         banner.className = 'withhold-banner';
         banner.style.borderColor = 'var(--red)';
-        banner.innerHTML = '<div class="wb-title" style="color:var(--red)">PRICE DATA MISMATCH — DECISION BLOCKED</div>' +
-          '<div class="wb-detail">Packet price <b>' + (packetPrice == null ? 'n/a' : fmt(packetPrice)) + '</b> disagrees with live OHLC close <b>' + (ohlcLast == null ? 'n/a' : fmt(ohlcLast)) + '</b> for ' + activeSymbol + ' (timeframe ' + (ohlcTf||'?') + ') by more than ' + TOLERANCE_PCT + '%. ' +
-          'The dashboard will not render execution levels until the source is reconciled.</div>';
-        var anchor = document.querySelector('.action-row');
+        banner.style.margin = '0 22px 14px';
+        banner.innerHTML = '<div class="wb-title" style="color:var(--red)">PRICE DATA MISMATCH — READ PAUSED</div>' +
+          '<div class="wb-detail">Read price <b>' + (packetPrice == null ? 'n/a' : fmt(packetPrice)) + '</b> disagrees with live OHLC close <b>' + (ohlcLast == null ? 'n/a' : fmt(ohlcLast)) + '</b> for ' + activeSymbol + ' (timeframe ' + (ohlcTf||'?') + ') by more than ' + TOLERANCE_PCT + '%. ' +
+          'ANALYSED TARGETS will not render until the source price is reconciled.</div>';
+        var anchor = document.getElementById('sec-trade-status');
         if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(banner, anchor);
       } else if (!mismatch && hdChg) {
         // "Today's change" baseline = previous daily close (penultimate bar).
@@ -2717,12 +2851,12 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
             hdChg.classList.add(pct >= 0 ? 'pos' : 'neg');
             console.log('[HEADER-CHG] symbol=' + activeSymbol + ' baseline=prevClose prevClose=' + prevClose + ' current=' + raw + ' pct=' + pct.toFixed(2) + '%');
           } else {
-            hdChg.textContent = 'change unavailable';
+            hdChg.textContent = '—';
             hdChg.classList.remove('pos','neg');
             console.warn('[HEADER-CHG] symbol=' + activeSymbol + ' baseline=missing prevClose=' + prevClose + ' status=suppressed');
           }
         } else if (raw != null) {
-          hdChg.textContent = 'change unavailable';
+          hdChg.textContent = '—';
           hdChg.classList.remove('pos','neg');
           console.warn('[HEADER-CHG] symbol=' + activeSymbol + ' baseline=missing daily=' + (daily ? daily.length : 'null') + ' status=suppressed');
         }
@@ -2863,45 +2997,29 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
     '</tbody></table>';
   document.getElementById('events-body').innerHTML = evHtml;
 
-  var mx = ctx.matrix || [];
-  document.getElementById('matrix-body').innerHTML =
-    '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
-    '<thead><tr style="text-align:left">' +
-      '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut)">SYMBOL</th>' +
-      '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut)">PRICE</th>' +
-      '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut)">CHANGE</th>' +
-      '<th style="padding:8px;border-bottom:1px solid var(--line2);color:var(--mut)">RANGE</th>' +
-    '</tr></thead><tbody>' +
-    mx.map(function(r){
-      return '<tr>' +
-        '<td style="padding:10px 8px;border-bottom:1px solid var(--line);color:var(--gold);font-weight:700">'+escapeHtml(r.sym)+'</td>' +
-        '<td style="padding:10px 8px;border-bottom:1px solid var(--line);font-family:\'SF Mono\',monospace">'+escapeHtml(r.px)+'</td>' +
-        '<td style="padding:10px 8px;border-bottom:1px solid var(--line);font-family:\'SF Mono\',monospace;color:'+(/^-/.test(r.chg)?'var(--red)':'var(--green)')+'">'+escapeHtml(r.chg)+'</td>' +
-        '<td style="padding:10px 8px;border-bottom:1px solid var(--line);font-family:\'SF Mono\',monospace;color:var(--mut2)">'+escapeHtml(r.range)+'</td>' +
-      '</tr>';
-    }).join('') +
-    '</tbody></table>';
-
-  document.getElementById('final-body').innerHTML =
-    '<div style="font-size:12px;line-height:1.6;color:var(--mut2)">' +
-    '<p><b style="color:var(--gold)">VERDICT:</b> ' + escapeHtml(ctx.actionState) + '</p>' +
-    '<p style="margin-top:8px"><b style="color:var(--gold)">DIRECTION:</b> ' + escapeHtml(ctx.direction) + '</p>' +
-    '<p style="margin-top:8px"><b style="color:var(--gold)">CANCELLATION:</b> ' + escapeHtml(ctx.cancellation) + '</p>' +
-    '<p style="margin-top:8px"><b style="color:var(--gold)">VALIDITY:</b> ' + escapeHtml(ctx.validity) + '</p>' +
-    '<p style="margin-top:14px;color:var(--mut);font-style:italic">Re-read Trade Status / Live Plan above for the live source. This duplicate exists only as a quick scroll-back for users who land on this tab from a deep link.</p>' +
-    '</div>';
+  // ---------- PRICE MATRIX (LRU recall — last 5 unique searches) ----------
+  // Stored in localStorage so it survives reload. Newest at top, no
+  // duplicates, max 5 entries. Click a row to reload that symbol via
+  // ?symbol= navigation. Active symbol is highlighted. No fake entries.
+  // Empty state is operator-friendly, never developer-facing.
+  PriceMatrix.touch(activeSymbol, {
+    px:    (ctx.lastPrice == null) ? null : (ctx.assetClass === 'fx' ? ctx.lastPrice.toFixed(5) : '$' + ctx.lastPrice.toFixed(2)),
+    chg:   (ctx.lastChangePct == null) ? null : ((ctx.lastChangePct >= 0 ? '+' : '') + ctx.lastChangePct.toFixed(2) + '%'),
+    range: null
+  });
+  PriceMatrix.render(activeSymbol);
 
   // ---------- Corey Macro / Spidey Structure / Source Audit (scaffold + withheld-with-reason) ----------
   // These are first usable versions. They render whatever the packet provides
   // and otherwise emit a structured withheld block that names the upstream
   // source and the exact missing field — never an empty pane on a live screen.
   function structuredWithheldCard(title, sourceLabel, sourceVal, missing){
-    var statusTxt = sourceVal ? String(sourceVal) : 'unavailable';
-    return '<div class="withhold-banner" style="margin:0">' +
-      '<div class="wb-title">' + escapeHtml(title) + ' WITHHELD</div>' +
-      '<div class="wb-detail"><b>Source:</b> ' + escapeHtml(sourceLabel) + ' · status <code>' + escapeHtml(statusTxt) + '</code></div>' +
-      '<div class="wb-detail" style="margin-top:6px"><b>Missing:</b> ' + escapeHtml(missing) + '</div>' +
-      '<div class="wb-detail" style="margin-top:8px;color:var(--mut2);font-style:italic">Pending — this section will populate once the upstream source posts the required fields.</div>' +
+    // Operator-facing — never surfaces banned tokens (withheld /
+    // unavailable / authorised / etc.). Diagnostic detail goes to the
+    // Source Status / Audit collapsible, not here.
+    return '<div class="withhold-banner pending" style="margin:0">' +
+      '<div class="wb-title">' + escapeHtml(title) + ' — PENDING</div>' +
+      '<div class="wb-detail" style="color:var(--mut2);font-style:italic">This section populates once the read for this symbol is published.</div>' +
       '</div>';
   }
   function kvBlock(rows){
@@ -3127,12 +3245,19 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
   } // ← close renderFromCtx
 
   // Tab switcher — wired once at IIFE scope (DOM elements always present).
+  // Only nav-controlled collapsibles toggle here; the always-open spec
+  // sections (CHARTS, ANALYSED TARGETS, TRADE STATUS / FINAL ASSESSMENT)
+  // are never hidden by clicking a tab.
+  var ALWAYS_OPEN_SECTIONS = { 'sec-charts':1, 'sec-analysed-targets':1, 'sec-trade-status':1 };
   document.querySelectorAll('.sec-nav .tab').forEach(function(btn){
     btn.addEventListener('click', function(){
       var target = btn.getAttribute('data-target');
       document.querySelectorAll('.sec-nav .tab').forEach(function(b){ b.classList.remove('active'); });
       btn.classList.add('active');
-      document.querySelectorAll('.sec-body').forEach(function(s){ s.classList.add('hidden'); });
+      document.querySelectorAll('.sec-body').forEach(function(s){
+        if (ALWAYS_OPEN_SECTIONS[s.id]) return;
+        s.classList.add('hidden');
+      });
       var el = document.getElementById(target);
       if(el) el.classList.remove('hidden');
     });
@@ -3143,6 +3268,167 @@ button{font-family:inherit;cursor:pointer;border:0;background:transparent;color:
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
     });
   }
+
+  // ============================================================
+  // PRICE MATRIX — last 5 unique symbol searches, recall/history
+  // only (per locked dashboard spec). localStorage-backed so the
+  // recall surface survives reload. NEVER fabricates entries.
+  // ============================================================
+  var PriceMatrix = (function(){
+    var KEY = 'atlas:price-matrix:v1';
+    var MAX = 5;
+
+    function read(){
+      try {
+        var raw = localStorage.getItem(KEY);
+        if (!raw) return [];
+        var arr = JSON.parse(raw);
+        return Array.isArray(arr) ? arr.filter(function(e){ return e && typeof e.sym === 'string' && e.sym; }).slice(0, MAX) : [];
+      } catch (_e) { return []; }
+    }
+    function write(arr){
+      try { localStorage.setItem(KEY, JSON.stringify(arr.slice(0, MAX))); } catch (_e) {}
+    }
+    function touch(sym, fields){
+      sym = String(sym || '').toUpperCase();
+      if (!sym) return;
+      var list = read().filter(function(e){ return e.sym !== sym; });
+      list.unshift({
+        sym: sym,
+        px:    (fields && fields.px)    || null,
+        chg:   (fields && fields.chg)   || null,
+        range: (fields && fields.range) || null,
+        seen:  Date.now()
+      });
+      write(list);
+    }
+    function render(activeSym){
+      var body = document.getElementById('matrix-body');
+      if (!body) return;
+      var list = read();
+      if (!list.length){
+        body.innerHTML =
+          '<div style="padding:18px;color:var(--mut2);font-size:12px;line-height:1.55;border:1px dashed var(--line2);border-radius:4px;text-align:center">' +
+          'No symbols searched yet. Each symbol you load will appear here for quick recall.' +
+          '</div>';
+        return;
+      }
+      var rows = list.map(function(r){
+        var isActive = (String(activeSym || '').toUpperCase() === r.sym);
+        var pxTxt    = r.px    || '—';
+        var chgTxt   = r.chg   || '';
+        var chgColor = chgTxt && /^-/.test(chgTxt) ? 'var(--red)' : (chgTxt ? 'var(--green)' : 'var(--mut)');
+        var rangeTxt = r.range || '';
+        var bg       = isActive ? 'rgba(255,214,0,0.08)' : 'transparent';
+        var symColor = isActive ? 'var(--gold)' : 'var(--fg)';
+        return '<tr class="pm-row" data-sym="' + escapeHtml(r.sym) + '" tabindex="0" role="button" ' +
+          'style="cursor:pointer;background:' + bg + '">' +
+          '<td style="padding:10px 12px;border-bottom:1px solid var(--line);color:' + symColor + ';font-weight:700;font-family:\'SF Mono\',monospace;letter-spacing:1px">' + escapeHtml(r.sym) + (isActive ? ' · ACTIVE' : '') + '</td>' +
+          '<td style="padding:10px 12px;border-bottom:1px solid var(--line);font-family:\'SF Mono\',monospace">' + escapeHtml(pxTxt) + '</td>' +
+          '<td style="padding:10px 12px;border-bottom:1px solid var(--line);font-family:\'SF Mono\',monospace;color:' + chgColor + '">' + escapeHtml(chgTxt) + '</td>' +
+          '<td style="padding:10px 12px;border-bottom:1px solid var(--line);font-family:\'SF Mono\',monospace;color:var(--mut2)">' + escapeHtml(rangeTxt) + '</td>' +
+        '</tr>';
+      }).join('');
+      body.innerHTML =
+        '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
+        '<thead><tr style="text-align:left">' +
+          '<th style="padding:8px 12px;border-bottom:1px solid var(--line2);color:var(--mut);letter-spacing:1.5px;font-weight:700;font-size:10px;text-transform:uppercase">Symbol</th>' +
+          '<th style="padding:8px 12px;border-bottom:1px solid var(--line2);color:var(--mut);letter-spacing:1.5px;font-weight:700;font-size:10px;text-transform:uppercase">Price</th>' +
+          '<th style="padding:8px 12px;border-bottom:1px solid var(--line2);color:var(--mut);letter-spacing:1.5px;font-weight:700;font-size:10px;text-transform:uppercase">Change</th>' +
+          '<th style="padding:8px 12px;border-bottom:1px solid var(--line2);color:var(--mut);letter-spacing:1.5px;font-weight:700;font-size:10px;text-transform:uppercase">Range</th>' +
+        '</tr></thead><tbody>' + rows + '</tbody></table>';
+      // Wire click + keyboard activation. Reloads via ?symbol= so all
+      // page state (charts, ANALYSED TARGETS, Trade Status) re-renders.
+      var qsUser = (new URLSearchParams(window.location.search).get('user') || '').toUpperCase();
+      function go(sym){
+        if (!sym) return;
+        var url = window.location.pathname + '?symbol=' + encodeURIComponent(sym);
+        if (qsUser) url += '&user=' + encodeURIComponent(qsUser);
+        window.location.href = url;
+      }
+      body.querySelectorAll('.pm-row').forEach(function(tr){
+        tr.addEventListener('click', function(){ go(tr.getAttribute('data-sym')); });
+        tr.addEventListener('keydown', function(ev){
+          if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); go(tr.getAttribute('data-sym')); }
+        });
+      });
+    }
+    return { touch: touch, render: render, read: read };
+  })();
+  // Render the recall surface immediately so it's populated even before
+  // the symbol's own ctx finishes loading.
+  PriceMatrix.render(activeSymbol);
+
+  // ============================================================
+  // BANNED-STRING QA — scans visible user-facing text for any of
+  // the locked banned terms. Console-warns on any hit. Runs on
+  // demand via window.ATLAS.qa() and once 1.5s after page load.
+  // Only inspects rendered text — internal enums, comments, logs,
+  // and audit-only sections are ignored. Used as a guard so future
+  // wording regressions surface immediately.
+  // ============================================================
+  (function installQa(){
+    // Banned user-facing terms (locked dashboard wording standard).
+    // "Trade Probability" is in the list — Nathan rejected it as a
+    // user-facing label. The verdict strip uses Target Status /
+    // Buyer-Seller Control / Setup Quality / Execution Confidence /
+    // Next Review instead.
+    var BANNED = [
+      'trigger','authorised','authorized','permitted','permission',
+      'blocked','withheld','no clear edge','probability low',
+      'trade probability','trade range','execution map',
+      'no_jane_packet','sourcereason','packet','unavailable',
+      'incomplete','not implemented',
+      'corey clone','corey','spidey','jane'
+    ];
+    // Engine names (corey/spidey/jane/etc.) are allowed only in the
+    // Source Status / Audit collapsible and inside the hidden legacy
+    // data sinks. The src-row is now operator-friendly and gets
+    // scanned like the rest of the visible surface.
+    var DEV_ONLY_IDS = { 'sec-audit':1, 'legacy-data-sinks':1 };
+    function isInDevOnly(node){
+      while (node && node !== document.body){
+        if (node.id && DEV_ONLY_IDS[node.id]) return true;
+        if (node.classList && node.classList.contains('legacy-data-sinks')) return true;
+        node = node.parentNode;
+      }
+      return false;
+    }
+    function scan(){
+      var hits = [];
+      var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
+      var n;
+      while ((n = walker.nextNode())){
+        var parent = n.parentNode;
+        if (!parent) continue;
+        // Skip <script>, <style>, <code> (code samples are operator instructions)
+        var tag = parent.nodeName;
+        if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'CODE') continue;
+        if (isInDevOnly(parent)) continue;
+        var txt = String(n.nodeValue || '').toLowerCase();
+        if (!txt.trim()) continue;
+        for (var i = 0; i < BANNED.length; i++){
+          var b = BANNED[i];
+          var re = new RegExp('(^|[^a-z0-9])' + b.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '($|[^a-z0-9])', 'i');
+          if (re.test(txt)){
+            hits.push({ term: b, sample: n.nodeValue.slice(0, 140), parentTag: tag, parentId: parent.id || (parent.closest('[id]') && parent.closest('[id]').id) || '' });
+          }
+        }
+      }
+      if (hits.length){
+        console.warn('[ATLAS-QA] banned-string hits in user-facing text:', hits.length);
+        hits.slice(0, 25).forEach(function(h){
+          console.warn('[ATLAS-QA] term="' + h.term + '" parent=' + h.parentTag + (h.parentId ? '#' + h.parentId : '') + ' :: ' + h.sample);
+        });
+      } else {
+        console.log('[ATLAS-QA] clean — no banned strings in user-facing text.');
+      }
+      return hits;
+    }
+    window.ATLAS = window.ATLAS || {};
+    window.ATLAS.qa = scan;
+    setTimeout(function(){ try { scan(); } catch (_e) {} }, 1500);
+  })();
 
   console.log('[ATLAS-DASHBOARD] v3.0 loaded · symbol=' + activeSymbol + ' user=' + requestedUser);
 })();
